@@ -128,7 +128,7 @@ const ADMIN_EMAIL = 'kittiya.so@psu.ac.th';
 const APPROVER_EMAIL = 'yada.d@psu.ac.th';
 
 // ← ผู้ดูแลระบบใส่ URL ของ Google Apps Script Web App ที่นี่
-let GAS_URL = localStorage.getItem('psu_gas_url') || '';
+let GAS_URL = 'https://script.google.com/macros/s/AKfycbwoxKOc2xTY429yfirrjUJzBD-jVAHZ1GTEykhv8l02yc9FkTx3ilPNGqb-vhUx5uo/exec'; // hardcoded — ไม่ต้องตั้งค่า
 
 // ======= STATE =======
 let state = {
@@ -304,8 +304,6 @@ window.changeUrl = function(){
 // ======= RENDER FORM =======
 function renderForm(){
   const f=state.form;
-  if(!GAS_URL) return renderSetup();
-
   const eqRows=f.equipment.map((eq,i)=>{
     const hasEmail=eq.responsibleEmail&&eq.responsibleEmail.length>0;
     const infoHtml=eq.responsible?(hasEmail
@@ -406,7 +404,6 @@ function renderList(){
     <i class="ti ti-refresh" aria-hidden="true" style="${state.syncing?'animation:spin .8s linear infinite':''}"></i>
     ${state.syncing?'กำลังโหลด...':'รีเฟรช'}
   </button>`;
-  if(!GAS_URL) return renderSetup();
   if(state.syncing && !state.requests.length) return `<div class="empty"><div class="spinner" style="margin:0 auto 16px"></div>กำลังโหลดข้อมูลจาก Google Sheets...</div>`;
   const reqs=state.requests;
   if(!reqs.length) return `<div style="display:flex;justify-content:flex-end;margin-bottom:12px">${synBtn}</div><div class="empty"><i class="ti ti-inbox" aria-hidden="true"></i>ยังไม่มีคำขอ</div>`;
@@ -722,7 +719,7 @@ function render(){
   const req=state.requests.find(r=>r.id===state.selectedId);
   const isConnected=!!GAS_URL;
   const connBadge=isConnected
-    ?`<span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;background:#EAF3DE;color:#27500A;border-radius:4px;padding:2px 8px;cursor:pointer" onclick="changeUrl()" title="คลิกเพื่อเปลี่ยน URL"><span class="dot dot-green"></span>เชื่อมต่อ Google Sheets · kittiya.so@psu.ac.th</span>`
+    ?`<span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;background:#EAF3DE;color:#27500A;border-radius:4px;padding:2px 8px;cursor:pointer" title="kittiyaso-star.github.io"><span class="dot dot-green"></span>เชื่อมต่อ Google Sheets · kittiya.so@psu.ac.th</span>`
     :`<span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;background:#FCEBEB;color:#791F1F;border-radius:4px;padding:2px 8px"><span class="dot dot-red"></span>ยังไม่ได้เชื่อมต่อ</span>`;
 
   root.innerHTML=`
