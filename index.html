@@ -117,639 +117,548 @@ body{font-family:'Sarabun',sans-serif;background:#f0efe9;color:#1a1a18;font-size
 <div id="toast" class="toast" style="display:none"></div>
 <script>
 
-// ======= DATA FROM EXCEL (PSU Vet Hospital) =======
-const PSU_STAFF = [{"name": "ดร.สพ.ญ.ญาดา ดวงนำสว่าง", "position": "รองผู้อำนวยการโรงพยาบาลสัตว์ ฝ่ายบริหารผลิตภัณฑ์ และเวชภัณฑ์", "dept": "สาขาวิชาสัตวแพทยศาสตร์", "email": "yada.d@psu.ac.th"}, {"name": "กิตติยา สุนทรเจริญนนท์", "position": "นักวิชาการอุดมศึกษา", "dept": "สำนักงานบริหารคณะ", "email": "kittiya.so@psu.ac.th"}, {"name": "นลิน ต่อวิวรรธน์", "position": "นักวิชาการพัสดุ", "dept": "สำนักงานบริหารคณะ", "email": "nalin.t@psu.ac.th"}, {"name": "ปกชน คีรีลักษณ์", "position": "นักวิทยาศาสตร์", "dept": "สาขาวิชาสัตวแพทยศาสตร์", "email": "pokchon.k@psu.ac.th"}, {"name": "ราชกุล วิริยพรหม", "position": "นักวิทยาศาสตร์", "dept": "สาขาวิชาสัตวแพทยศาสตร์", "email": "ratchakul.w@psu.ac.th"}, {"name": "บารมี ชาญชญานนท์", "position": "นักวิทยาศาสตร์", "dept": "สาขาวิชาสัตวแพทยศาสตร์", "email": "baramee.c@psu.ac.th"}, {"name": "ซารีป๊ะ หมันหมู้", "position": "นักวิทยาศาสตร์", "dept": "สาขาวิชาสัตวแพทยศาสตร์", "email": "sareepah.m@psu.ac.th"}, {"name": "นวพล คุปต์ธรรมสาร", "position": "นักวิทยาศาสตร์", "dept": "สาขาวิชาสัตวแพทยศาสตร์", "email": "navapol.k@psu.ac.th"}, {"name": "นันทรัตน์ ชุติจิรัฐิติกาล", "position": "นักวิทยาศาสตร์", "dept": "สาขาวิชาสัตวแพทยศาสตร์", "email": "nantarat.c@psu.ac.th"}, {"name": "เสาวคนธ์ อินทร์ด้วง", "position": "นักวิทยาศาสตร์", "dept": "สาขาวิชาสัตวแพทยศาสตร์", "email": "saowakon.i@psu.ac.th"}, {"name": "โดมชัย แก้วน้อย", "position": "นักวิทยาศาสตร์", "dept": "สาขาวิชาสัตวแพทยศาสตร์", "email": "domechai.k@psu.ac.th"}, {"name": "จุฬาลักษณ์ เจียงสกุล", "position": "นักวิทยาศาสตร์", "dept": "สาขาวิชาสัตวแพทยศาสตร์", "email": "Julaluk.ji@psu.ac.th"}, {"name": "พีรพล สรยิง", "position": "นักวิทยาศาสตร์", "dept": "สาขาวิชาสัตวแพทยศาสตร์", "email": "peerapon.s@psu.ac.th"}, {"name": "สิริลักษณ์ แก้วมณี", "position": "นักวิทยาศาสตร์", "dept": "สาขาวิชาสัตวแพทยศาสตร์", "email": "siriluk.ka@psu.ac.th"}, {"name": "นริศรา แก้วชนะ", "position": "นักวิทยาศาสตร์", "dept": "สาขาวิชาสัตวแพทยศาสตร์", "email": "narissara.k@psu.ac.th"}, {"name": "สพ.ญ.ณัฏฐนิช  เหมทานนท์", "position": "สัตวแพทย์", "dept": "โรงพยาบาลสัตว์", "email": "natthanit.h@psu.ac.th"}, {"name": "สพ.ญ.สุภาณี  ธีรวรัชนันท์", "position": "สัตวแพทย์", "dept": "โรงพยาบาลสัตว์", "email": "supanee.t@psu.ac.th"}, {"name": "น.สพ.ทักษ์ สุวรรณโอภาส", "position": "สัตวแพทย์", "dept": "โรงพยาบาลสัตว์", "email": "thak.s@psu.ac.th"}, {"name": "น.สพ.พนธกร ศิริรักษณ์", "position": "สัตวแพทย์", "dept": "โรงพยาบาลสัตว์", "email": "pontakorn.s@psu.ac.th"}, {"name": "น.สพ.ก่อสิน จันทนะ", "position": "สัตวแพทย์", "dept": "โรงพยาบาลสัตว์", "email": "korsin.j@psu.ac.th"}, {"name": "น.สพ.ธนวัฒน์ ปัญญศิริ", "position": "สัตวแพทย์", "dept": "โรงพยาบาลสัตว์", "email": "thanawat.pu@psu.ac.th"}, {"name": "นายพิเชษ  จันทรมโน", "position": "ผู้ช่วยสัตวแพทย์", "dept": "โรงพยาบาลสัตว์", "email": "pichet.j@psu.ac.th"}, {"name": "นายถิรกร พ้นภัย", "position": "ผู้ช่วยสัตวแพทย์", "dept": "โรงพยาบาลสัตว์", "email": "thirakong.p@psu.ac.th"}, {"name": "นายเกียรติดำรงค์  ก่อลาภเจริญกุล", "position": "ผู้ช่วยสัตวแพทย์", "dept": "โรงพยาบาลสัตว์", "email": "kietdumrong.k@psu.ac.th"}, {"name": "นายพีรพัฒน์ แก้วมณี", "position": "ผู้ช่วยสัตวแพทย์", "dept": "โรงพยาบาลสัตว์", "email": "peerapat.ka@psu.ac.th"}, {"name": "นางนภัสกร  สิ่งประสงค์", "position": "ผู้ช่วยสัตวแพทย์", "dept": "โรงพยาบาลสัตว์", "email": "naphatsakon.s@psu.ac.th"}, {"name": "นางสาวเบญจมาศ  จิตรจำนงค์", "position": "ผู้ช่วยสัตวแพทย์", "dept": "โรงพยาบาลสัตว์", "email": "benjamas.ji@psu.ac.th"}, {"name": "นางสาวปูชิยา  อิสโร", "position": "ผู้ช่วยสัตวแพทย์", "dept": "โรงพยาบาลสัตว์", "email": "poochiya.i@psu.ac.th"}, {"name": "นางสาวนิศากร  แซ่โล่", "position": "ผู้ช่วยสัตวแพทย์", "dept": "โรงพยาบาลสัตว์", "email": "nisakorn.sae@psu.ac.th"}, {"name": "นางสาวอัจฉรา หมื่นชำนาญ", "position": "ผู้ช่วยสัตวแพทย์", "dept": "โรงพยาบาลสัตว์", "email": "atchara.m@psu.ac.th"}, {"name": "นางสาวกาญจนา ดินเตบ", "position": "ผู้ช่วยสัตวแพทย์", "dept": "โรงพยาบาลสัตว์", "email": "kanchana.d@psu.ac.th"}, {"name": "นางสาววรางคณา ทองสาย", "position": "ผู้ช่วยสัตวแพทย์", "dept": "โรงพยาบาลสัตว์", "email": "warangkhana.t@psu.ac.th"}, {"name": "นางสาวขวัญภิรมณ์ ช่วยคง", "position": "ผู้ช่วยสัตวแพทย์", "dept": "โรงพยาบาลสัตว์", "email": "khwanpirom.c@psu.ac.th"}, {"name": "นางสาววทันยา พลชนะ", "position": "ผู้ช่วยสัตวแพทย์", "dept": "โรงพยาบาลสัตว์", "email": "watanya.po@psu.ac.th"}, {"name": "นายณัฐนันท์ บุญมี", "position": "ผู้ช่วยสัตวแพทย์", "dept": "โรงพยาบาลสัตว์", "email": "nattanan.b@psu.ac.th"}, {"name": "นายกิตติ  ไชยพจน์", "position": "ผู้ปฏิบัติงานพยาบาลสัตว์", "dept": "โรงพยาบาลสัตว์", "email": "kitti.ch@psu.ac.th"}, {"name": "นายวัฒนา สมศรี", "position": "ผู้ปฏิบัติงานพยาบาลสัตว์", "dept": "โรงพยาบาลสัตว์", "email": "wattana.so@psu.ac.th"}, {"name": "นางนิตยา  ไกรแก้ว", "position": "ผู้ปฏิบัติงานพยาบาลสัตว์", "dept": "โรงพยาบาลสัตว์", "email": "nittaya.kra@psu.ac.th"}, {"name": "นางพรพนา พุทธพงค์", "position": "ผู้ปฏิบัติงานพยาบาลสัตว์", "dept": "โรงพยาบาลสัตว์", "email": "pornpana.p@psu.ac.th"}, {"name": "นางอาจรีย์  จันหน่อแก้ว", "position": "ผู้ปฏิบัติงานพยาบาลสัตว์", "dept": "โรงพยาบาลสัตว์", "email": "ajaree.c@psu.ac.th"}, {"name": "นางสาวจิฬาภรณ์  สังข์ทอง", "position": "ผู้ปฏิบัติงานพยาบาลสัตว์", "dept": "โรงพยาบาลสัตว์", "email": "jilaporn.s@psu.ac.th"}, {"name": "นางสาวพัชราภรณ์ แซ่เตียว", "position": "ผู้ปฏิบัติงานพยาบาลสัตว์", "dept": "โรงพยาบาลสัตว์", "email": "patcharaporn.sa@psu.ac.th"}, {"name": "นางสาววชิราภรณ์ นพรัตน์", "position": "ผู้ปฏิบัติงานพยาบาลสัตว์", "dept": "โรงพยาบาลสัตว์", "email": "wachiraporn.n@psu.ac.th"}, {"name": "นายพีรพล คชรัตน์", "position": "ผู้ปฏิบัติงานพยาบาลสัตว์", "dept": "โรงพยาบาลสัตว์", "email": "peerapol.kh@psu.ac.th"}, {"name": "นางสาวนรมน แก้วประดิษฐ", "position": "ผู้ปฏิบัติงานพยาบาลสัตว์", "dept": "โรงพยาบาลสัตว์", "email": "noramon.k@psu.ac.th"}];
-const PSU_EQUIPMENT = [{"code": "สพ.6530-051-0002-1/3-56/บ.", "name": "รถเข็นถังออกซิเจนขนาดเล็ก", "location": "N/A", "responsible": "เมธาพร", "responsibleEmail": ""}, {"code": "สพ.6530-051-0002-2/3-56/บ.", "name": "รถเข็นถังออกซิเจนขนาดเล็ก", "location": "N/A", "responsible": "เมธาพร", "responsibleEmail": ""}, {"code": "สพ.6530-051-0002-13/3-56/บ.", "name": "รถเข็นถังออกซิเจนขนาดเล็ก", "location": "N/A", "responsible": "เมธาพร", "responsibleEmail": ""}, {"code": "สพ.6650-002-0001-1/3-57/งป.", "name": "กล้องจุลทรรศน์ 2 ตา Olympus", "location": "2/ห้องปฏิบัติการธนาคารเลือด(ฝั่งศูนย์ชันสูตร)", "responsible": "เกียรติดำรงค์", "responsibleEmail": "kietdumrong.k@psu.ac.th"}, {"code": "สพ.6530-040-0008-1/1-57/บ.", "name": "รถเข็นโครงเหล็ก", "location": "N/A", "responsible": "เมธาพร", "responsibleEmail": ""}, {"code": "สพ.6525-003-0001-1/1-57/บ.", "name": "ตู้อ่านฟิลม์", "location": "N/A", "responsible": "อัจฉรา", "responsibleEmail": "atchara.m@psu.ac.th"}, {"code": "สพ.6630-010-0001-1/1-58/ทข.", "name": "เครื่องบันทึกสัญญาณชีพ", "location": "N/A", "responsible": "วทันยา", "responsibleEmail": "watanya.po@psu.ac.th"}, {"code": "สพ.6515-048-0001-1/1-58/บ.", "name": "เครื่องเจาะกระดูกใบหน้าพร้อมอุปกรณ์", "location": "N/A", "responsible": "นภัสกร", "responsibleEmail": "naphatsakon.s@psu.ac.th"}, {"code": "สพ.6515-085-0001-1/3-58/บ.", "name": "Capnograph", "location": "2/ห้องประชุม (ห้องผ่าตัด)", "responsible": "นภัสกร", "responsibleEmail": "naphatsakon.s@psu.ac.th"}, {"code": "สพ.6515-085-0001-2/3-58/บ.", "name": "Capnograph วัดค่าคาร์บอนไดออกไซด์ในลมหายใจ", "location": "N/A", "responsible": "นภัสกร", "responsibleEmail": "naphatsakon.s@psu.ac.th"}, {"code": "สพ.6515-085-0001-3/3-58/บ.", "name": "Capnograph วัดค่าคาร์บอนไดออกไซด์ในลมหายใจ", "location": "N/A", "responsible": "นภัสกร", "responsibleEmail": "naphatsakon.s@psu.ac.th"}, {"code": "สพ.6515-049-0001-1/1-58/บ.", "name": "เครื่อง Suction", "location": "N/A", "responsible": "นภัสกร", "responsibleEmail": "naphatsakon.s@psu.ac.th"}, {"code": "สพ.6515-014-0008-1/2-59", "name": "เครื่องปั่นเหวี่ยงควบคุมอุณหภูมิ", "location": "1/ห้องหัตถการ", "responsible": "ปูชิยา", "responsibleEmail": "poochiya.i@psu.ac.th"}, {"code": "สพ.6515-085-0001-3/4-59", "name": "เครื่องวัดความดันโลหิตทางอ้อมแบบอัตโนมัติ", "location": "N/A", "responsible": "ปูชิยา", "responsibleEmail": "poochiya.i@psu.ac.th"}, {"code": "สพ.6515-085-0001-4/4-59", "name": "เครื่องวัดความดันโลหิตทางอ้อมแบบอัตโนมัติ", "location": "N/A", "responsible": "ปูชิยา", "responsibleEmail": "poochiya.i@psu.ac.th"}, {"code": "สพ.6515-065-0007-1/2-59", "name": "ชุดอุปกรณ์ตรวจสัตว์เล็ก", "location": "N/A", "responsible": "อัจฉรา", "responsibleEmail": "atchara.m@psu.ac.th"}, {"code": "สพ.6515-065-0007-2/2-59", "name": "ชุดอุปกรณ์ตรวจสัตว์เล็ก", "location": "N/A", "responsible": "อัจฉรา", "responsibleEmail": "atchara.m@psu.ac.th"}, {"code": "สพ.6515-050-0000-1/3-59", "name": "ชุดเครื่องมือผ่าตัดทั่วไป", "location": "N/A", "responsible": "นภัสกร", "responsibleEmail": "naphatsakon.s@psu.ac.th"}, {"code": "สพ.6515-050-0000-2/3-59", "name": "ชุดเครื่องมือผ่าตัดทั่วไป", "location": "N/A", "responsible": "นภัสกร", "responsibleEmail": "naphatsakon.s@psu.ac.th"}, {"code": "สพ.6515-050-0000-3/3-59", "name": "ชุดเครื่องมือผ่าตัดทั่วไป", "location": "N/A", "responsible": "นภัสกร", "responsibleEmail": "naphatsakon.s@psu.ac.th"}, {"code": "สพ.6545-009-0001-1/2-59", "name": "เครื่องฆ่าเชื้อและกำจัดกลิ่นในอากาศเคลื่อนที่", "location": "1/ห้องหัตถการ", "responsible": "ปูชิยา", "responsibleEmail": "poochiya.i@psu.ac.th"}, {"code": "สพ.6530-015-0001-4/6-59", "name": "เครื่องให้น้ำเกลือ", "location": "1/ห้องสัตว์ป่วยใน", "responsible": "วรางคณา", "responsibleEmail": "warangkhana.t@psu.ac.th"}, {"code": "สพ.6530-015-0001-5/6-59", "name": "เครื่องให้น้ำเกลือ", "location": "2/ห้องศัลยกรรม", "responsible": "นภัสกร", "responsibleEmail": "naphatsakon.s@psu.ac.th"}, {"code": "สพ.6515-087-0001-1/1-59", "name": "เครื่องอัลตร้าซาวน์", "location": "1/ห้องฉุกเฉิน (CCU)", "responsible": "อัจฉรา", "responsibleEmail": "atchara.m@psu.ac.th"}, {"code": "สพ.6525-002-0004-1/1-59", "name": "เครื่องล้างฟิลม์เอ็กซเรย์", "location": "1/ห้องหัตถการ", "responsible": "อัจฉรา", "responsibleEmail": "atchara.m@psu.ac.th"}, {"code": "สพ.6515-001-0001-1/2-59", "name": "เครื่องดมยา", "location": "2/ห้องศัลยกรรม", "responsible": "นภัสกร", "responsibleEmail": "naphatsakon.s@psu.ac.th"}, {"code": "สพ.6515-001-0001-2/2-59", "name": "เครื่องดมยา", "location": "2/ห้องศัลยกรรม", "responsible": "นภัสกร", "responsibleEmail": "naphatsakon.s@psu.ac.th"}, {"code": "สพ.6515-047-0001-1/2-59", "name": "เครื่องจี้ห้ามเลือด", "location": "2/ห้องศัลยกรรม", "responsible": "นภัสกร", "responsibleEmail": "naphatsakon.s@psu.ac.th"}, {"code": "สพ.6515-047-0001-2/2-59", "name": "เครื่องจี้ห้ามเลือด", "location": "2/ห้องผ่าตัด 2", "responsible": "นภัสกร", "responsibleEmail": "naphatsakon.s@psu.ac.th"}, {"code": "สพ.6515-085-0001-1/2-59", "name": "เครื่องวัดความดันโลหิต", "location": "2/ห้องศัลยกรรม", "responsible": "นภัสกร", "responsibleEmail": "naphatsakon.s@psu.ac.th"}, {"code": "สพ.6525-008-0001-1/1-59", "name": "เครื่องอ่านไมโครชิพ", "location": "1/ห้องหัตถการ", "responsible": "อัจฉรา", "responsibleEmail": "atchara.m@psu.ac.th"}, {"code": "สพ.6525-002-0003-1/2-59", "name": "เครื่องเอ็กซเรย์เคลื่อนที่", "location": "2/ห้องผ่าตัด 2", "responsible": "นภัสกร", "responsibleEmail": "naphatsakon.s@psu.ac.th"}, {"code": "สพ.6515-001-0002-1/3-59", "name": "เครื่องดมยาสลบสำหรับสัตว์เล็ก", "location": "02/โรงพยาบาลปศุสัตว์ (การเรียนการสอน)", "responsible": "นภัสกร", "responsibleEmail": "naphatsakon.s@psu.ac.th"}, {"code": "สพ.6515-001-0002-2/3-59", "name": "เครื่องดมยาสลบสำหรับสัตว์เล็ก", "location": "02/โรงพยาบาลปศุสัตว์ (การเรียนการสอน)", "responsible": "นภัสกร", "responsibleEmail": "naphatsakon.s@psu.ac.th"}, {"code": "สพ.6515-001-0002-3/3-59", "name": "เครื่องดมยาสลบสำหรับสัตว์เล็ก", "location": "02/โรงพยาบาลปศุสัตว์ (การเรียนการสอน)", "responsible": "นภัสกร", "responsibleEmail": "naphatsakon.s@psu.ac.th"}, {"code": "สพ.6520-004-0001-1/1-59", "name": "เครื่องขูดหินปูน", "location": "2/ห้องผ่าตัด 5", "responsible": "นภัสกร", "responsibleEmail": "naphatsakon.s@psu.ac.th"}, {"code": "สพ.6545-022-0001-1/1-59", "name": "อุปกรณ์ตัดเฝือก", "location": "N/A", "responsible": "นิศากร", "responsibleEmail": "nisakorn.sae@psu.ac.th"}, {"code": "รพส.6670-002-0004-1/1-59", "name": "เครื่องชั่งดิจิตอล", "location": "2/ห้องโถง", "responsible": "กาญจนา", "responsibleEmail": "kanchana.d@psu.ac.th"}, {"code": "รพส.6635-079-0003-1/1-59", "name": "เครื่องตรวจน้ำตาล", "location": "1/ห้องหัตถการ", "responsible": "นลิน", "responsibleEmail": "nalin.t@psu.ac.th"}, {"code": "รพส.6515-085-0001-1/1-59", "name": "เครื่องวัดความดันตา", "location": "N/A", "responsible": "นิศากร", "responsibleEmail": "nisakorn.sae@psu.ac.th"}, {"code": "รพส.6545-005-0001-1/1-59", "name": "เครื่องมือทันตกรรม", "location": "1/ห้องหัตถการ", "responsible": "นิศากร", "responsibleEmail": "nisakorn.sae@psu.ac.th"}, {"code": "รพส.6515-086-0002-1/1-59", "name": "เครื่องตรวจคลื่นไฟฟ้าหัวใจสัตว์", "location": "1/ห้องหัตถการ", "responsible": "วทันยา", "responsibleEmail": "watanya.po@psu.ac.th"}, {"code": "รพส.6515-116-0001-1/1-59", "name": "ตู้ให้ความอบอุ่นสำหรับลูกสัตว์ BX-506", "location": "2/ห้องศัลยกรรม", "responsible": "นภัสกร", "responsibleEmail": "naphatsakon.s@psu.ac.th"}, {"code": "รพส.6640-060-0000-1/1-59", "name": "Colony counter (เครื่องนับจำนวนจุลินทรีย์)", "location": "4/ห้องปฏิบัติการ 1", "responsible": "ราชกุล", "responsibleEmail": "ratchakul.w@psu.ac.th"}, {"code": "รพส.6530-040-0013-1/1-59", "name": "เครื่องเข็นถังออกซิเจน 1.5 คิว", "location": "1/ห้องหัตถการ", "responsible": "พีรพัฒน์", "responsibleEmail": "peerapat.ka@psu.ac.th"}, {"code": "รพส.6515-085-0001-1/1-59", "name": "Doppler blood pressure measure", "location": "1/ห้องหัตถการ", "responsible": "ปูชิยา", "responsibleEmail": "poochiya.i@psu.ac.th"}, {"code": "รพส.4310-008-0004-1/2-59", "name": "Syringe pump", "location": "1/ห้องฉุกเฉิน (CCU)", "responsible": "วรางคณา", "responsibleEmail": "warangkhana.t@psu.ac.th"}, {"code": "รพส.4310-008-0004-2/2-59", "name": "Syringe pump", "location": "1/ห้องสัตว์ป่วยในติดเชื้อ", "responsible": "วรางคณา", "responsibleEmail": "warangkhana.t@psu.ac.th"}, {"code": "รพส.6515-116-0002-1/1-59", "name": "Bair hugger", "location": "2/ห้องผ่าตัด 4", "responsible": "นภัสกร", "responsibleEmail": "naphatsakon.s@psu.ac.th"}, {"code": "รพส.6515-116-0003-1/1-59", "name": "Electric water heater", "location": "2/ห้องศัลยกรรม", "responsible": "นภัสกร", "responsibleEmail": "naphatsakon.s@psu.ac.th"}, {"code": "รพส.6640-022-0028-1/1-59", "name": "Water bath Electronic PLD Controller Model WNB 14L", "location": "2/ห้องปฏิบัติการสูติฯ", "responsible": "นลิน", "responsibleEmail": "nalin.t@psu.ac.th"}, {"code": "รพส.3770-012-0001-1/1-59", "name": "เบาะอัลตราซาวด์ ขนาดกลาง (50ซม.x100ซม.x20ซม.)", "location": "1/ห้องเอกซเรย์", "responsible": "อัจฉรา", "responsibleEmail": "atchara.m@psu.ac.th"}, {"code": "รพส.6515-092-0000-1/1-59", "name": "INFUSION PUMP MODEL TE-171", "location": "1/ห้องฉุกเฉิน (CCU)", "responsible": "วรางคณา", "responsibleEmail": "warangkhana.t@psu.ac.th"}, {"code": "รพส.6530-008-0085-1/1-59", "name": "OTOSCOPE FIREFLY (เครื่องส่องหู)", "location": "1/ห้องหัตถการ", "responsible": "นิศากร", "responsibleEmail": "nisakorn.sae@psu.ac.th"}, {"code": "รพส.6670-001-0012-1/6-59", "name": "Electronic Balance Model: IDS701C  พิกัดน้ำหนัก 500kg. ขนาด 60*120ซม.", "location": "1/ห้องโถง", "responsible": "กาญจนา", "responsibleEmail": "kanchana.d@psu.ac.th"}, {"code": "รพส.6670-001-0012-2/6-59", "name": "Electronic Balance Model: IDS701C  พิกัดน้ำหนัก 500kg. ขนาด 90*120ซม.", "location": "1/ห้องโถง", "responsible": "กาญจนา", "responsibleEmail": "kanchana.d@psu.ac.th"}, {"code": "รพส.6670-001-0012-3/6-59", "name": "Electronic Balance Model: IDS701C  พิกัดน้ำหนัก 500kg. ขนาด 90*120ซม.", "location": "1/ห้องโถง", "responsible": "กาญจนา", "responsibleEmail": "kanchana.d@psu.ac.th"}, {"code": "รพส.6670-001-0012-4/6-59", "name": "Pet Scale Model: TCS-D300 พิกัดน้ำหนัก 300kg. ขนาด 60*90ซม.", "location": "1/ห้องโถง", "responsible": "กาญจนา", "responsibleEmail": "kanchana.d@psu.ac.th"}, {"code": "รพส.6670-001-0012-5/6-59", "name": "Pet Scale Model: TCS-D300 พิกัดน้ำหนัก 300kg. ขนาด 60*90ซม.", "location": "1/ห้องโถง", "responsible": "กาญจนา", "responsibleEmail": "kanchana.d@psu.ac.th"}, {"code": "รพส.6670-001-0012-6/6-59", "name": "Pet Scale Model: TCS-D300 พิกัดน้ำหนัก 300kg. ขนาด 60*90ซม.", "location": "2/ห้องโถง", "responsible": "กาญจนา", "responsibleEmail": "kanchana.d@psu.ac.th"}, {"code": "รพส.6515-092-0001-2/20-59", "name": "เครื่องควบคุมสารละลายทางหลอดเลือดดำ (Infusion Pump) รุ่น PRO-IP100", "location": "2/ห้องศัลยกรรม", "responsible": "นภัสกร", "responsibleEmail": "naphatsakon.s@psu.ac.th"}, {"code": "รพส.6515-092-0001-4/20-59", "name": "เครื่องควบคุมสารละลายทางหลอดเลือดดำ (Infusion Pump) รุ่น PRO-IP100", "location": "2/ห้องผ่าตัด 2", "responsible": "นภัสกร", "responsibleEmail": "naphatsakon.s@psu.ac.th"}, {"code": "รพส.6515-092-0001-5/20-59", "name": "เครื่องควบคุมสารละลายทางหลอดเลือดดำ (Infusion Pump) รุ่น PRO-IP100", "location": "2/ห้องผ่าตัด 5", "responsible": "นภัสกร", "responsibleEmail": "naphatsakon.s@psu.ac.th"}, {"code": "รพส.6515-092-0001-9/20-59", "name": "เครื่องควบคุมสารละลายทางหลอดเลือดดำ (Infusion Pump) รุ่น PRO-IP100", "location": "1/ห้องฉุกเฉิน (CCU)", "responsible": "วรางคณา", "responsibleEmail": "warangkhana.t@psu.ac.th"}, {"code": "รพส.6515-092-0001-18/20-59", "name": "เครื่องควบคุมสารละลายทางหลอดเลือดดำ (Infusion Pump) รุ่น PRO-IP100", "location": "1/ห้องหัตถการ", "responsible": "วรางคณา", "responsibleEmail": "warangkhana.t@psu.ac.th"}, {"code": "รพส.6515-092-0001-19/20-59", "name": "เครื่องควบคุมสารละลายทางหลอดเลือดดำ (Infusion Pump) รุ่น PRO-IP100", "location": "1/ห้องฉุกเฉิน (CCU)", "responsible": "วรางคณา", "responsibleEmail": "warangkhana.t@psu.ac.th"}, {"code": "สพ.4240-004-0000-1/2-59/กต.", "name": "เครื่องช่วยหายใจ Anesthesia system", "location": "1/ห้องฉุกเฉิน (CCU)", "responsible": "วทันยา", "responsibleEmail": "watanya.po@psu.ac.th"}, {"code": "สพ.4240-004-0000-2/2-59/กต.", "name": "เครื่องช่วยหายใจ Anesthesia system", "location": "2/ห้องผ่าตัด 2", "responsible": "นภัสกร", "responsibleEmail": "naphatsakon.s@psu.ac.th"}, {"code": "สพ.6530-048-0000-1/1-59/กต.(23)", "name": "อุปกรณ์ถ่ายของเหลว พร้อม Poole aspirating tube", "location": "2/ห้องผ่าตัด 2", "responsible": "นภัสกร", "responsibleEmail": "naphatsakon.s@psu.ac.th"}, {"code": "สพ.6525-003-0001-1/1-59/กต.", "name": "เครื่องแปลงสัญญาณเอ็กซเรย์ฟันสัตว์ (CR)", "location": "2/ห้องศัลยกรรม", "responsible": "นภัสกร", "responsibleEmail": "naphatsakon.s@psu.ac.th"}, {"code": "สพ.6525-003-0001-1/1-59/กต.(1)", "name": "เครื่องอ่านเอ็กซเรย์ฟันสัตว์ (CR)", "location": "2/ห้องผ่าตัด 5", "responsible": "นภัสกร", "responsibleEmail": "naphatsakon.s@psu.ac.th"}, {"code": "สพ.6630-042-0001-1/1-59/กต.", "name": "กล้องส่องตรวจกระเพาะ", "location": "2/ห้องศัลยกรรม", "responsible": "นภัสกร", "responsibleEmail": "naphatsakon.s@psu.ac.th"}, {"code": "สพ.6515-116-0002-5/19-59", "name": "กรงแมวสแตนเลส (วางซ้อนสี่ชั้น)", "location": "02/โรงพยาบาลปศุสัตว์ (การเรียนการสอน)", "responsible": "ซารีป๊ะ", "responsibleEmail": "sareepah.m@psu.ac.th"}, {"code": "สพ.6515-116-0001-14/21-59", "name": "กรงสุนัขสแตนเลส (วางซ้อน 3 ชั้น)", "location": "1/ห้องฉุกเฉิน (CCU)", "responsible": "อาจรีย์", "responsibleEmail": "ajaree.c@psu.ac.th"}, {"code": "สพ.6670-002-0004-3/3-59", "name": "เครื่องชั่ง", "location": "1/ห้องโถง", "responsible": "กาญจนา", "responsibleEmail": "kanchana.d@psu.ac.th"}, {"code": "สพ.6530-001-0005-1/1-59", "name": "เตียงผ่าตัด", "location": "1/ห้องฉุกเฉิน (CCU)", "responsible": "กาญจนา", "responsibleEmail": "kanchana.d@psu.ac.th"}, {"code": "สพ.6525-002-0003-2/2-59", "name": "เครื่องเอ็กซเรย์", "location": "1/ห้องเอกซเรย์", "responsible": "อัจฉรา", "responsibleEmail": "atchara.m@psu.ac.th"}, {"code": "รพส.6515-086-0005-1/4-59", "name": "เครื่องวัดสัญญาณชีพ", "location": "02/โรงพยาบาลปศุสัตว์ (การเรียนการสอน)", "responsible": "ถิรกร", "responsibleEmail": "thirakong.p@psu.ac.th"}, {"code": "รพส.6515-086-0005-2/4-59", "name": "เครื่องวัดสัญญาณชีพ", "location": "02/โรงพยาบาลปศุสัตว์ (การเรียนการสอน)", "responsible": "ซารีป๊ะ", "responsibleEmail": "sareepah.m@psu.ac.th"}, {"code": "รพส.6515-086-0005-3/4-59", "name": "เครื่องวัดสัญญาณชีพ", "location": "02/โรงพยาบาลปศุสัตว์ (การเรียนการสอน)", "responsible": "ซารีป๊ะ", "responsibleEmail": "sareepah.m@psu.ac.th"}, {"code": "รพส.6515-086-0005-4/4-59", "name": "เครื่องวัดสัญญาณชีพ", "location": "02/โรงพยาบาลปศุสัตว์ (การเรียนการสอน)", "responsible": "ถิรกร", "responsibleEmail": "thirakong.p@psu.ac.th"}, {"code": "สพ.6650-002-0002-8/16-59", "name": "กล้องจุลทรรศน์ 2 ตา", "location": "1/ห้องหัตถการ", "responsible": "กาญจนา", "responsibleEmail": "kanchana.d@psu.ac.th"}, {"code": "สพ.6530-048-0000-1/2-60/ง.(1)", "name": "SUCTION รุ่น 7A-23D", "location": "1/ห้องฉุกเฉิน (CCU)", "responsible": "นภัสกร", "responsibleEmail": "naphatsakon.s@psu.ac.th"}, {"code": "สพ.6530-048-0000-2/2-60/ง.", "name": "โต๊ะผ่าตัดไฟฟ้า รุ่น YH039-6", "location": "2/ห้องผ่าตัด 5", "responsible": "นภัสกร", "responsibleEmail": "naphatsakon.s@psu.ac.th"}, {"code": "สพ.6530-048-0000-2/2-60/ง.(1)", "name": "SUCTION รุ่น 7A-23D", "location": "2/ห้องผ่าตัด 5", "responsible": "นภัสกร", "responsibleEmail": "naphatsakon.s@psu.ac.th"}, {"code": "สพ.4240-004-0000-1/1-60/ง.", "name": "เครื่องช่วยหายใจ รุ่น SV-2000", "location": "N/A", "responsible": "วทันยา", "responsibleEmail": "watanya.po@psu.ac.th"}, {"code": "สพ.6515-085-0001-1/1-60/ง.", "name": "เครื่องวัดความดันตาสำหรับสัตว์ OPHTHALMOSCOPE รุ่น RIE-3723", "location": "N/A", "responsible": "นิศากร", "responsibleEmail": "nisakorn.sae@psu.ac.th"}, {"code": "สพ.6515-085-0001-1/1-60/ง.(1)", "name": "SCHIOTZ TONOMETER รุ่น R5112", "location": "N/A", "responsible": "นิศากร", "responsibleEmail": "nisakorn.sae@psu.ac.th"}, {"code": "สพ.6515-085-0001-1/1-60/ง.(2)", "name": "INDIRECT OPHTHALMOSCOPE รุ่น ALL PUPIL II (3994)", "location": "N/A", "responsible": "นิศากร", "responsibleEmail": "nisakorn.sae@psu.ac.th"}, {"code": "สพ.6515-001-0002-1/1-60/ง.", "name": "เครื่องดมยาสลบสัตว์พร้อมเครื่องช่วยหายใจอัตโนมัติ Wato ex-20 Vet", "location": "2/ห้องศัลยกรรม", "responsible": "นภัสกร", "responsibleEmail": "naphatsakon.s@psu.ac.th"}, {"code": "สพ.6515-001-0002-1/1-60/ง.(1)", "name": "เครื่องควบคุมสารละลายทางหลอดเลือดดำชนิดควบคุมด้วยปริมาตร", "location": "2/ห้องศัลยกรรม", "responsible": "นภัสกร", "responsibleEmail": "naphatsakon.s@psu.ac.th"}, {"code": "สพ.6515-001-0002-1/1-60/ง.(2)", "name": "Vascular Doppler Detector BV-520", "location": "2/ห้องศัลยกรรม", "responsible": "นภัสกร", "responsibleEmail": "naphatsakon.s@psu.ac.th"}, {"code": "สพ.5860-003-0001-1/1-60/ง.", "name": "เครื่องเลเซอร์กระตุ้นการเจริญของเซลล์", "location": "1/ห้องหัตถการ", "responsible": "พีรพัฒน์", "responsibleEmail": "peerapat.ka@psu.ac.th"}, {"code": "สพ.6515-112-0002-1/1-60/ง.", "name": "เครื่องตรวจ Blood gas", "location": "1/ห้องฉุกเฉิน (CCU)", "responsible": "ปูชิยา", "responsibleEmail": "poochiya.i@psu.ac.th"}, {"code": "รพส.6685-014-0000-1/1-60/รด.", "name": "Data logger temperature (เครื่องวัดอุณหภูมิ)", "location": "2/ห้องปฏิบัติการธนาคารเลือด(ฝั่งห้องวัคซีน)", "responsible": "เกียรติดำรงค์", "responsibleEmail": "kietdumrong.k@psu.ac.th"}, {"code": "รพส.6640-094-0000-1/1-60/รด.", "name": "Hemoscale Model AB-20E (เครื่องเขย่าพร้อมชั่งน้ำหนักถุงเลือด)", "location": "2/ห้องปฏิบัติการธนาคารเลือด(ฝั่งห้องวัคซีน)", "responsible": "เกียรติดำรงค์", "responsibleEmail": "kietdumrong.k@psu.ac.th"}, {"code": "รพส.6640-017-0006-1/1-60/รด.", "name": "Hemosealer Model HS-21 AA (เครื่องซีลสายถุงเลือด)", "location": "2/ห้องปฏิบัติการธนาคารเลือด(ฝั่งศูนย์ชันสูตร)", "responsible": "เกียรติดำรงค์", "responsibleEmail": "kietdumrong.k@psu.ac.th"}, {"code": "รพส.6515-014-0005-1/1-60/ปศ.", "name": "เครื่องปั่นเหวี่ยงสำหรับแยกเม็ดเลือดแดง", "location": "1/ห้องหัตถการ", "responsible": "นภัสกร", "responsibleEmail": "naphatsakon.s@psu.ac.th"}, {"code": "รพส.6515-001-0000-1/1-60/ปศ.", "name": "ชุดเครื่องดมยาสลบสัตว์ใหญ่", "location": "01/โรงพยาบาลปศุสัตว์ (ห้องรักษาฝั่งซ้าย)", "responsible": "พิเชษ", "responsibleEmail": "pichet.j@psu.ac.th"}, {"code": "รพส.6635-002-0001-1/1-60/ปศ.", "name": "เครื่องเอกซเรย์แบบมีหูหิ้ว", "location": "01/โรงพยาบาลปศุสัตว์ (ห้องรักษาฝั่งขวา)", "responsible": "พิเชษ", "responsibleEmail": "pichet.j@psu.ac.th"}, {"code": "สพ.6515-003-0001-1/3-60/บ.", "name": "เครื่องผลิตออกซิเจน Y-7F-5", "location": "1/ห้องหัตถการ", "responsible": "พีรพัฒน์", "responsibleEmail": "peerapat.ka@psu.ac.th"}, {"code": "สพ.6515-003-0001-2/3-60/บ.", "name": "เครื่องผลิตออกซิเจน Y-7F-5", "location": "1/ห้องฉุกเฉิน (CCU)", "responsible": "พีรพัฒน์", "responsibleEmail": "peerapat.ka@psu.ac.th"}, {"code": "สพ.6515-003-0001-3/3-60/บ.", "name": "เครื่องผลิตออกซิเจน Y-7F-5", "location": "1/ห้องหัตถการ", "responsible": "พีรพัฒน์", "responsibleEmail": "peerapat.ka@psu.ac.th"}, {"code": "สพ.6515-116-0001-1/1-60/บ.", "name": "ตู้อบให้ความอบอุ่นลูกสัตว์ BX-506", "location": "1/ห้องฉุกเฉิน (CCU)", "responsible": "กาญจนา", "responsibleEmail": "kanchana.d@psu.ac.th"}, {"code": "สพ.6515-001-0000-2/2-60/บ.", "name": "เครื่องดมยาสลบ รุ่น Excel 210 SE ยี่ห้อ OHMEDA", "location": "2/ห้องผ่าตัด 1", "responsible": "นภัสกร", "responsibleEmail": "naphatsakon.s@psu.ac.th"}, {"code": "สพ.6515-090-0001-1/1-60/บ.", "name": "เครื่องควบคุมการให้ยา (Syringe Pump) รุ่น STC-521 ยี่ห้อ TERUMO", "location": "N/A", "responsible": "วรางคณา", "responsibleEmail": "warangkhana.t@psu.ac.th"}, {"code": "สพ.6515-065-0007-1/1-60/บ.", "name": "เครื่องตรวจโลหะกระเพาะสัตว์", "location": "01/โรงพยาบาลปศุสัตว์ (ห้องรักษาฝั่งซ้าย)", "responsible": "พิเชษ", "responsibleEmail": "pichet.j@psu.ac.th"}, {"code": "รพส.6650-002-0020-1/1-61/รด.", "name": "กล้องจุลทรรศน์ชนิด 3 ตา พร้อมชุดถ่ายภาพดิจิตอล (เลนส์อยู่ห้อง IT)", "location": "1/ห้องหัตถการ", "responsible": "กาญจนา", "responsibleEmail": "kanchana.d@psu.ac.th"}, {"code": "รพส.6515-009-0001-1/1-61/รด.", "name": "PM-60 Vet Pulse Oximeter (เครื่องความอิ่มตัวของออกซิเจนในเลือด สำหรับสัตว์)", "location": "1/ห้องหัตถการ", "responsible": "วทันยา", "responsibleEmail": "watanya.po@psu.ac.th"}, {"code": "รพส.6630-082-0001-1/1-61/รด.", "name": "Plasma Extractor (เครื่องแยกพลาสม่า)", "location": "2/ห้องปฏิบัติการธนาคารเลือด(ฝั่งศูนย์ชันสูตร)", "responsible": "เกียรติดำรงค์", "responsibleEmail": "kietdumrong.k@psu.ac.th"}, {"code": "รพส.6515-116-0001-1/1-61/รด.", "name": "ตู้ให้ความอบอุ่นสำหรับลูกสัตว์ (แถม)", "location": "1/ห้องฉุกเฉิน (CCU)", "responsible": "กาญจนา", "responsibleEmail": "kanchana.d@psu.ac.th"}, {"code": "รพส.6515-009-0004-1/1-61/รด.", "name": "เครื่องวัดออกซิเจนสัตว์ Pulse Oximeter (แถม)", "location": "1/ห้องฉุกเฉิน (CCU)", "responsible": "วทันยา", "responsibleEmail": "watanya.po@psu.ac.th"}, {"code": "รพส.6515-085-0001-1/1-61/รด.", "name": "Doppler V-Med,Vet-DOP2 เครื่องวัดความดันโลหิตสำหรับสัตว์", "location": "1/ห้องฉุกเฉิน (CCU)", "responsible": "ปูชิยา", "responsibleEmail": "poochiya.i@psu.ac.th"}, {"code": "รพส.6515-092-0001-1/1-61/รด.", "name": "Infusion pump model te-171 เครื่องควบคุมสารละลายทางหลอดเลือดดำ+ขาตั้งเครื่อง", "location": "2/ห้องผ่าตัด 1", "responsible": "นภัสกร", "responsibleEmail": "naphatsakon.s@psu.ac.th"}, {"code": "รพส.6515-001-0001-1/1-61/รด.", "name": "Vaporizer Isoflurane (Cage Mount) เครื่องควบคุมไอระเหยยาดมสลบ", "location": "2/ห้องผ่าตัด 2", "responsible": "นภัสกร", "responsibleEmail": "naphatsakon.s@psu.ac.th"}, {"code": "รพส.6515-086-0000-1/1-61/รด.", "name": "iPM12 Vet Veterinary Monitor เครื่องติดตามและบันทึกสัญญาณชีพสำหรับสัตว์", "location": "1/ห้องฉุกเฉิน (CCU)", "responsible": "วทันยา", "responsibleEmail": "watanya.po@psu.ac.th"}, {"code": "รพส.6650-002-0002-1/1-61/รด.", "name": "กล้องจุลทรรศน์ชนิด 2 ตา", "location": "1/ห้องฉุกเฉิน (CCU)", "responsible": "อัจฉรา", "responsibleEmail": "atchara.m@psu.ac.th"}, {"code": "รพส.6650-002-0024-1/1-61/รด.", "name": "กล้องจุลทรรศน์ชนิด 3 ตา พร้อมชุดถ่ายภาพดิจิตอลและคอมพิวเตอร์", "location": "2/คลินิคสัตว์พิเศษ", "responsible": "กาญจนา", "responsibleEmail": "kanchana.d@psu.ac.th"}, {"code": "รพส.6530-004-0000-1/1-62/งป.(2)", "name": "เครื่องอัลตร้าซาวด์กระตุ้นไฟฟ้า", "location": "1/ห้องสัตว์ป่วยใน (สุนัข)", "responsible": "พีรพัฒน์", "responsibleEmail": "peerapat.ka@psu.ac.th"}, {"code": "รพส.6530-004-0000-1/1-62/งป.(5)", "name": "เครื่องผลิตออกซิเจน (Oxygen concentrator)", "location": "1/ห้องสัตว์ป่วยใน (สุนัข)", "responsible": "พีรพัฒน์", "responsibleEmail": "peerapat.ka@psu.ac.th"}, {"code": "รพส.6530-004-0000-1/1-62/งป.(6)", "name": "เครื่องตรวจหู/ตรวจตา Standard oto/Ophthalmoscope set", "location": "1/ห้องสัตว์ป่วยใน (สุนัข)", "responsible": "พีรพัฒน์", "responsibleEmail": "peerapat.ka@psu.ac.th"}, {"code": "รพส.6670-002-0013-1/1-62/รด.", "name": "เครื่องชั่งตั้งโต๊ะกันน้ำ", "location": "2/ห้องปฏิบัติการธนาคารเลือด(ฝั่งศูนย์ชันสูตร)", "responsible": "เกียรติดำรงค์", "responsibleEmail": "kietdumrong.k@psu.ac.th"}, {"code": "รพส.6670-002-0014-2/2-62/รด.", "name": "เครื่องชั่งน้ำหนักเด็กทารกแบบดิจิตอล รุ่น EB-20 ยี่ห้อ ZEPPER", "location": "1/ห้องหัตถการ", "responsible": "กาญจนา", "responsibleEmail": "kanchana.d@psu.ac.th"}, {"code": "รพส.6515-003-0001-1/1-62/รด.", "name": "เครื่องผลิตออกซิเจน ขนาด 5 ลิตร", "location": "2/ห้องปฏิบัติการธนาคารเลือด(ฝั่งห้องวัคซีน)", "responsible": "เกียรติดำรงค์", "responsibleEmail": "kietdumrong.k@psu.ac.th"}, {"code": "รพส.6515-092-0001-1/6-62/รด.", "name": "เครื่องควบคุมการให้สารละลายทางหลอดเลือดดำ (Infusion Pump IP100)", "location": "1/ห้องหัตถการ", "responsible": "วรางคณา", "responsibleEmail": "warangkhana.t@psu.ac.th"}, {"code": "รพส.6515-002-0001-1/1-62/รด.", "name": "เครื่องเชื่อมปิดหลอดเลือดด้วยไฟฟ้า", "location": "2/ห้องศัลยกรรม", "responsible": "นภัสกร", "responsibleEmail": "naphatsakon.s@psu.ac.th"}, {"code": "รพส.6515-085-0001-1/1-62/รด.(1)", "name": "เครื่องวัดความดันชนิด ULTRASOUND DOPPLER", "location": "1/ห้องหัตถการ", "responsible": "ปูชิยา", "responsibleEmail": "poochiya.i@psu.ac.th"}, {"code": "รพส.6515-047-0000-1/1-62/รด.", "name": "เครื่องจี้ไฟฟ้าแบบ Bipolar", "location": "2/ห้องศัลยกรรม", "responsible": "นภัสกร", "responsibleEmail": "naphatsakon.s@psu.ac.th"}, {"code": "รพส.6515-092-0002-1/1-62/รด.", "name": "เครื่องควบคุมสารละลายทางหลอดเลือดดำชนิดใช้กระบอกฉีดยา", "location": "2/ห้องศัลยกรรม", "responsible": "นภัสกร", "responsibleEmail": "naphatsakon.s@psu.ac.th"}, {"code": "รพส.6640-017-0006-1/1-62/รด.", "name": "เครื่องผนึกสายถุงบรรจุโลหิตแบบเคลื่อนที่", "location": "2/ห้องปฏิบัติการธนาคารเลือด(ฝั่งห้องวัคซีน)", "responsible": "เกียรติดำรงค์", "responsibleEmail": "kietdumrong.k@psu.ac.th"}, {"code": "รพส.6640-094-0000-1/1-62/รด.", "name": "เครื่องเขย่าถุงเลือดและชั่งน้ำหนักอัตโนมัติ", "location": "2/ห้องปฏิบัติการธนาคารเลือด(ฝั่งห้องวัคซีน)", "responsible": "เกียรติดำรงค์", "responsibleEmail": "kietdumrong.k@psu.ac.th"}, {"code": "รพส.6515-085-0001-1/1-62/รด.(2)", "name": "เครื่องวัดความดัน Doppler v-med, Vet-dop2", "location": "1/ห้องฉุกเฉิน (CCU)", "responsible": "ปูชิยา", "responsibleEmail": "poochiya.i@psu.ac.th"}, {"code": "รพส.6515-009-0004-1/1-62/รด.", "name": "เครื่องบันทึกและติดตามปริมาณความอิ่มตัวของออกซิเจนในเลือดและชีพจรสำหรับสัตว์", "location": "1/ห้องฉุกเฉิน (CCU)", "responsible": "วทันยา", "responsibleEmail": "watanya.po@psu.ac.th"}, {"code": "รพส.6630-049-0003-1/1-62/รด.", "name": "Vcheck V 200 (เครื่องอ่านผล รุ่น V200)", "location": "1/ห้องหัตถการ", "responsible": "ปูชิยา", "responsibleEmail": "poochiya.i@psu.ac.th"}, {"code": "รพส.6650-002-0020-1/1-62/รด.", "name": "ชุดประกอบการวินิจฉัยด้วยกล้องจุลทรรศน์พร้อมจอภาพ Nikon รุ่น E100 LED", "location": "2/ห้องฉีดวัคซีน", "responsible": "กาญจนา", "responsibleEmail": "kanchana.d@psu.ac.th"}, {"code": "รพส.6515-086-0000-1/1-62/รด.", "name": "เครื่องเฝ้าระวังสัญญาณชีพและวัดความดัน", "location": "02/โรงพยาบาลปศุสัตว์ (การเรียนการสอน)", "responsible": "ถิรกร", "responsibleEmail": "thirakong.p@psu.ac.th"}, {"code": "รพส.6515-092-0001-5/6-62/รด.", "name": "เครื่องควบคุมการให้สารละลายทางหลอดเลือดดำ (Infusion Pump IP100)", "location": "01/โรงพยาบาลปศุสัตว์ (ห้องรักษาฝั่งขวา)", "responsible": "พิเชษ", "responsibleEmail": "pichet.j@psu.ac.th"}, {"code": "รพส.6515-092-0001-6/6-62/รด.", "name": "เครื่องควบคุมการให้สารละลายทางหลอดเลือดดำ (Infusion Pump IP100)", "location": "01/โรงพยาบาลปศุสัตว์ (ห้องรักษาฝั่งขวา)", "responsible": "พิเชษ", "responsibleEmail": "pichet.j@psu.ac.th"}, {"code": "รพส.6650-002-0002-1/1-62/รด.", "name": "กล้องจุลทรรศน์ ขนิด 2 กระบอกตา", "location": "01/โรงพยาบาลปศุสัตว์ (ห้องปฏิบัติการ)", "responsible": "พิเชษ", "responsibleEmail": "pichet.j@psu.ac.th"}, {"code": "รพส.6670-002-0015-1/1-62/รด.", "name": "เครื่องชั่ง 2 ตำแหน่ง รุ่น SPX1202", "location": "01/โรงพยาบาลปศุสัตว์ (ห้องปฏิบัติการ)", "responsible": "พิเชษ", "responsibleEmail": "pichet.j@psu.ac.th"}, {"code": "รพส.6670-002-0012-1/1-62/บ.", "name": "ตาชั่งสำหรับสัตว์", "location": "2/ห้องปฏิบัติการธนาคารเลือด(ฝั่งห้องวัคซีน)", "responsible": "เกียรติดำรงค์", "responsibleEmail": "kietdumrong.k@psu.ac.th"}, {"code": "รพส.7110-007-0035-1/1-62/บ.", "name": "โต๊ะสแตนเลสปรับระดับ ระบบไฟฟ้า", "location": "1/ห้องสัตว์ป่วยใน (สุนัข)", "responsible": "ปูชิยา", "responsibleEmail": "poochiya.i@psu.ac.th"}, {"code": "รพส.6515-086-0000-1/1-63/งป.", "name": "เครื่องติดตามและบันทึกสัญญาณชีพสำหรับสัตว์", "location": "2/ห้องศัลยกรรม", "responsible": "นภัสกร", "responsibleEmail": "naphatsakon.s@psu.ac.th"}, {"code": "สพ.6530-008-0085-1/1-61/รด.", "name": "เครื่องส่องหูสำหรับสัตว์", "location": "N/A", "responsible": "นิศากร", "responsibleEmail": "nisakorn.sae@psu.ac.th"}, {"code": "สพ.6695-072-0005-1/1-59", "name": "Foot switce for powerlift", "location": "N/A", "responsible": "นลิน", "responsibleEmail": "nalin.t@psu.ac.th"}, {"code": "รพส.3940-005-0001-1/2-63/รด.", "name": "รอกโซ่พร้อมสายพานยกของ", "location": "01/โรงพยาบาลปศุสัตว์ (ห้องรักษาฝั่งขวา)", "responsible": "พิเชษ", "responsibleEmail": "pichet.j@psu.ac.th"}, {"code": "รพส.3940-005-0001-2/2-63/รด.", "name": "รอกโซ่พร้อมสายพานยกของ", "location": "01/โรงพยาบาลปศุสัตว์ (ห้องรักษาฝั่งขวา)", "responsible": "พิเชษ", "responsibleEmail": "pichet.j@psu.ac.th"}, {"code": "รพส.4440-002-0001-1/1-63/รด.", "name": "เครื่องอบผ้าแห้งเอนกประสงค์ EazyBlow รุ่น Curve", "location": "1/ห้องหัตถการ", "responsible": "ขวัญภิรมณ์", "responsibleEmail": "khwanpirom.c@psu.ac.th"}, {"code": "สพ.6545-005-0000-1/1-63/งป.", "name": "ชุดเครื่องมือทันตกรรมสำหรับสัตว์ iM3", "location": "2/ห้องผ่าตัด 5", "responsible": "นภัสกร", "responsibleEmail": "naphatsakon.s@psu.ac.th"}, {"code": "รพส.6515-050-0007-1/1-63/งป.", "name": "ชุดกล้องส่องตรวจโพรงจมูก", "location": "2/ห้องผ่าตัด 3", "responsible": "นภัสกร", "responsibleEmail": "naphatsakon.s@psu.ac.th"}, {"code": "รพส.6515-050-0001-1/1-63/งป.", "name": "ชุดกล้องส่องตรวจกระเพาะปัสสาวะ", "location": "2/ห้องผ่าตัด 3", "responsible": "นภัสกร", "responsibleEmail": "naphatsakon.s@psu.ac.th"}, {"code": "รพส.6515-050-0001-1/1-63/งป.(2)", "name": "VETPUMP®2, adjust.Suction-irrig.pump", "location": "2/ห้องผ่าตัด 3", "responsible": "นภัสกร", "responsibleEmail": "naphatsakon.s@psu.ac.th"}, {"code": "รพส.6640-116-0013-1/1-63/งป.", "name": "ตู้เตรียมยาเคมีบำบัด", "location": "2/ห้องปฏิบัติการธนาคารเลือด(ฝั่งห้องวัคซีน)", "responsible": "นิศากร", "responsibleEmail": "nisakorn.sae@psu.ac.th"}, {"code": "รพส.6515-085-0002-1/1-63/งป.", "name": "เครื่องตรวจจอประสาทตา", "location": "2/ห้องปฏิบัติการธนาคารเลือด(ฝั่งห้องวัคซีน)", "responsible": "นิศากร", "responsibleEmail": "nisakorn.sae@psu.ac.th"}, {"code": "รพส.6515-085-0003-1/1-63/รด.", "name": "กล้องจุลทรรศน์ส่องตรวจตาชนิดลําแสงแคบแบบมือถือ", "location": "2/ห้องปฏิบัติการธนาคารเลือด(ฝั่งห้องวัคซีน)", "responsible": "นิศากร", "responsibleEmail": "nisakorn.sae@psu.ac.th"}, {"code": "สพ.6525-003-0001-1/1-64/งป.", "name": "เครื่องเอกซเรย์ฟันสำหรับสัตว์ (เครื่องกำเนิดรังสี)", "location": "2/ห้องศัลยกรรม", "responsible": "นภัสกร", "responsibleEmail": "naphatsakon.s@psu.ac.th"}, {"code": "สพ.6515-006-0005-1/1-62/งป.(1)", "name": "เครื่องปั่นแยกส่วนประกอบของโลหิตชนิดควบคุมอุณหภูมิ", "location": "N/A", "responsible": "เกียรติดำรงค์", "responsibleEmail": "kietdumrong.k@psu.ac.th"}, {"code": "สพ.6515-006-0005-1/1-62/งป.(2)", "name": "เครื่องปั่นตกตะกอนเลือด (Hematocrit)", "location": "N/A", "responsible": "เกียรติดำรงค์", "responsibleEmail": "kietdumrong.k@psu.ac.th"}, {"code": "สพ.6515-006-0005-1/1-62/งป.(3)", "name": "เครื่องปั่นล้างเซลล์เม็ดเลือดชนิดไม่ควบคุมอุณหภูมิ", "location": "N/A", "responsible": "เกียรติดำรงค์", "responsibleEmail": "kietdumrong.k@psu.ac.th"}, {"code": "สพ.6515-006-0005-1/1-62/งป.(5)", "name": "ปิเปตต์อัตโนมัติ ขนาด 2-20 ไมโครลิตร", "location": "N/A", "responsible": "เกียรติดำรงค์", "responsibleEmail": "kietdumrong.k@psu.ac.th"}, {"code": "สพ.6515-006-0005-1/1-62/งป.(6)", "name": "ปิเปตต์อัตโนมัติ ขนาด 20-200 ไมโครลิตร", "location": "N/A", "responsible": "เกียรติดำรงค์", "responsibleEmail": "kietdumrong.k@psu.ac.th"}, {"code": "สพ.6515-006-0005-1/1-62/งป.(7)", "name": "ปิเปตต์อัตโนมัติ ขนาด 100-1000 ไมโครลิตร", "location": "N/A", "responsible": "เกียรติดำรงค์", "responsibleEmail": "kietdumrong.k@psu.ac.th"}, {"code": "สพ.6515-006-0005-1/1-62/งป.(8)", "name": "ปิเปตต์อัตโนมัติ ขนาด 500-5000 ไมโครลิตร", "location": "N/A", "responsible": "เกียรติดำรงค์", "responsibleEmail": "kietdumrong.k@psu.ac.th"}, {"code": "สพ.6515-006-0005-1/1-62/งป.(9)", "name": "ที่บ่มหลอดเลือดแบบควบคุมอุณหภูมิ", "location": "N/A", "responsible": "เกียรติดำรงค์", "responsibleEmail": "kietdumrong.k@psu.ac.th"}, {"code": "สพ.6515-006-0005-1/1-62/งป.(10)", "name": "ที่ละลายถุงเลือดแบบควบคุมอุณหภูมิ (Waterbath)", "location": "N/A", "responsible": "เกียรติดำรงค์", "responsibleEmail": "kietdumrong.k@psu.ac.th"}, {"code": "สพ.5860-003-0002-1/1-65/งป.", "name": "เครื่องมือรักษาด้วยเลเซอร์ชนิดกำลังต่ำ", "location": "1/ห้องหัตถการ", "responsible": "พีรพัฒน์", "responsibleEmail": "peerapat.ka@psu.ac.th"}, {"code": "รพส.6515-087-0001-1/1-65/งป.", "name": "เครื่องอัลตร้าซาวน์ สำหรับสัตว์ใหญ่", "location": "01/โรงพยาบาลปศุสัตว์ (ห้องรักษาฝั่งขวา)", "responsible": "พิเชษ", "responsibleEmail": "pichet.j@psu.ac.th"}, {"code": "รพส.6515-087-0001-1/1-65/งป.(2)", "name": "โต๊ะอัลตร้าซาวน์ UMT-150", "location": "01/โรงพยาบาลปศุสัตว์ (ห้องรักษาฝั่งขวา)", "responsible": "ถิรกร", "responsibleEmail": "thirakong.p@psu.ac.th"}, {"code": "รพส.6515-087-0001-1/1-65/งป.(3)", "name": "Thermal printer sony-UP-X898MD", "location": "01/โรงพยาบาลปศุสัตว์ (ห้องรักษาฝั่งขวา)", "responsible": "ถิรกร", "responsibleEmail": "thirakong.p@psu.ac.th"}, {"code": "รพส.6525-003-0002-1/1-65/งป.", "name": "เครื่องตัดเนื้อเยื่อยึดฟันอัตโนมัติสำหรับสัตว์", "location": "2/ห้องศัลยกรรม", "responsible": "นภัสกร", "responsibleEmail": "naphatsakon.s@psu.ac.th"}, {"code": "รพส.6515-050-0008-1/1-65/งป.", "name": "ชุดถ่ายทอดภาพเพื่อผ่าตัดส่องกล้องทางเดินหายใจสำหรับสัตว์เล็ก (เครื่องประมวลผลและกล้องส่องตรวจทางเดินหายใจ)", "location": "2/ห้องผ่าตัด 1", "responsible": "นภัสกร", "responsibleEmail": "naphatsakon.s@psu.ac.th"}, {"code": "รพส.6515-050-0010-1/1-65/งป.", "name": "เครื่องจี้และตัดพร้อมระบบเชื่อมปิดหลอดเลือดด้วยไฟฟ้า", "location": "2/ห้องผ่าตัด 1", "responsible": "นภัสกร", "responsibleEmail": "naphatsakon.s@psu.ac.th"}, {"code": "รพส.6515-050-0009-1/1-65/งป.", "name": "เครื่องถ่ายทอดสัญญาณภาพพร้อมชุดกล้องส่องตรวจโพรงมดลูก (เครื่อง+จอ+กล้อง)", "location": "2/ห้องผ่าตัด 1", "responsible": "นภัสกร", "responsibleEmail": "naphatsakon.s@psu.ac.th"}, {"code": "รพส.6670-002-0014-1/2-65/รด.", "name": "เครื่องชั่งน้ำหนักเด็กทารก", "location": "1/ห้องสัตว์ป่วยในติดเชื้อ (แมว)", "responsible": "กาญจนา", "responsibleEmail": "kanchana.d@psu.ac.th"}, {"code": "รพส.6670-002-0014-2/2-65/รด.", "name": "เครื่องชั่งน้ำหนักเด็กทารก", "location": "1/ห้องสัตว์ป่วยในติดเชื้อ (สุนัข)", "responsible": "กาญจนา", "responsibleEmail": "kanchana.d@psu.ac.th"}, {"code": "รพส.6515-092-0001-1/10-65/รด.", "name": "เครื่องควบคุมการให้สารละลายทางหลอดเลือดชนิดควบคุมปริมาตร Infusion Pump", "location": "1/ห้องฉุกเฉิน (CCU)", "responsible": "วรางคณา", "responsibleEmail": "warangkhana.t@psu.ac.th"}, {"code": "รพส.6515-092-0001-2/10-65/รด.", "name": "เครื่องควบคุมการให้สารละลายทางหลอดเลือดชนิดควบคุมปริมาตร Infusion Pump", "location": "2/ห้องศัลยกรรม", "responsible": "นภัสกร", "responsibleEmail": "naphatsakon.s@psu.ac.th"}, {"code": "รพส.6515-092-0001-3/10-65/รด.", "name": "เครื่องควบคุมการให้สารละลายทางหลอดเลือดชนิดควบคุมปริมาตร Infusion Pump", "location": "1/ห้องฉุกเฉิน (CCU)", "responsible": "วรางคณา", "responsibleEmail": "warangkhana.t@psu.ac.th"}, {"code": "รพส.6515-092-0001-4/10-65/รด.", "name": "เครื่องควบคุมการให้สารละลายทางหลอดเลือดชนิดควบคุมปริมาตร Infusion Pump", "location": "1/ห้องฉุกเฉิน (CCU)", "responsible": "วรางคณา", "responsibleEmail": "warangkhana.t@psu.ac.th"}, {"code": "รพส.6515-092-0001-5/10-65/รด.", "name": "เครื่องควบคุมการให้สารละลายทางหลอดเลือดชนิดควบคุมปริมาตร Infusion Pump", "location": "1/ห้องฉุกเฉิน (CCU)", "responsible": "วรางคณา", "responsibleEmail": "warangkhana.t@psu.ac.th"}, {"code": "รพส.6515-092-0001-6/10-65/รด.", "name": "เครื่องควบคุมการให้สารละลายทางหลอดเลือดชนิดควบคุมปริมาตร Infusion Pump", "location": "1/ห้องฉุกเฉิน (CCU)", "responsible": "วรางคณา", "responsibleEmail": "warangkhana.t@psu.ac.th"}, {"code": "รพส.6515-092-0001-7/10-65/รด.", "name": "เครื่องควบคุมการให้สารละลายทางหลอดเลือดชนิดควบคุมปริมาตร Infusion Pump", "location": "1/ห้องฉุกเฉิน (CCU)", "responsible": "วรางคณา", "responsibleEmail": "warangkhana.t@psu.ac.th"}, {"code": "รพส.6515-092-0001-8/10-65/รด.", "name": "เครื่องควบคุมการให้สารละลายทางหลอดเลือดชนิดควบคุมปริมาตร Infusion Pump", "location": "1/ห้องฉุกเฉิน (CCU)", "responsible": "วรางคณา", "responsibleEmail": "warangkhana.t@psu.ac.th"}, {"code": "รพส.6515-092-0001-9/10-65/รด.", "name": "เครื่องควบคุมการให้สารละลายทางหลอดเลือดชนิดควบคุมปริมาตร Infusion Pump", "location": "1/ห้องฉุกเฉิน (CCU)", "responsible": "วรางคณา", "responsibleEmail": "warangkhana.t@psu.ac.th"}, {"code": "รพส.6515-092-0001-10/10-65/รด.", "name": "เครื่องควบคุมการให้สารละลายทางหลอดเลือดชนิดควบคุมปริมาตร Infusion Pump", "location": "1/ห้องฉุกเฉิน (CCU)", "responsible": "วรางคณา", "responsibleEmail": "warangkhana.t@psu.ac.th"}, {"code": "รพส.5130-007-0000-1/3-65/รด.", "name": "ด้ามจับสว่านและเลื่อย (ด้ามสว่านเจาะกระดูกแบบเปลี่ยนหัวต่อได้)", "location": "2/ห้องศัลยกรรม", "responsible": "นภัสกร", "responsibleEmail": "naphatsakon.s@psu.ac.th"}, {"code": "รพส.5130-007-0000-2/3-65/รด.", "name": "ด้ามจับสว่านและเลื่อย (หัวต่อเลื่อยสำหรับตัดกระดูก)", "location": "2/ห้องศัลยกรรม", "responsible": "นภัสกร", "responsibleEmail": "naphatsakon.s@psu.ac.th"}, {"code": "รพส.5130-007-0000-3/3-65/รด.", "name": "ด้ามจับสว่านและเลื่อย (เลื่อยตัดกระดูกขนาดเล็ก)", "location": "2/ห้องศัลยกรรม", "responsible": "นภัสกร", "responsibleEmail": "naphatsakon.s@psu.ac.th"}, {"code": "รพส.6515-092-0001-1/1-65/รด.", "name": "เครื่องให้น้ำเกลืออัตโนมัติ Infusion pump HK-100", "location": "1/ห้องฉุกเฉิน (CCU)", "responsible": "วรางคณา", "responsibleEmail": "warangkhana.t@psu.ac.th"}, {"code": "รพส.4310-008-0004-1/1-65/รด.", "name": "เครื่องควบคุมกระบอกฉีดสารละลาย Syringe pump", "location": "1/ห้องฉุกเฉิน (CCU)", "responsible": "วรางคณา", "responsibleEmail": "warangkhana.t@psu.ac.th"}, {"code": "รพส.6515-092-0002-1/2-65/รด.", "name": "เครื่องให้ความร้อนสารละลายทางสายน้ำเกลือ Blood&Infusion Warmer", "location": "2/ห้องศัลยกรรม", "responsible": "นภัสกร", "responsibleEmail": "naphatsakon.s@psu.ac.th"}, {"code": "รพส.6515-092-0002-2/2-65/รด.", "name": "เครื่องให้ความร้อนสารละลายทางสายน้ำเกลือ Blood&Infusion Warmer", "location": "2/ห้องศัลยกรรม", "responsible": "นภัสกร", "responsibleEmail": "naphatsakon.s@psu.ac.th"}, {"code": "รพส.6515-116-0001-1/1-65/รด.", "name": "ตู้ฟักไข่และให้ความอบอุ่นสำหรับลูกสัตว์", "location": "2/ห้องศัลยกรรม", "responsible": "นภัสกร", "responsibleEmail": "naphatsakon.s@psu.ac.th"}, {"code": "รพส.6515-085-0001-1/1-65/รด.", "name": "DOPPLER V-MED, VET-DOP2 (เครื่องวัดความดันโลหิต)", "location": "1/ห้องสัตว์ป่วยในติดเชื้อ", "responsible": "ปูชิยา", "responsibleEmail": "poochiya.i@psu.ac.th"}, {"code": "รพส.6515-050-0011-1/1-65/รด.", "name": "Biopsy Forceps, 28 cm. (เครื่องมือคีบตัดชิ้นเนื้อในสัตว์)", "location": "2/ห้องศัลยกรรม", "responsible": "นภัสกร", "responsibleEmail": "naphatsakon.s@psu.ac.th"}, {"code": "รพส.6710-004-0004-1/2-66/รด.", "name": "ชุดกล้องวงจรปิดโรงพยาบาลสัตว์ (เครื่องบันทึกภาพ+HDD+ตู้+กล้อง 4 ตัว)", "location": "1/ห้องฉุกเฉิน (CCU)", "responsible": "พีรพัฒน์", "responsibleEmail": "peerapat.ka@psu.ac.th"}, {"code": "รพส.6650-002-0022-1/4-66/งป.", "name": "กล้องจุลทรรศน์สำหรับช่วยตรวจวินิจฉัย พร้อมชุดถ่ายภาพ", "location": "1/ห้องหัตถการ", "responsible": "กาญจนา", "responsibleEmail": "kanchana.d@psu.ac.th"}, {"code": "รพส.6650-002-0022-2/4-66/งป.", "name": "กล้องจุลทรรศน์สำหรับช่วยตรวจวินิจฉัย", "location": "1/ห้องตรวจสุนัข 2", "responsible": "กาญจนา", "responsibleEmail": "kanchana.d@psu.ac.th"}, {"code": "รพส.6650-002-0022-3/4-66/งป.", "name": "กล้องจุลทรรศน์สำหรับช่วยตรวจวินิจฉัย", "location": "1/ห้องตรวจแมว 1", "responsible": "กาญจนา", "responsibleEmail": "kanchana.d@psu.ac.th"}, {"code": "รพส.6650-002-0022-4/4-66/งป.", "name": "กล้องจุลทรรศน์สำหรับช่วยตรวจวินิจฉัย", "location": "1/ห้องตรวจแมว 2", "responsible": "กาญจนา", "responsibleEmail": "kanchana.d@psu.ac.th"}, {"code": "รพส.6670-002-0014-1/1-66/รด.", "name": "เครื่องชั่งน้ำหนักเด็กทารก ยี่ห้อ Zepper รุ่น EB-20", "location": "1/ห้องหัตถการ", "responsible": "กาญจนา", "responsibleEmail": "kanchana.d@psu.ac.th"}, {"code": "รพส.6515-092-0001-1/10-67/งป.", "name": "เครื่องควบคุมการให้สารน้ำทางหลอดเลือดชนิดควบคุมปริมาณ (Infusion pump)", "location": "1/ห้องฉุกเฉิน (CCU)", "responsible": "วรางคณา", "responsibleEmail": "warangkhana.t@psu.ac.th"}, {"code": "รพส.6515-092-0001-2/10-67/งป.", "name": "เครื่องควบคุมการให้สารน้ำทางหลอดเลือดชนิดควบคุมปริมาณ (Infusion pump)", "location": "1/ห้องฉุกเฉิน (CCU)", "responsible": "วรางคณา", "responsibleEmail": "warangkhana.t@psu.ac.th"}, {"code": "รพส.6515-092-0001-3/10-67/งป.", "name": "เครื่องควบคุมการให้สารน้ำทางหลอดเลือดชนิดควบคุมปริมาณ (Infusion pump)", "location": "1/ห้องฉุกเฉิน (CCU)", "responsible": "วรางคณา", "responsibleEmail": "warangkhana.t@psu.ac.th"}, {"code": "รพส.6515-092-0001-4/10-67/งป.", "name": "เครื่องควบคุมการให้สารน้ำทางหลอดเลือดชนิดควบคุมปริมาณ (Infusion pump)", "location": "1/ห้องฉุกเฉิน (CCU)", "responsible": "วรางคณา", "responsibleEmail": "warangkhana.t@psu.ac.th"}, {"code": "รพส.6515-092-0001-5/10-67/งป.", "name": "เครื่องควบคุมการให้สารน้ำทางหลอดเลือดชนิดควบคุมปริมาณ (Infusion pump)", "location": "1/ห้องฉุกเฉิน (CCU)", "responsible": "วรางคณา", "responsibleEmail": "warangkhana.t@psu.ac.th"}, {"code": "รพส.6515-092-0001-6/10-67/งป.", "name": "เครื่องควบคุมการให้สารน้ำทางหลอดเลือดชนิดควบคุมปริมาณ (Infusion pump)", "location": "1/ห้องฉุกเฉิน (CCU)", "responsible": "วรางคณา", "responsibleEmail": "warangkhana.t@psu.ac.th"}, {"code": "รพส.6515-092-0001-7/10-67/งป.", "name": "เครื่องควบคุมการให้สารน้ำทางหลอดเลือดชนิดควบคุมปริมาณ (Infusion pump)", "location": "1/ห้องฉุกเฉิน (CCU)", "responsible": "วรางคณา", "responsibleEmail": "warangkhana.t@psu.ac.th"}, {"code": "รพส.6515-092-0001-8/10-67/งป.", "name": "เครื่องควบคุมการให้สารน้ำทางหลอดเลือดชนิดควบคุมปริมาณ (Infusion pump)", "location": "1/ห้องฉุกเฉิน (CCU)", "responsible": "วรางคณา", "responsibleEmail": "warangkhana.t@psu.ac.th"}, {"code": "รพส.6515-092-0001-9/10-67/งป.", "name": "เครื่องควบคุมการให้สารน้ำทางหลอดเลือดชนิดควบคุมปริมาณ (Infusion pump)", "location": "1/ห้องฉุกเฉิน (CCU)", "responsible": "วรางคณา", "responsibleEmail": "warangkhana.t@psu.ac.th"}, {"code": "รพส.6515-092-0001-10/10-67/งป.", "name": "เครื่องควบคุมการให้สารน้ำทางหลอดเลือดชนิดควบคุมปริมาณ (Infusion pump)", "location": "1/ห้องฉุกเฉิน (CCU)", "responsible": "วรางคณา", "responsibleEmail": "warangkhana.t@psu.ac.th"}, {"code": "รพส.6515-112-0001-1/1-67/บ.", "name": "เครื่องวิเคราะห์ทางเคมีของสัตว์แบบมัลติฟังก์ชั่น", "location": "01/โรงพยาบาลปศุสัตว์ (ห้องปฏิบัติการ)", "responsible": "พิเชษ", "responsibleEmail": "pichet.j@psu.ac.th"}, {"code": "รพส.7440-006-0001-1/1-67/บ.", "name": "จอภาพความละเอียดสูงสำหรับดูภาพทางการแพทย์ (X-RAY)", "location": "1/ห้องหัตถการ", "responsible": "อัจฉรา", "responsibleEmail": "atchara.m@psu.ac.th"}, {"code": "รพส.6515-087-0001-1/1-67/งป.", "name": "เครื่องอัลตร้าซาวด์", "location": "1/ห้องอัลตร้าซาวด์", "responsible": "อัจฉรา", "responsibleEmail": "atchara.m@psu.ac.th"}, {"code": "รพส.6525-003-0001-1/1-67/งป.", "name": "ชุดเครื่องเอกซเรย์ฟันสำหรับสัตว์ (เครื่องกำเนิดรังสี X-RAY Port-X IV)", "location": "2/ห้องศัลยกรรม", "responsible": "นภัสกร", "responsibleEmail": "naphatsakon.s@psu.ac.th"}, {"code": "รพส.6525-003-0001-1/1-67/งป.(1)", "name": "เครื่องมือทันตกรรมทางสัตวแพทย์ Ultrasonic Scaler & Dental Unit", "location": "2/ห้องศัลยกรรม", "responsible": "นภัสกร", "responsibleEmail": "naphatsakon.s@psu.ac.th"}, {"code": "รพส.6515-003-0003-1/1-67/รด.", "name": "เครื่องพ่นยา", "location": "01/โรงพยาบาลปศุสัตว์ (ห้องรักษาฝั่งขวา)", "responsible": "พิเชษ", "responsibleEmail": "pichet.j@psu.ac.th"}, {"code": "รพส.6515-001-0002-1/1-67/งป.", "name": "ชุดเครื่องมือสำหรับห้องฉุกเฉิน: เครื่องดมยาสลบพร้อมเครื่องช่วยหายใจ", "location": "2/ห้องศัลยกรรม", "responsible": "นภัสกร", "responsibleEmail": "naphatsakon.s@psu.ac.th"}, {"code": "รพส.6515-085-0001-1/2-67/งป.", "name": "ชุดเครื่องมือสำหรับห้องฉุกเฉิน: เครื่องวัดความดันโลหิต Doppler", "location": "2/ห้องศัลยกรรม", "responsible": "นภัสกร", "responsibleEmail": "naphatsakon.s@psu.ac.th"}, {"code": "รพส.6515-085-0001-2/2-67/งป.", "name": "ชุดเครื่องมือสำหรับห้องฉุกเฉิน: เครื่องวัดความดันโลหิต Doppler", "location": "2/ห้องศัลยกรรม", "responsible": "นภัสกร", "responsibleEmail": "naphatsakon.s@psu.ac.th"}, {"code": "รพส.6515-009-0001-1/1-67/งป.", "name": "ชุดเครื่องมือสำหรับห้องฉุกเฉิน : เครื่องวัดความอิ่มตัวของออกซิเจนในเลือด PULSE OXIMETER", "location": "2/ห้องศัลยกรรม", "responsible": "นภัสกร", "responsibleEmail": "naphatsakon.s@psu.ac.th"}, {"code": "รพส.6515-092-0001-1/1-67/งป.", "name": "ชุดเครื่องมือสำหรับห้องฉุกเฉิน : เครื่องควบคุมการให้สารละลายทางหลอดเลือดดำโดยอัตโนมัติ (Infusion pump)", "location": "2/ห้องศัลยกรรม", "responsible": "นภัสกร", "responsibleEmail": "naphatsakon.s@psu.ac.th"}, {"code": "รพส.3410-007-0000-1/1-67/รด.", "name": "เครื่องเจียรไร้สาย 4 นิ้ว 18 โวลต์ 11000", "location": "01/โรงพยาบาลปศุสัตว์ (ห้องรักษาฝั่งขวา)", "responsible": "พิเชษ", "responsibleEmail": "pichet.j@psu.ac.th"}, {"code": "รพส.6650-002-0001-1/1-67/งป.", "name": "ชุดถ่ายภาพจุลพยาธิเพื่อการเรียนการสอนแบบเชิงรุก", "location": "1/ห้องหัตถการ", "responsible": "ซารีป๊ะ", "responsibleEmail": "sareepah.m@psu.ac.th"}];
-const PSU_POSITIONS = ["นักวิชาการพัสดุ", "นักวิชาการอุดมศึกษา", "นักวิทยาศาสตร์", "ผู้ช่วยสัตวแพทย์", "ผู้ปฏิบัติงานพยาบาลสัตว์", "รองผู้อำนวยการโรงพยาบาลสัตว์ ฝ่ายบริหารผลิตภัณฑ์ และเวชภัณฑ์", "สัตวแพทย์"];
-const PSU_DEPTS = ["สาขาวิชาสัตวแพทยศาสตร์", "สำนักงานบริหารคณะ", "โรงพยาบาลสัตว์"];
+// ======= 🌐 CONNECT TO GOOGLE SHEETS LIVE DATA =======
+let GAS_URL = 'https://script.google.com/macros/s/AKfycbzl5te2wmo-3pV-gny0srGCQiQcJxbkp8inHpyJW42vs4HTRWSXFO5cgWM2whhVDLo/exec';
 
-// ======= CONFIG =======
-const ADMIN_EMAIL = 'kittiya.so@psu.ac.th';
-const APPROVER_EMAIL = 'yada.d@psu.ac.th';
-
-let GAS_URL = 'https://script.google.com/macros/s/AKfycbzl5te2wmo-3pV-gny0srGCQiQcJxbkp8inHpyJW42vs4HTRWSXFO5cgWM2whhVDLo/exec';// ← ผู้ดูแลระบบใส่ URL ของ Google Apps Script Web App ที่นี่
-
-
-// ======= STATE =======
+// ─── STATE MANAGEMENT ────────────────────────────────────────
 let state = {
-  tab: 'form',
+  currentTab: 'form', // 'form' | 'status'
   requests: [],
-  loading: false,
-  syncing: false,
-  lastSync: null,
-  submitted: false,
-  selectedId: null,
-  eqCnt: 2,
+  masterData: { equipment: [], staff: [], positions: [], depts: [] },
   form: {
-    date: today(), name:'', position:'', dept:'', email:'', purpose:'',
-    borrowFrom:'', bFromTime:'', borrowTo:'', bToTime:'',
-    equipment: [{ id:1, code:'', name:'', location:'', responsible:'', responsibleEmail:'', condBefore:'', condAfter:'' }]
-  }
+    name: '', position: '', dept: '', email: '',
+    purpose: '', borrowFrom: '', borrowFromTime: '', borrowTo: '', borrowToTime: '',
+    equipment: [{ code: '', name: '', location: '', responsible: '', responsibleEmail: '' }]
+  },
+  activeAc: null, // index of active equipment autocomplete
+  selectedRequest: null,
+  toastTimeout: null
 };
 
-// ======= HELPERS =======
-function today(){ return new Date().toISOString().split('T')[0]; }
-function fmtDate(d){ if(!d||d==='-') return '-'; const p=String(d).split('-'); return p.length===3?p[2]+'/'+p[1]+'/'+p[0]:d; }
-function fmtDT(d,t){ return fmtDate(d)+(t?' '+t:''); }
-function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-function searchEquip(q){ if(!q) return []; const lq=q.toLowerCase(); return PSU_EQUIPMENT.filter(e=>e.name.toLowerCase().includes(lq)||e.code.toLowerCase().includes(lq)).slice(0,12); }
-function searchStaff(q){ if(!q) return []; const lq=q.toLowerCase(); return PSU_STAFF.filter(s=>s.name.toLowerCase().includes(lq)).slice(0,8); }
+// ─── INIT APP ────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', async () => {
+  showLoading('กำลังโหลดข้อมูลฐานข้อมูลสดจาก Google Sheets...');
+  await fetchMasterData();
+  await fetchRequests();
+  hideLoading();
+  render();
+});
 
-// ======= LOADING / TOAST =======
-function showLoading(msg){ document.getElementById('loading-overlay').style.display='flex'; document.getElementById('loading-text').textContent=msg||'กำลังโหลด...'; }
-function hideLoading(){ document.getElementById('loading-overlay').style.display='none'; }
-function showToast(msg,type,dur){
-  const t=document.getElementById('toast');
-  t.textContent=msg; t.className='toast '+(type==='ok'?'toast-ok':type==='err'?'toast-err':'');
-  t.style.display='flex';
-  clearTimeout(window._toastTimer);
-  window._toastTimer=setTimeout(()=>t.style.display='none',dur||3000);
+// ─── API FETCHES ─────────────────────────────────────────────
+async function fetchMasterData() {
+  try {
+    const res = await fetch(`${GAS_URL}?action=getMasterData`);
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    state.masterData = data;
+  } catch(e) {
+    showToast('ดึงฐานข้อมูลล้มเหลว: ' + e.message, 'err');
+    console.error(e);
+  }
 }
 
-// ======= API CALLS via JSONP (no CORS issue) =======
-function gasCall(action, data){
-  return new Promise((resolve, reject) => {
-    if(!GAS_URL){ reject(new Error('ยังไม่ได้ตั้งค่า GAS URL')); return; }
-    const cbName = '_cb_'+Date.now();
-    const script = document.createElement('script');
-    let done = false;
-    window[cbName] = function(result){
-      done = true;
-      delete window[cbName];
-      document.body.removeChild(script);
-      if(result && result.error) reject(new Error(result.error));
-      else resolve(result);
-    };
-    const timer = setTimeout(()=>{
-      if(!done){ delete window[cbName]; try{document.body.removeChild(script);}catch(e){}
-        reject(new Error('Request timeout')); }
-    }, 15000);
-    if(data){
-      // POST via hidden form + iframe trick for JSONP
-      fetch(GAS_URL+'?action='+action+'&callback='+cbName, {
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify(data),
-        mode:'no-cors'
-      }).catch(()=>{});
-      // Fallback: GET with data encoded
-      const encoded = encodeURIComponent(JSON.stringify(data));
-      script.src = GAS_URL+'?action='+action+'&data='+encoded+'&callback='+cbName;
+async function fetchRequests() {
+  try {
+    const res = await fetch(`${GAS_URL}?action=getAll`);
+    state.requests = await res.json();
+  } catch(e) {
+    showToast('ดึงรายการคำขอไม่สำเร็จ', 'err');
+  }
+}
+
+// ─── ACTIONS ─────────────────────────────────────────────────
+async function submitForm(e) {
+  e.preventDefault();
+  if (!state.form.name || !state.form.email || !state.form.borrowFrom || !state.form.borrowTo) {
+    showToast('กรุณากรอกข้อมูลสำคัญให้ครบถ้วน', 'err');
+    return;
+  }
+  const validEq = state.form.equipment.filter(eq => eq.code && eq.name);
+  if (validEq.length === 0) {
+    showToast('กรุณาเลือกครุภัณฑ์อย่างน้อย 1 รายการ', 'err');
+    return;
+  }
+
+  showLoading('กำลังส่งใบคำขอยืมและระบบกำลังส่งอีเมลแจ้งเตือน...');
+  try {
+    const payload = { ...state.form, equipment: validEq };
+    const res = await fetch(`${GAS_URL}?action=create`, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+    const r = await res.json();
+    if (r.ok) {
+      showToast('ส่งคำขอยืมครุภัณฑ์สำเร็จแล้ว!', 'ok');
+      // Reset Form
+      state.form = {
+        name: '', position: '', dept: '', email: '',
+        purpose: '', borrowFrom: '', borrowFromTime: '', borrowTo: '', borrowToTime: '',
+        equipment: [{ code: '', name: '', location: '', responsible: '', responsibleEmail: '' }]
+      };
+      state.currentTab = 'status';
+      await fetchRequests();
     } else {
-      script.src = GAS_URL+'?action='+action+'&callback='+cbName;
+      throw new Error(r.error);
     }
-    document.body.appendChild(script);
-  });
-}
-
-// Proper fetch-based API (uses fetch with mode cors — requires GAS to set CORS headers)
-async function apiCall(action, body){
-  if(!GAS_URL) throw new Error('ยังไม่ได้ตั้งค่า GAS URL — คลิกปุ่มตั้งค่า');
-  const url = GAS_URL + '?action=' + action;
-  const opts = body
-    ? { method:'POST', headers:{'Content-Type':'text/plain'}, body: JSON.stringify(body) }
-    : { method:'GET' };
-  const res = await fetch(url, opts);
-  const json = await res.json();
-  if(json && json.error) throw new Error(json.error);
-  return json;
-}
-
-// ======= LOAD ALL REQUESTS =======
-async function loadRequests(){
-  if(!GAS_URL){ state.requests=[]; render(); return; }
-  state.syncing=true; render();
-  try {
-    const data = await apiCall('getAll');
-    state.requests = Array.isArray(data) ? data.map(r => ({
-      ...r,
-      form: {
-        name: r.requesterName, position: r.requesterPosition,
-        dept: r.requesterDept, email: r.requesterEmail,
-        purpose: r.purpose, borrowFrom: r.borrowFrom,
-        bFromTime: r.borrowFromTime, borrowTo: r.borrowTo,
-        bToTime: r.borrowToTime, date: r.createdAt?.split('T')[0]||'',
-        equipment: r.equipmentJSON||[]
-      }
-    })) : [];
-    state.lastSync = new Date();
-    showToast('โหลดข้อมูลสำเร็จ ('+state.requests.length+' รายการ)','ok',2000);
   } catch(e) {
-    showToast('โหลดข้อมูลล้มเหลว: '+e.message,'err',4000);
-  }
-  state.syncing=false; render();
-}
-
-// ======= AUTO REFRESH every 30s =======
-setInterval(()=>{ if(GAS_URL && !state.loading && state.tab==='list') loadRequests(); }, 30000);
-
-// ======= STATUS BADGE =======
-function sbadge(s){
-  const map={'ยื่นขออนุมัติ':['s-pending','⏳'],'รับทราบแล้ว':['s-ack','👍'],'ไม่สามารถให้ยืมได้':['s-unavail','⚠️'],'อนุมัติแล้ว':['s-approved','✅'],'ไม่อนุมัติ':['s-rejected','❌'],'อยู่ระหว่างยืม':['s-borrowed','📦'],'คืนครุภัณฑ์แล้ว':['s-returned','🔄'],'ตรวจสภาพเสร็จสิ้น':['s-done','✔️']};
-  const [cls,ic]=map[s]||['s-pending','❓'];
-  return `<span class="sbadge ${cls}">${ic} ${esc(s)}</span>`;
-}
-
-// ======= SETUP SCREEN =======
-function renderSetup(){
-  return `
-  <div class="setup-card">
-    <i class="ti ti-brand-google" aria-hidden="true" style="font-size:48px;color:#185FA5;margin-bottom:16px;display:block"></i>
-    <h2 style="font-size:16px;font-weight:600;margin-bottom:8px">ตั้งค่าการเชื่อมต่อ Google Sheets</h2>
-    <p style="font-size:13px;color:#5f5e5a;margin-bottom:20px;line-height:1.6">
-      ระบบนี้ใช้ Google Sheets เป็นฐานข้อมูลกลาง<br>
-      กรุณาใส่ URL ของ Google Apps Script Web App เพื่อเริ่มต้น
-    </p>
-    <div class="field" style="text-align:left;max-width:500px;margin:0 auto 16px">
-      <label>Google Apps Script Web App URL</label>
-      <input id="gas-url-input" type="url" value="${esc(GAS_URL)}" 
-        placeholder="https://script.google.com/macros/s/AKfy.../exec"
-        style="font-size:12px">
-    </div>
-    <button class="btn-primary" style="margin:0 auto;justify-content:center" onclick="saveGasUrl()">
-      <i class="ti ti-plug" aria-hidden="true"></i> เชื่อมต่อ
-    </button>
-    <div style="margin-top:20px;padding-top:16px;border-top:0.5px solid rgba(0,0,0,.1);font-size:12px;color:#5f5e5a;text-align:left">
-      <strong>วิธีสร้าง Web App URL:</strong><br>
-      1. เปิด Google Sheets → Extensions → Apps Script<br>
-      2. วางโค้ด Code.gs แล้วคลิก Deploy → New Deployment<br>
-      3. เลือก Type: Web App, Execute as: Me, Access: Anyone<br>
-      4. คัดลอก Web App URL มาวางที่นี่
-    </div>
-  </div>`;
-}
-
-window.saveGasUrl = async function(){
-  const url = document.getElementById('gas-url-input')?.value?.trim();
-  if(!url){ showToast('กรุณาใส่ URL','err'); return; }
-  showLoading('กำลังทดสอบการเชื่อมต่อ...');
-  GAS_URL = url;
-  try {
-    await apiCall('ping');
-    localStorage.setItem('psu_gas_url',url);
-    showToast('เชื่อมต่อสำเร็จ!','ok');
+    showToast('เกิดข้อผิดพลาด: ' + e.message, 'err');
+  } finally {
     hideLoading();
-    await loadRequests();
+    render();
+  }
+}
+
+async function handleUpdateStatus(id, nextStatus, updatedEquipment = null) {
+  showLoading('กำลังบันทึกสถานะใหม่ลงฐานข้อมูล...');
+  try {
+    const payload = { id, status: nextStatus };
+    if (updatedEquipment) payload.equipment = updatedEquipment;
+
+    const res = await fetch(`${GAS_URL}?action=updateStatus`, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+    const r = await res.json();
+    if (r.ok) {
+      showToast(`เปลี่ยนสถานะเป็น "${nextStatus}" เรียบร้อย`, 'ok');
+      state.selectedRequest = null;
+      await fetchRequests();
+    } else {
+      throw new Error(r.error);
+    }
   } catch(e) {
+    showToast('อัปเดตไม่สำเร็จ: ' + e.message, 'err');
+  } finally {
     hideLoading();
-    showToast('เชื่อมต่อล้มเหลว: '+e.message,'err',5000);
-    GAS_URL='';
+    render();
   }
-};
-
-window.changeUrl = function(){
-  GAS_URL=''; localStorage.removeItem('psu_gas_url'); state.requests=[]; render();
-};
-
-// ======= RENDER FORM =======
-function renderForm(){
-  const f=state.form;
-  const eqRows=f.equipment.map((eq,i)=>{
-    const hasEmail=eq.responsibleEmail&&eq.responsibleEmail.length>0;
-    const infoHtml=eq.responsible?(hasEmail
-      ?`<div class="info-box"><i class="ti ti-mail" aria-hidden="true" style="flex-shrink:0;margin-top:2px"></i><div>จะส่งอีเมลแจ้ง <strong>${esc(eq.responsible)}</strong> (${esc(eq.responsibleEmail)})</div></div>`
-      :`<div class="warn-box"><i class="ti ti-alert-triangle" aria-hidden="true" style="flex-shrink:0;margin-top:2px"></i><div>ไม่พบอีเมลผู้รับผิดชอบ (${esc(eq.responsible)})</div></div>`):'';
-    return `
-      <div class="eq-row" id="eq-${eq.id}">
-        <div class="eq-header">
-          <span class="eq-label"><i class="ti ti-device-laptop" aria-hidden="true"></i> ครุภัณฑ์ที่ ${i+1}</span>
-          ${f.equipment.length>1?`<button class="btn-remove" onclick="removeEq(${eq.id})"><i class="ti ti-x"></i></button>`:''}
-        </div>
-        <div class="field">
-          <label>ชื่อครุภัณฑ์ <span class="req">*</span></label>
-          <div class="ac-wrap">
-            <input id="eq-name-${eq.id}" value="${esc(eq.name)}" placeholder="พิมพ์เพื่อค้นหาชื่อหรือรหัส..."
-              oninput="eqSearch(${eq.id},this.value)" onblur="closeAc(${eq.id},220)" autocomplete="off">
-            <div class="ac-drop" id="eqdrop-${eq.id}" style="display:none"></div>
-          </div>
-        </div>
-        <div class="grid2">
-          <div class="field"><label>เลขครุภัณฑ์</label><input value="${esc(eq.code)}" readonly placeholder="(ดึงอัตโนมัติ)"></div>
-          <div class="field"><label>ผู้รับผิดชอบ</label><input value="${esc(eq.responsible)}" readonly placeholder="(ดึงอัตโนมัติ)"></div>
-        </div>
-        <div class="field"><label>สถานที่ติดตั้ง</label><input value="${esc(eq.location)}" readonly placeholder="(ดึงอัตโนมัติ)"></div>
-        ${infoHtml}
-      </div>`;
-  }).join('');
-
-  return `
-  ${state.submitted?`<div class="success-banner">
-    <i class="ti ti-circle-check" aria-hidden="true" style="font-size:20px;color:#3B6D11;flex-shrink:0;margin-top:2px"></i>
-    <div><div style="font-weight:500;color:#27500A;font-size:14px">บันทึกคำขอในฐานข้อมูลเรียบร้อย ✓</div>
-    <div style="font-size:12px;color:#3B6D11;margin-top:4px">ส่งอีเมลแจ้ง ${APPROVER_EMAIL} และ ${ADMIN_EMAIL} แล้ว · ติดตามสถานะที่แท็บ "ติดตามสถานะ"</div></div>
-  </div>`:''}
-
-  <div class="card">
-    <div class="section-title"><i class="ti ti-user" aria-hidden="true"></i> ข้อมูลผู้ขอใช้ครุภัณฑ์</div>
-    <div class="grid2">
-      <div class="field"><label>วันที่กรอกแบบฟอร์ม</label>
-        <input type="date" value="${f.date}" oninput="updF('date',this.value)"></div>
-      <div></div>
-    </div>
-    <div class="field"><label>ชื่อ - นามสกุล <span class="req">*</span></label>
-      <div class="ac-wrap">
-        <input id="req-name" value="${esc(f.name)}" placeholder="พิมพ์ชื่อเพื่อค้นหา..."
-          oninput="staffSearch(this.value)" onblur="closeStaffAc(250)" autocomplete="off">
-        <div class="ac-drop" id="staff-drop" style="display:none"></div>
-      </div>
-    </div>
-    <div class="grid2">
-      <div class="field"><label>ตำแหน่ง <span class="req">*</span></label>
-        <select onchange="updF('position',this.value)">
-          <option value="">-- เลือกตำแหน่ง --</option>
-          ${PSU_POSITIONS.map(p=>`<option value="${esc(p)}" ${f.position===p?'selected':''}>${esc(p)}</option>`).join('')}
-        </select></div>
-      <div class="field"><label>สังกัด <span class="req">*</span></label>
-        <select onchange="updF('dept',this.value)">
-          <option value="">-- เลือกสังกัด --</option>
-          ${PSU_DEPTS.map(d=>`<option value="${esc(d)}" ${f.dept===d?'selected':''}>${esc(d)}</option>`).join('')}
-        </select></div>
-    </div>
-    <div class="field"><label>Email <span class="req">*</span></label>
-      <input type="email" value="${esc(f.email)}" oninput="updF('email',this.value)" placeholder="example@psu.ac.th"></div>
-    <div class="field"><label>มีความประสงค์ขอยืมครุภัณฑ์ เพื่อ <span class="req">*</span></label>
-      <textarea oninput="updF('purpose',this.value)" placeholder="ระบุวัตถุประสงค์...">${esc(f.purpose)}</textarea></div>
-  </div>
-
-  <div class="card">
-    <div class="section-title"><i class="ti ti-device-laptop" aria-hidden="true"></i> รายการครุภัณฑ์ที่ขอยืม</div>
-    ${eqRows}
-    <button class="btn-add" onclick="addEq()"><i class="ti ti-plus" aria-hidden="true"></i> เพิ่มรายการครุภัณฑ์</button>
-  </div>
-
-  <div class="card">
-    <div class="section-title"><i class="ti ti-calendar" aria-hidden="true"></i> ระยะเวลาการยืม</div>
-    <div class="grid2">
-      <div class="field"><label>วันที่ขอยืม <span class="req">*</span></label>
-        <input type="date" value="${f.borrowFrom}" oninput="updF('borrowFrom',this.value)"></div>
-      <div class="field"><label>เวลา</label>
-        <input type="time" value="${f.bFromTime}" oninput="updF('bFromTime',this.value)"></div>
-      <div class="field"><label>วันที่กำหนดคืน <span class="req">*</span></label>
-        <input type="date" value="${f.borrowTo}" oninput="updF('borrowTo',this.value)"></div>
-      <div class="field"><label>เวลา</label>
-        <input type="time" value="${f.bToTime}" oninput="updF('bToTime',this.value)"></div>
-    </div>
-  </div>
-
-  <div style="display:flex;justify-content:flex-end;margin-bottom:2rem">
-    <button class="btn-primary" onclick="submitForm()" id="submit-btn">
-      <i class="ti ti-send" aria-hidden="true"></i> ส่งคำขอและบันทึกใน Google Sheets
-    </button>
-  </div>`;
 }
 
-// ======= RENDER LIST =======
-function renderList(){
-  const synBtn=`<button class="btn-outline" onclick="loadRequests()" style="margin-left:auto;font-size:12px;padding:6px 14px" ${state.syncing?'disabled':''}>
-    <i class="ti ti-refresh" aria-hidden="true" style="${state.syncing?'animation:spin .8s linear infinite':''}"></i>
-    ${state.syncing?'กำลังโหลด...':'รีเฟรช'}
-  </button>`;
-  if(state.syncing && !state.requests.length) return `<div class="empty"><div class="spinner" style="margin:0 auto 16px"></div>กำลังโหลดข้อมูลจาก Google Sheets...</div>`;
-  const reqs=state.requests;
-  if(!reqs.length) return `<div style="display:flex;justify-content:flex-end;margin-bottom:12px">${synBtn}</div><div class="empty"><i class="ti ti-inbox" aria-hidden="true"></i>ยังไม่มีคำขอ</div>`;
-  return `<div style="display:flex;align-items:center;margin-bottom:12px;gap:8px">
-    <span style="font-size:13px;color:#5f5e5a">${reqs.length} รายการ ${state.lastSync?'· อัปเดต '+state.lastSync.toLocaleTimeString('th-TH'):''}</span>
-    ${synBtn}
-  </div>
-  ${reqs.map(r=>`
-    <div class="req-card" onclick="openDetail('${r.id}')">
-      <div class="req-top">
-        <div style="min-width:0">
-          <div class="req-name">${esc(r.form.name)}</div>
-          <div class="req-meta">${esc(r.form.position)} · ${esc(r.form.dept)}</div>
-          <div class="req-meta" style="color:#185FA5;font-size:11px">${esc(r.form.email)}</div>
-        </div>
-        ${sbadge(r.status)}
-      </div>
-      <div style="font-size:12px;color:#5f5e5a;margin-top:8px">
-        <i class="ti ti-device-laptop" aria-hidden="true" style="font-size:12px"></i>
-        ${(r.form.equipment||[]).map(e=>esc(e.name||'ไม่ระบุ')).join(', ')}
-      </div>
-      <div class="req-footer">
-        <span>เลขที่: ${esc(r.id)}</span>
-        <span>${fmtDate(r.form.borrowFrom)} → ${fmtDate(r.form.borrowTo)}</span>
-      </div>
-    </div>`).join('')}`;
+// ─── UI HELPERS ──────────────────────────────────────────────
+function showLoading(t) {
+  document.getElementById('loading-text').innerText = t || 'กำลังโหลด...';
+  document.getElementById('loading-overlay').style.display = 'flex';
+}
+function hideLoading() { document.getElementById('loading-overlay').style.display = 'none'; }
+
+function showToast(msg, type='ok') {
+  const t = document.getElementById('toast');
+  t.innerText = msg;
+  t.className = `toast toast-${type}`;
+  t.style.display = 'flex';
+  clearTimeout(state.toastTimeout);
+  state.toastTimeout = setTimeout(() => t.style.display = 'none', 4000);
 }
 
-// ======= TIMELINE =======
-function tlItem(label,sub,done,cur,bad){
-  const cls=bad?'td-bad':done?'td-done':cur?'td-cur':'td-wait';
-  const icon=bad?'ti-x':done?'ti-check':cur?'ti-loader-2':'ti-clock';
-  return `<div class="tl-item"><div class="tl-dot ${cls}"><i class="ti ${icon}" style="font-size:13px" aria-hidden="true"></i></div>
-    <div class="tl-body"><div class="tl-t" style="color:${bad?'#791F1F':'inherit'}">${label}</div><div class="tl-s">${sub}</div></div></div>`;
-}
-
-// ======= DETAIL MODAL =======
-function renderDetail(r){
-  const s=r.status;
-  const eqs=r.form.equipment||[];
-
-  const eqCards=eqs.map((eq,i)=>`<div class="eq-info-card">
-    <div class="eq-info-name">${i+1}. ${esc(eq.name)}</div>
-    <div class="ig">
-      <span class="il">เลขครุภัณฑ์</span><span>${esc(eq.code)||'—'}</span>
-      <span class="il">ผู้รับผิดชอบ</span><span>${esc(eq.responsible)||'—'}${eq.responsibleEmail?` <span style="font-size:11px;color:#5f5e5a">(${esc(eq.responsibleEmail)})</span>`:''}</span>
-      <span class="il">สถานที่</span><span>${esc(eq.location)||'—'}</span>
-      <span class="il">สภาพก่อนใช้</span><span style="color:${eq.condBefore?'inherit':'#888'}">${esc(eq.condBefore)||'รอตรวจสอบ'}</span>
-      ${eq.condAfter?`<span class="il">สภาพหลังใช้</span><span>${esc(eq.condAfter)}</span>`:''}
-    </div>
-  </div>`).join('');
-
-  const steps=[
-    tlItem('ยื่นคำขออนุมัติ',`${fmtDate(r.createdAt?.split('T')[0])}`,true,false,false),
-    tlItem('ผู้รับผิดชอบรับทราบและตรวจสภาพก่อน','ส่งอีเมลแจ้งผู้รับผิดชอบครุภัณฑ์',
-      ['รับทราบแล้ว','อนุมัติแล้ว','อยู่ระหว่างยืม','คืนครุภัณฑ์แล้ว','ตรวจสภาพเสร็จสิ้น'].includes(s),
-      s==='ยื่นขออนุมัติ', s==='ไม่สามารถให้ยืมได้'),
-    tlItem('รองผู้อำนวยการพิจารณา','yada.d@psu.ac.th · CC: kittiya.so@psu.ac.th',
-      ['อนุมัติแล้ว','อยู่ระหว่างยืม','คืนครุภัณฑ์แล้ว','ตรวจสภาพเสร็จสิ้น'].includes(s)||s==='ไม่อนุมัติ',
-      s==='รับทราบแล้ว', s==='ไม่อนุมัติ'),
-    tlItem('ผู้ขอยืมยืนยันรับครุภัณฑ์','อนุมัติแล้ว → เริ่มใช้งาน',
-      ['อยู่ระหว่างยืม','คืนครุภัณฑ์แล้ว','ตรวจสภาพเสร็จสิ้น'].includes(s),
-      s==='อนุมัติแล้ว',false),
-    tlItem('ผู้ขอยืมนำครุภัณฑ์มาคืน','แจ้งคืนผ่านระบบ',
-      ['คืนครุภัณฑ์แล้ว','ตรวจสภาพเสร็จสิ้น'].includes(s),
-      s==='อยู่ระหว่างยืม',false),
-    tlItem('ผู้รับผิดชอบตรวจสภาพและปิดคำขอ','บันทึกสภาพหลังการใช้งาน',
-      s==='ตรวจสภาพเสร็จสิ้น', s==='คืนครุภัณฑ์แล้ว',false),
-  ].join('');
-
-  let actions='';
-
-  if(s==='ยื่นขออนุมัติ'){
-    const condInputs=eqs.map((eq,i)=>`
-      <div style="margin-bottom:10px;background:#f7f7f5;border-radius:8px;padding:10px 14px">
-        <div style="font-size:13px;font-weight:500;color:#0C447C;margin-bottom:2px">${i+1}. ${esc(eq.name)}</div>
-        <div style="font-size:11px;color:#5f5e5a;margin-bottom:6px">ผู้รับผิดชอบ: ${esc(eq.responsible)}</div>
-        <label style="font-size:12px;color:#5f5e5a;font-weight:500;display:block;margin-bottom:4px">สภาพครุภัณฑ์ก่อนยืม <span class="req">*</span></label>
-        <select class="cond-sel" id="cond-${eq.id}">
-          <option value="">-- เลือกสภาพ --</option>
-          <option>ปกติ</option><option>ชำรุด</option><option>อยู่ระหว่างซ่อม</option>
-        </select>
-      </div>`).join('');
-    actions+=`<div class="divider"></div>
-    <div class="step-label"><i class="ti ti-user-check" aria-hidden="true"></i> ผู้รับผิดชอบครุภัณฑ์ — รับทราบและตรวจสภาพก่อนยืม</div>
-    ${condInputs}
-    <div class="action-row">
-      <button class="btn-success" onclick="doAcknowledge('${r.id}',true)"><i class="ti ti-thumb-up" aria-hidden="true"></i> รับทราบ — พร้อมให้ยืม</button>
-      <button class="btn-danger" onclick="doAcknowledge('${r.id}',false)"><i class="ti ti-thumb-down" aria-hidden="true"></i> ไม่สามารถให้ยืมได้</button>
-    </div>`;
-  }
-
-  if(s==='รับทราบแล้ว'){
-    actions+=`<div class="divider"></div>
-    <div class="step-label"><i class="ti ti-shield-check" aria-hidden="true"></i> รองผู้อำนวยการ — พิจารณาอนุมัติ</div>
-    <div class="action-row">
-      <button class="btn-success" onclick="doAction('${r.id}','อนุมัติแล้ว')"><i class="ti ti-circle-check" aria-hidden="true"></i> อนุมัติ</button>
-      <button class="btn-danger" onclick="doAction('${r.id}','ไม่อนุมัติ')"><i class="ti ti-circle-x" aria-hidden="true"></i> ไม่อนุมัติ</button>
-    </div>`;
-  }
-
-  if(s==='อนุมัติแล้ว'){
-    actions+=`<div class="divider"></div>
-    <div class="step-label"><i class="ti ti-package" aria-hidden="true"></i> ผู้ขอยืม — ยืนยันรับครุภัณฑ์</div>
-    <div class="action-row">
-      <button class="btn-primary" onclick="doAction('${r.id}','อยู่ระหว่างยืม')"><i class="ti ti-package" aria-hidden="true"></i> ยืนยันรับครุภัณฑ์แล้ว</button>
-    </div>`;
-  }
-
-  if(s==='อยู่ระหว่างยืม'){
-    actions+=`<div class="divider"></div>
-    <div class="step-label"><i class="ti ti-arrow-back-up" aria-hidden="true"></i> ผู้ขอยืม — แจ้งนำครุภัณฑ์มาคืน</div>
-    <div class="action-row">
-      <button class="btn-warn" onclick="doAction('${r.id}','คืนครุภัณฑ์แล้ว')"><i class="ti ti-arrow-back-up" aria-hidden="true"></i> แจ้งคืนครุภัณฑ์แล้ว</button>
-    </div>`;
-  }
-
-  if(s==='คืนครุภัณฑ์แล้ว'){
-    const condInputs=eqs.map((eq,i)=>`
-      <div style="margin-bottom:10px;background:#f7f7f5;border-radius:8px;padding:10px 14px">
-        <div style="font-size:13px;font-weight:500;color:#0C447C;margin-bottom:2px">${i+1}. ${esc(eq.name)}</div>
-        <div style="font-size:11px;color:#5f5e5a;margin-bottom:2px">สภาพก่อนยืม: <strong>${esc(eq.condBefore)||'ไม่ได้บันทึก'}</strong></div>
-        <label style="font-size:12px;color:#5f5e5a;font-weight:500;display:block;margin-bottom:4px;margin-top:6px">สภาพหลังได้รับคืน <span class="req">*</span></label>
-        <select class="cond-sel" id="after-${eq.id}">
-          <option value="">-- เลือกสภาพ --</option>
-          <option>ปกติ</option><option>ชำรุด</option><option>อยู่ระหว่างซ่อม</option>
-        </select>
-      </div>`).join('');
-    actions+=`<div class="divider"></div>
-    <div class="step-label"><i class="ti ti-clipboard-check" aria-hidden="true"></i> ผู้รับผิดชอบ — ตรวจสภาพหลังได้รับคืน</div>
-    ${condInputs}
-    <div class="action-row">
-      <button class="btn-success" onclick="doInspect('${r.id}')"><i class="ti ti-clipboard-check" aria-hidden="true"></i> บันทึกสภาพและปิดคำขอ</button>
-    </div>`;
-  }
-
-  return `
-    <div class="modal-hdr">
-      <div class="modal-title"><i class="ti ti-file-text" aria-hidden="true"></i> คำขอ ${esc(r.id)}</div>
-      <button class="btn-close" onclick="closeDetail()" aria-label="ปิด"><i class="ti ti-x" aria-hidden="true"></i></button>
-    </div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
-      ${sbadge(r.status)}
-      <span style="font-size:11px;color:#888">สร้างเมื่อ ${fmtDate(r.createdAt?.split('T')[0])}${r.updatedAt&&r.updatedAt!==r.createdAt?' · อัปเดต '+fmtDate(r.updatedAt?.split('T')[0]):''}</span>
-    </div>
-    <div style="font-size:12px;font-weight:500;color:#5f5e5a;margin-bottom:8px">ผู้ขอใช้</div>
-    <div class="ig">
-      <span class="il">ชื่อ - นามสกุล</span><span>${esc(r.form.name)}</span>
-      <span class="il">ตำแหน่ง</span><span>${esc(r.form.position)}</span>
-      <span class="il">สังกัด</span><span>${esc(r.form.dept)}</span>
-      <span class="il">Email</span><span style="color:#185FA5">${esc(r.form.email)}</span>
-      <span class="il">วัตถุประสงค์</span><span>${esc(r.form.purpose)}</span>
-    </div>
-    <div class="divider"></div>
-    <div style="font-size:12px;font-weight:500;color:#5f5e5a;margin-bottom:8px">รายการครุภัณฑ์</div>
-    ${eqCards}
-    <div class="divider"></div>
-    <div class="ig">
-      <span class="il">ยืมตั้งแต่</span><span>${fmtDT(r.form.borrowFrom,r.form.bFromTime)}</span>
-      <span class="il">ถึงวันที่</span><span>${fmtDT(r.form.borrowTo,r.form.bToTime)}</span>
-    </div>
-    <div class="divider"></div>
-    <div style="font-size:12px;font-weight:500;color:#5f5e5a;margin-bottom:10px">ขั้นตอนการดำเนินการ</div>
-    <div class="tl">${steps}</div>
-    ${actions}`;
-}
-
-// ======= ACTIONS =======
-window.doAction = async function(id, newStatus){
-  const r=state.requests.find(x=>x.id===id);
-  if(!r) return;
-  showLoading('กำลังอัปเดตสถานะ...');
-  try {
-    await apiCall('updateStatus',{id, status:newStatus, equipment:r.form.equipment});
-    showToast('อัปเดตสถานะเรียบร้อย: '+newStatus,'ok');
-    await loadRequests();
-    state.selectedId=null;
-  } catch(e){ showToast('เกิดข้อผิดพลาด: '+e.message,'err',5000); }
-  hideLoading(); render();
-};
-
-window.doAcknowledge = async function(id, ok){
-  const r=state.requests.find(x=>x.id===id);
-  if(!r) return;
-  const eqs=[...r.form.equipment];
-  if(ok){
-    let allFilled=true;
-    eqs.forEach(eq=>{
-      const el=document.getElementById('cond-'+eq.id);
-      if(el&&el.value) eq.condBefore=el.value; else allFilled=false;
-    });
-    if(!allFilled){ showToast('กรุณาเลือกสภาพครุภัณฑ์ก่อนยืมให้ครบทุกรายการ','err'); return; }
-  }
-  showLoading('กำลังบันทึก...');
-  try {
-    await apiCall('updateStatus',{id, status: ok?'รับทราบแล้ว':'ไม่สามารถให้ยืมได้', equipment: eqs});
-    showToast(ok?'รับทราบแล้ว — บันทึกสภาพครุภัณฑ์เรียบร้อย':'บันทึก: ไม่สามารถให้ยืมได้','ok');
-    await loadRequests();
-    state.selectedId=null;
-  } catch(e){ showToast('เกิดข้อผิดพลาด: '+e.message,'err',5000); }
-  hideLoading(); render();
-};
-
-window.doInspect = async function(id){
-  const r=state.requests.find(x=>x.id===id);
-  if(!r) return;
-  const eqs=[...r.form.equipment];
-  let allFilled=true;
-  eqs.forEach(eq=>{
-    const el=document.getElementById('after-'+eq.id);
-    if(el&&el.value) eq.condAfter=el.value; else allFilled=false;
-  });
-  if(!allFilled){ showToast('กรุณาเลือกสภาพครุภัณฑ์หลังใช้งานให้ครบทุกรายการ','err'); return; }
-  showLoading('กำลังบันทึกและปิดคำขอ...');
-  try {
-    await apiCall('updateStatus',{id, status:'ตรวจสภาพเสร็จสิ้น', equipment: eqs});
-    showToast('ปิดคำขอเรียบร้อย — บันทึกสภาพครุภัณฑ์หลังใช้งานแล้ว','ok');
-    await loadRequests();
-    state.selectedId=null;
-  } catch(e){ showToast('เกิดข้อผิดพลาด: '+e.message,'err',5000); }
-  hideLoading(); render();
-};
-
-// ======= SUBMIT =======
-window.submitForm = async function(){
-  const f=state.form;
-  if(!f.name||!f.position||!f.dept||!f.email||!f.purpose||!f.borrowFrom||!f.borrowTo){
-    showToast('กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วน','err'); return;
-  }
-  if(f.equipment.some(e=>!e.name||!e.code)){
-    showToast('กรุณาเลือกครุภัณฑ์ให้ครบทุกรายการ','err'); return;
-  }
-  const btn=document.getElementById('submit-btn');
-  if(btn) btn.disabled=true;
-  showLoading('กำลังบันทึกใน Google Sheets และส่งอีเมล...');
-  try {
-    const result = await apiCall('create', {
-      name:f.name, position:f.position, dept:f.dept, email:f.email,
-      purpose:f.purpose, date:f.date,
-      borrowFrom:f.borrowFrom, borrowFromTime:f.bFromTime,
-      borrowTo:f.borrowTo, borrowToTime:f.bToTime,
-      equipment:f.equipment
-    });
-    showToast('บันทึกสำเร็จ! เลขที่: '+result.id,'ok',4000);
-    state.submitted=true;
-    state.form={date:today(),name:'',position:'',dept:'',email:'',purpose:'',borrowFrom:'',bFromTime:'',borrowTo:'',bToTime:'',equipment:[{id:1,code:'',name:'',location:'',responsible:'',responsibleEmail:'',condBefore:'',condAfter:''}]};
-    state.eqCnt=2;
-    await loadRequests();
-  } catch(e) {
-    showToast('บันทึกไม่สำเร็จ: '+e.message,'err',6000);
-    if(btn) btn.disabled=false;
-  }
-  hideLoading(); render();
-};
-
-// ======= AUTOCOMPLETE =======
-window.eqSearch=function(eqId,q){
-  const eq=state.form.equipment.find(e=>e.id===eqId);
-  if(eq){eq.name=q;eq.code='';eq.location='';eq.responsible='';eq.responsibleEmail='';}
-  const items=searchEquip(q);
-  const drop=document.getElementById('eqdrop-'+eqId);
-  if(!drop) return;
-  if(!q||!items.length){drop.style.display='none';return;}
-  drop.innerHTML=items.map(e=>`<div class="ac-item" onmousedown="selectEq(${eqId},${JSON.stringify(e).replace(/"/g,'&quot;')})">
-    <strong>${esc(e.name.length>45?e.name.slice(0,45)+'…':e.name)}</strong>
-    <div style="font-size:11px;color:#5f5e5a">${esc(e.code)} · ${esc(e.responsible)}</div>
-  </div>`).join('');
-  drop.style.display='block';
-};
-window.selectEq=function(eqId,e){
-  const eq=state.form.equipment.find(x=>x.id===eqId);
-  if(!eq) return;
-  Object.assign(eq,{code:e.code,name:e.name,location:e.location,responsible:e.responsible,responsibleEmail:e.responsibleEmail||''});
-  const inp=document.getElementById('eq-name-'+eqId);
-  if(inp) inp.value=e.name;
-  document.getElementById('eqdrop-'+eqId).style.display='none';
-  render();
-};
-window.closeAc=function(id,d){setTimeout(()=>{const el=document.getElementById('eqdrop-'+id);if(el)el.style.display='none';},d);};
-window.staffSearch=function(q){
-  state.form.name=q;
-  const items=searchStaff(q);
-  const drop=document.getElementById('staff-drop');
-  if(!drop) return;
-  if(!q||!items.length){drop.style.display='none';return;}
-  drop.innerHTML=items.map(s=>`<div class="ac-item" onmousedown="selectStaff(${JSON.stringify(s).replace(/"/g,'&quot;')})">
-    <strong>${esc(s.name)}</strong>
-    <div style="font-size:11px;color:#5f5e5a">${esc(s.position)} · ${esc(s.dept)}</div>
-  </div>`).join('');
-  drop.style.display='block';
-};
-window.selectStaff=function(s){
-  Object.assign(state.form,{name:s.name,position:s.position,dept:s.dept,email:s.email});
-  document.getElementById('staff-drop').style.display='none';
-  render();
-};
-window.closeStaffAc=function(d){setTimeout(()=>{const el=document.getElementById('staff-drop');if(el)el.style.display='none';},d);};
-
-// ======= NAV =======
-window.setTab=async t=>{
-  state.tab=t; state.submitted=false; render();
-  if(t==='list') await loadRequests();
-};
-window.updF=(k,v)=>{state.form[k]=v;};
-window.addEq=()=>{state.form.equipment.push({id:state.eqCnt++,code:'',name:'',location:'',responsible:'',responsibleEmail:'',condBefore:'',condAfter:''});render();};
-window.removeEq=id=>{if(state.form.equipment.length<=1)return;state.form.equipment=state.form.equipment.filter(e=>e.id!==id);render();};
-window.openDetail=id=>{state.selectedId=id;render();};
-window.closeDetail=()=>{state.selectedId=null;render();};
-
-// ======= MAIN RENDER =======
-function render(){
-  const root=document.getElementById('root');
-  const req=state.requests.find(r=>r.id===state.selectedId);
-  const isConnected=!!GAS_URL;
-  const connBadge=isConnected
-    ?`<span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;background:#EAF3DE;color:#27500A;border-radius:4px;padding:2px 8px;cursor:pointer" title="kittiyaso-star.github.io"><span class="dot dot-green"></span>เชื่อมต่อ Google Sheets · kittiya.so@psu.ac.th</span>`
-    :`<span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;background:#FCEBEB;color:#791F1F;border-radius:4px;padding:2px 8px"><span class="dot dot-red"></span>ยังไม่ได้เชื่อมต่อ</span>`;
-
-  root.innerHTML=`
+// ─── RENDER ENGINE ───────────────────────────────────────────
+function render() {
+  const root = document.getElementById('root');
+  root.innerHTML = `
     <div class="header">
-      <div class="logo"><i class="ti ti-building-hospital" aria-hidden="true"></i></div>
+      <div class="logo"><i class="ti ti-building-hospital"></i></div>
       <div class="header-info">
-        <div class="header-title">ระบบยืม-คืนครุภัณฑ์ โรงพยาบาลสัตว์ มหาวิทยาลัยสงขลานครินทร์</div>
-        <div class="header-sub">คณะสัตวแพทยศาสตร์ · kittiya.so@psu.ac.th</div>
-        <div style="margin-top:6px">${connBadge}</div>
+        <h1 class="header-title">ระบบยืม-คืนครุภัณฑ์</h1>
+        <p class="header-sub">โรงพยาบาลสัตว์ คณะสัตวแพทยศาสตร์ มหาวิทยาลัยสงขลานครินทร์</p>
       </div>
     </div>
+
+    <div class="status-bar">
+      <div class="dot ${GAS_URL ? 'dot-green' : 'dot-red'}"></div>
+      <span>${GAS_URL ? 'เชื่อมต่อฐานข้อมูลระบบ Google Sheets เรียบร้อย (ข้อมูลอัปเดตสด)' : 'ไม่ได้เชื่อมต่อ API'}</span>
+    </div>
+
     <div class="tabs">
-      <button class="tab ${state.tab==='form'?'active':''}" onclick="setTab('form')">
-        <i class="ti ti-clipboard-plus" aria-hidden="true"></i> ยืมครุภัณฑ์
+      <button class="tab ${state.currentTab==='form'?'active':''}" onclick="switchTab('form')">
+        <i class="ti ti-file-plus"></i> แบบฟอร์มขอยืมครุภัณฑ์
       </button>
-      <button class="tab ${state.tab==='list'?'active':''}" onclick="setTab('list')">
-        <i class="ti ti-list-check" aria-hidden="true"></i> ติดตามสถานะ
-        ${state.requests.length>0?`<span class="badge">${state.requests.length}</span>`:''}
+      <button class="tab ${state.currentTab==='status'?'active':''}" onclick="switchTab('status')">
+        <i class="ti ti-list-check"></i> ตรวจสอบสถานะและอนุมัติ 
+        ${state.requests.length ? `<span class="badge">${state.requests.length}</span>` : ''}
       </button>
     </div>
-    <div id="main-content">${state.tab==='form'?renderForm():renderList()}</div>
-    ${req?`<div class="modal-bg" onclick="closeDetail()" role="dialog" aria-modal="true">
-      <div class="modal" onclick="event.stopPropagation()">${renderDetail(req)}</div>
-    </div>`:''}
+
+    ${state.currentTab === 'form' ? renderFormSection() : renderStatusSection()}
+
+    ${state.selectedRequest ? renderModal() : ''}
   `;
 }
 
-// ======= INIT =======
-render();
-if(GAS_URL){ loadRequests(); }
+function switchTab(t) { state.currentTab = t; render(); }
+
+// ─── FORM VIEW ────────────────────────────────────────────────
+function renderFormSection() {
+  // สร้างตัวเลือกตำแหน่งและสังกัดจาก MasterData
+  const optDepts = state.masterData.depts.map(d => `<option value="${d}">${d}</option>`).join('');
+  const optPositions = state.masterData.positions.map(p => `<option value="${p}">${p}</option>`).join('');
+
+  return `
+    <form onsubmit="submitForm(event)">
+      <div class="card">
+        <h2 class="section-title"><i class="ti ti-user"></i> ข้อมูลผู้ขอยืมครุภัณฑ์</h2>
+        
+        <div class="field ac-wrap">
+          <label>ค้นหารายชื่อบุคลากร <span class="req">*</span></label>
+          <input type="text" placeholder="พิมพ์ชื่อ-นามสกุล เพื่อค้นหาข้อมูลอัตโนมัติ..." value="${state.form.name}" oninput="searchStaff(this.value)">
+          <div id="ac-staff" class="ac-drop" style="display:none"></div>
+        </div>
+
+        <div class="grid2">
+          <div class="field">
+            <label>ตำแหน่ง</label>
+            <select onchange="state.form.position=this.value" id="f-pos">
+              <option value="">-- เลือกตำแหน่ง --</option>
+              ${optPositions}
+            </select>
+          </div>
+          <div class="field">
+            <label>ฝ่าย / แผนก / สังกัด</label>
+            <select onchange="state.form.dept=this.value" id="f-dept">
+              <option value="">-- เลือกฝ่าย/สังกัด --</option>
+              ${optDepts}
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label>อีเมล (เพื่อรับผลอนุมัติ) <span class="req">*</span></label>
+          <input type="email" required placeholder="example@psu.ac.th" value="${state.form.email}" oninput="state.form.email=this.value">
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 class="section-title"><i class="ti ti-calendar-event"></i> รายละเอียดและกำหนดเวลาการยืม</h2>
+        <div class="field">
+          <label>วัตถุประสงค์การใช้งาน</label>
+          <textarea placeholder="ระบุเหตุผลความจำเป็นในการยืมใช้งาน..." oninput="state.form.purpose=this.value">${state.form.purpose}</textarea>
+        </div>
+        <div class="grid2">
+          <div class="field">
+            <label>ยืมตั้งแต่วันที่ <span class="req">*</span></label>
+            <input type="date" required value="${state.form.borrowFrom}" onchange="state.form.borrowFrom=this.value">
+            <input type="time" style="margin-top:6px" value="${state.form.borrowFromTime}" onchange="state.form.borrowFromTime=this.value">
+          </div>
+          <div class="field">
+            <label>ถึงวันที่ (กำหนดคืน) <span class="req">*</span></label>
+            <input type="date" required value="${state.form.borrowTo}" onchange="state.form.borrowTo=this.value">
+            <input type="time" style="margin-top:6px" value="${state.form.borrowToTime}" onchange="state.form.borrowToTime=this.value">
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 class="section-title"><i class="ti ti-package"></i> รายการครุภัณฑ์ที่ต้องการยืม</h2>
+        <div id="equipment-list">
+          ${state.form.equipment.map((eq, idx) => renderEquipmentRow(eq, idx)).join('')}
+        </div>
+        <button type="button" class="btn-add" onclick="addEquipmentRow()">
+          <i class="ti ti-plus"></i> เพิ่มครุภัณฑ์อีก 1 รายการ
+        </button>
+      </div>
+
+      <div style="display:flex;justify-content:flex-end">
+        <button type="submit" class="btn-primary"><i class="ti ti-send"></i> ส่งเอกสารคำขอยืมครุภัณฑ์</button>
+      </div>
+    </form>
+  `;
+}
+
+function renderEquipmentRow(eq, idx) {
+  return `
+    <div class="eq-row">
+      <div class="eq-header">
+        <span class="eq-label">ครุภัณฑ์รายการที่ ${idx+1}</span>
+        ${idx > 0 ? `<button type="button" class="btn-remove" onclick="removeEquipmentRow(${idx})"><i class="ti ti-trash"></i></button>` : ''}
+      </div>
+      <div class="field ac-wrap">
+        <label>ค้นหา ครุภัณฑ์ (พิมพ์รหัสหรือชื่อครุภัณฑ์) <span class="req">*</span></label>
+        <input type="text" placeholder="พิมพ์คำค้นหาเพื่อเลือกครุภัณฑ์..." value="${eq.name ? `${eq.name} (${eq.code})` : ''}" oninput="searchEquipment(this.value, ${idx})" onfocus="state.activeAc=${idx}">
+        <div id="ac-eq-${idx}" class="ac-drop" style="display:none"></div>
+      </div>
+      ${eq.code ? `
+        <div class="info-box">
+          <i class="ti ti-info-circle" style="font-size:16px"></i>
+          <div>
+            <b>รหัส:</b> ${eq.code} | <b>สถานที่ตั้งปกติ:</b> ${eq.location}<br>
+            <b>ผู้รับผิดชอบดูแล:</b> ${eq.responsible} (${eq.responsibleEmail || 'ไม่มีข้อมูลอีเมล'})
+          </div>
+        </div>
+      ` : ''}
+    </div>
+  `;
+}
+
+// ─── FORM LOGIC ──────────────────────────────────────────────
+function addEquipmentRow() {
+  state.form.equipment.push({ code: '', name: '', location: '', responsible: '', responsibleEmail: '' });
+  render();
+}
+function removeEquipmentRow(idx) {
+  state.form.equipment.splice(idx, 1);
+  render();
+}
+
+function searchStaff(val) {
+  state.form.name = val;
+  const drop = document.getElementById('ac-staff');
+  if (!val.trim()) { drop.style.display = 'none'; return; }
+  
+  const match = state.masterData.staff.filter(s => s.name.toLowerCase().includes(val.toLowerCase())).slice(0, 6);
+  if (!match.length) { drop.style.display = 'none'; return; }
+
+  drop.innerHTML = match.map(s => `
+    <div class="ac-item" onclick="selectStaff('${s.name}','${s.position}','${s.dept}','${s.email}')">
+      <b>${s.name}</b> <span style="font-size:11px;color:#666">(${s.dept})</span>
+    </div>
+  `).join('');
+  drop.style.display = 'block';
+}
+
+function selectStaff(name, pos, dept, email) {
+  state.form.name = name;
+  state.form.email = email;
+  state.form.position = pos;
+  state.form.dept = dept;
+  document.getElementById('ac-staff').style.display = 'none';
+  render();
+  // เลือก dropdown อัตโนมัติ
+  setTimeout(() => {
+    if (document.getElementById('f-pos')) document.getElementById('f-pos').value = pos;
+    if (document.getElementById('f-dept')) document.getElementById('f-dept').value = dept;
+  }, 50);
+}
+
+function searchEquipment(val, idx) {
+  const drop = document.getElementById(`ac-eq-${idx}`);
+  if (!val.trim()) { drop.style.display = 'none'; return; }
+
+  const match = state.masterData.equipment.filter(e => 
+    e.name.toLowerCase().includes(val.toLowerCase()) || 
+    e.code.toLowerCase().includes(val.toLowerCase())
+  ).slice(0, 6);
+
+  if (!match.length) { drop.style.display = 'none'; return; }
+
+  drop.innerHTML = match.map(e => `
+    <div class="ac-item" onclick="selectEquipment(${idx}, ${JSON.stringify(e).replace(/"/g, '&quot;')})">
+      <b>${e.name}</b><br><span style="font-size:11px;color:#5f5e5a">${e.code}</span>
+    </div>
+  `).join('');
+  drop.style.display = 'block';
+}
+
+function selectEquipment(idx, item) {
+  state.form.equipment[idx] = {
+    code: item.code,
+    name: item.name,
+    location: item.location,
+    responsible: item.responsible,
+    responsibleEmail: item.responsibleEmail
+  };
+  render();
+}
+
+// ─── STATUS VIEW ─────────────────────────────────────────────
+function renderStatusSection() {
+  if (state.requests.length === 0) {
+    return `<div class="card empty"><i class="ti ti-folder-off"></i>ยังไม่มีประวัติใบคำขอยืมครุภัณฑ์ในระบบ</div>`;
+  }
+  return state.requests.map(r => {
+    let sCls = 's-pending';
+    if(r.status==='อนุมัติแล้ว') sCls='s-approved';
+    if(r.status==='ปฏิเสธคำขอ') sCls='s-rejected';
+    if(r.status==='รับทราบแล้ว') sCls='s-ack';
+    if(r.status==='ยืมครุภัณฑ์แล้ว') sCls='s-borrowed';
+    if(r.status==='คืนครุภัณฑ์แล้ว') sCls='s-returned';
+    if(r.status==='เสร็จสิ้น') sCls='s-done';
+
+    const count = Array.isArray(r.equipmentJSON) ? r.equipmentJSON.length : 0;
+    const dateStr = r.createdAt ? new Date(r.createdAt).toLocaleDateString('th-TH',{day:'numeric',month:'short',year:'2-digit',hour:'2-digit',minute:'2-digit'}) : '—';
+
+    return `
+      <div class="req-card" onclick="state.selectedRequest = ${JSON.stringify(r).replace(/"/g, '&quot;')}; render();">
+        <div class="req-top">
+          <div>
+            <div class="req-name">${r.requesterName}</div>
+            <div class="req-meta">${r.requesterDept || 'ไม่ระบุสังกัด'} | ครุภัณฑ์ที่ยืม: <b>${count} รายการ</b></div>
+          </div>
+          <span class="sbadge ${sCls}">${r.status}</span>
+        </div>
+        <div class="req-footer">
+          <span>เลขที่คำขอ: ${r.id}</span>
+          <span>ยื่นเมื่อ: ${dateStr} น.</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ─── MODAL DETAIL & WORKFLOW MANAGER ─────────────────────────
+function renderModal() {
+  const r = state.selectedRequest;
+  const eqList = Array.isArray(r.equipmentJSON) ? r.equipmentJSON : [];
+  
+  // จัดการสีของสเต็ปบน Timeline
+  const getStepStatus = (stepIndex) => {
+    const s = r.status;
+    if (stepIndex === 1) return 'td-done'; // ยื่นคำขอเสมอ
+    if (stepIndex === 2) { // ขั้นตอนอนุมัติ
+      if (s === 'ยื่นขออนุมัติ') return 'td-cur';
+      if (s === 'ปฏิเสธคำขอ') return 'td-bad';
+      return 'td-done';
+    }
+    if (stepIndex === 3) { // ผู้ดูแลครุภัณฑ์รับทราบ
+      if (s === 'อนุมัติแล้ว') return 'td-cur';
+      if (s === 'ปฏิเสธคำขอ') return 'td-wait';
+      return 'td-done';
+    }
+    if (stepIndex === 4) { // รับครุภัณฑ์ไปใช้งาน
+      if (s === 'รับทราบแล้ว') return 'td-cur';
+      if (s === 'ยื่นขออนุมัติ' || s === 'อนุมัติแล้ว' || s === 'ปฏิเสธคำขอ') return 'td-wait';
+      return 'td-done';
+    }
+    if (stepIndex === 5) { // คืนครุภัณฑ์และตรวจสอบ
+      if (s === 'ยืมครุภัณฑ์แล้ว') return 'td-cur';
+      if (s === 'คืนครุภัณฑ์แล้ว' || s === 'เสร็จสิ้น') return 'td-done';
+      return 'td-wait';
+    }
+    return 'td-wait';
+  };
+
+  return `
+    <div class="modal-bg" onclick="if(event.target===this){state.selectedRequest=null;render();}">
+      <div class="modal">
+        <div class="modal-hdr">
+          <h3 class="modal-title">รายละเอียดใบคำขอเอกสาร เลขที่ ${r.id}</h3>
+          <button class="btn-close" onclick="state.selectedRequest=null;render();">&times;</button>
+        </div>
+
+        <div class="grid2" style="margin-bottom:1.5rem">
+          <div>
+            <div class="step-label"><i class="ti ti-file-text"></i> ข้อมูลผู้ขอยืม</div>
+            <div class="ig"><span class="il">ชื่อ-นามสกุล:</span><span><b>${r.requesterName}</b></span></div>
+            <div class="ig"><span class="il">ตำแหน่ง/สังกัด:</span><span>${r.requesterPosition} <br><span style="color:#666">${r.requesterDept}</span></span></div>
+            <div class="ig"><span class="il">อีเมลติดต่อ:</span><span>${r.requesterEmail}</span></div>
+            <div class="ig"><span class="il">วัตถุประสงค์:</span><span>${r.purpose || '—'}</span></div>
+            <div class="ig"><span class="il">กำหนดเวลายืม:</span><span>${r.borrowFrom} ${r.borrowFromTime||''} ถึง ${r.borrowTo} ${r.borrowToTime||''}</span></div>
+          </div>
+
+          <div>
+            <div class="step-label"><i class="ti ti-git-commit"></i> ความคืบหน้าของขั้นตอน (Workflow)</div>
+            <div class="tl">
+              <div class="tl-item">
+                <div class="tl-dot ${getStepStatus(1)}"><i class="ti ti-check"></i></div>
+                <div class="tl-body"><div class="tl-t">ยื่นคำขอเข้าสู่ระบบ</div></div>
+              </div>
+              <div class="tl-item">
+                <div class="tl-dot ${getStepStatus(2)}">2</div>
+                <div class="tl-body"><div class="tl-t">หัวหน้าฝ่าย/ผู้มีอำนาจ พิจารณาอนุมัติ</div></div>
+              </div>
+              <div class="tl-item">
+                <div class="tl-dot ${getStepStatus(3)}">3</div>
+                <div class="tl-body"><div class="tl-t">ผู้รับผิดชอบครุภัณฑ์ รับทราบและเตรียมของ</div></div>
+              </div>
+              <div class="tl-item">
+                <div class="tl-dot ${getStepStatus(4)}">4</div>
+                <div class="tl-body"><div class="tl-t">ผู้ขอยืม ยืนยันรับครุภัณฑ์ไปใช้งาน</div></div>
+              </div>
+              <div class="tl-item">
+                <div class="tl-dot ${getStepStatus(5)}">5</div>
+                <div class="tl-body"><div class="tl-t">ส่งคืนครุภัณฑ์ และบันทึกสภาพหลังคืน</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+        <div class="step-label"><i class="ti ti-box"></i> รายการครุภัณฑ์และบันทึกตรวจสอบสภาพ</div>
+        
+        <div style="margin-bottom:1rem">
+          ${eqList.map((eq, i) => `
+            <div class="eq-info-card">
+              <div class="eq-info-name">${i+1}. ${eq.name}</div>
+              <div style="font-size:11px;color:#5f5e5a;margin-bottom:8px">
+                รหัสครุภัณฑ์: <b>${eq.code}</b> | ผู้ดูแล: ${eq.responsible}
+              </div>
+              
+              <div class="grid2">
+                <div>
+                  <label style="font-size:11px;color:#666">สภาพก่อนยืม (ผู้ดูแลระบุ):</label>
+                  ${r.status === 'อนุมัติแล้ว' ? `
+                    <select class="cond-sel" id="cond-b-${i}">
+                      <option value="ปกติสมบูรณ์">ปกติสมบูรณ์</option>
+                      <option value="ชำรุดบางส่วน">ชำรุดบางส่วน (มีตำหนิ)</option>
+                    </select>
+                  ` : `<div><b>${eq.condBefore || '—'}</b></div>`}
+                </div>
+                <div>
+                  <label style="font-size:11px;color:#666">สภาพหลังคืน (ผู้ดูแลระบุ):</label>
+                  ${r.status === 'ยืมครุภัณฑ์แล้ว' ? `
+                    <select class="cond-sel" id="cond-a-${i}">
+                      <option value="ปกติสมบูรณ์">ปกติสมบูรณ์</option>
+                      <option value="ชำรุดจากการใช้งาน">ชำรุดจากการใช้งาน</option>
+                      <option value="สูญหาย">สูญหาย</option>
+                    </select>
+                  ` : `<div><b>${eq.condAfter || '—'}</b></div>`}
+                </div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+
+        <div class="divider"></div>
+        <div class="step-label"><i class="ti ti-adjustments"></i> ส่วนการจัดการสำหรับเจ้าหน้าที่ / ผู้อนุมัติ</div>
+        <div class="action-row">
+          ${renderActionButtons(r, eqList)}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderActionButtons(r, eqList) {
+  if (r.status === 'ยื่นขออนุมัติ') {
+    return `
+      <button class="btn-success" onclick="handleUpdateStatus('${r.id}', 'อนุมัติแล้ว')"><i class="ti ti-circle-check"></i> อนุมัติคำขอ</button>
+      <button class="btn-danger" onclick="handleUpdateStatus('${r.id}', 'ปฏิเสธคำขอ')"><i class="ti ti-circle-x"></i> ปฏิเสธการยืม</button>
+    `;
+  }
+  if (r.status === 'อนุมัติแล้ว') {
+    return `
+      <div style="width:100%"><p style="font-size:12px;color:#BA7517;margin-bottom:8px"><i class="ti ti-alert-circle"></i> สิทธิ์ของผู้ดูแลครุภัณฑ์: ตรวจสอบและลงบันทึกสภาพสินค้าก่อนคลิกรับทราบ</p></div>
+      <button class="btn-warn" onclick="submitAck('${r.id}', ${JSON.stringify(eqList).replace(/"/g, '&quot;')})"><i class="ti ti-thumb-up"></i> บันทึกสภาพ & รับทราบการยืม</button>
+    `;
+  }
+  if (r.status === 'รับทราบแล้ว') {
+    return `
+      <div style="width:100%"><p style="font-size:12px;color:#0C447C;margin-bottom:8px"><i class="ti ti-info-circle"></i> ขั้นตอนของผู้ขอยืม: กรุณากดปุ่มด้านล่างนี้เมื่อได้รับครุภัณฑ์จริงไปใช้งานแล้ว</p></div>
+      <button class="btn-primary" onclick="handleUpdateStatus('${r.id}', 'ยืมครุภัณฑ์แล้ว')"><i class="ti ti-player-play"></i> ยืนยันรับครุภัณฑ์เรียบร้อย</button>
+    `;
+  }
+  if (r.status === 'ยืมครุภัณฑ์แล้ว') {
+    return `
+      <div style="width:100%"><p style="font-size:12px;color:#3B6D11;margin-bottom:8px"><i class="ti ti-refresh"></i> ขั้นตอนการส่งคืน: ผู้ดูแลครุภัณฑ์ตรวจสภาพและกดบันทึกรับคืน</p></div>
+      <button class="btn-success" onclick="submitReturn('${r.id}', ${JSON.stringify(eqList).replace(/"/g, '&quot;')})"><i class="ti ti-archive"></i> ตรวจรับคืนครุภัณฑ์สำเร็จ</button>
+    `;
+  }
+  return `<span style="font-size:12px;color:#888">ใบคำขอนี้เสร็จสิ้นกระบวนการในระบบแล้ว</span>`;
+}
+
+// ─── WORKFLOW SAVING HELPERS ────────────────────────────────
+function submitAck(id, eqList) {
+  const updated = eqList.map((eq, i) => {
+    eq.condBefore = document.getElementById(`cond-b-${i}`).value;
+    return eq;
+  });
+  handleUpdateStatus(id, 'รับทราบแล้ว', updated);
+}
+
+function submitReturn(id, eqList) {
+  const updated = eqList.map((eq, i) => {
+    eq.condAfter = document.getElementById(`cond-a-${i}`).value;
+    return eq;
+  });
+  handleUpdateStatus(id, 'เสร็จสิ้น', updated);
+}
+
 </script>
 </body>
 </html>
