@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>แบบประเมินผลการปฏิบัติงาน</title>
+<style>
+  :root {
+    --primary: #0f6e56;
+    --primary-dark: #085041;
+    --border: #d9d9d3;
+    --bg: #f7f6f2;
+    --card: #ffffff;
+    --text: #2c2c2a;
+    --text-muted: #6b6a64;
+    --danger: #a32d2d;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: "Segoe UI", "Sarabun", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    margin: 0;
+    padding: 20px 14px 60px;
+  }
+  .wrap { max-width: 760px; margin: 0 auto; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  .sub { color: var(--text-muted); font-size: 13px; margin-bottom: 20px; }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px 20px;
+    margin-bottom: 18px;
+  }
+  .card h2 { font-size: 16px; margin: 0 0 4px; }
+  .card .points { color: var(--primary); font-weight: 500; font-size: 14px; }
+  .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 20px; font-size: 14px; }
+  .info-grid div span { display: block; color: var(--text-muted); font-size: 12px; }
+  .item { border-top: 1px solid var(--border); padding: 14px 0; }
+  .item:first-of-type { border-top: none; padding-top: 6px; }
+  .item-title { font-size: 14px; margin-bottom: 10px; font-weight: 500; }
+  .item-desc { font-size: 13px; color: var(--text-muted); margin: -6px 0 10px; white-space: pre-line; }
+  .bands { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 8px; }
+  .band-btn {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 4px;
+    text-align: center;
+    cursor: pointer;
+    font-size: 12px;
+    background: #fff;
+  }
+  .band-btn small { display: block; color: var(--text-muted); font-size: 11px; margin-top: 2px; }
+  .band-btn.active { border-color: var(--primary); background: #e1f5ee; }
+  .score-row { display: flex; align-items: center; gap: 8px; }
+  .score-row input[type=number] {
+    width: 70px; padding: 7px 8px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px;
+  }
+  .score-row .maxlabel { font-size: 13px; color: var(--text-muted); }
+  .subtotal-row {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-top: 4px; padding-top: 12px; border-top: 1px dashed var(--border);
+    font-size: 14px; font-weight: 500;
+  }
+  .total-card {
+    background: #e1f5ee; border: 1px solid #9fe1cb;
+  }
+  .total-row { display: flex; justify-content: space-between; align-items: center; font-size: 16px; font-weight: 500; }
+  .total-row .num { font-size: 26px; color: var(--primary-dark); }
+  label.field-label { display: block; font-size: 13px; color: var(--text-muted); margin-bottom: 4px; }
+  input[type=text], input[type=date], textarea {
+    width: 100%; padding: 9px 10px; border: 1px solid var(--border); border-radius: 8px;
+    font-size: 14px; font-family: inherit; background: #fff; color: var(--text);
+  }
+  textarea { min-height: 64px; resize: vertical; }
+  .decision-opt {
+    border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-bottom: 10px; cursor: pointer;
+  }
+  .decision-opt.active { border-color: var(--primary); background: #e1f5ee; }
+  .decision-opt label { display: flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer; }
+  .decision-detail { margin-top: 10px; display: none; }
+  .decision-detail.show { display: block; }
+  .field { margin-bottom: 12px; }
+  button[type=submit] {
+    width: 100%; background: var(--primary); color: #fff; border: none;
+    padding: 14px; border-radius: 10px; font-size: 15px; cursor: pointer; font-family: inherit;
+  }
+  button[type=submit]:hover { background: var(--primary-dark); }
+  button[type=submit]:disabled { opacity: .6; cursor: default; }
+  .msg { text-align: center; padding: 60px 20px; color: var(--text-muted); }
+  .msg.error { color: var(--danger); }
+  #formArea { display: none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>แบบประเมินผลการปฏิบัติงานของพนักงาน</h1>
+  <div class="sub">โรงพยาบาลสัตว์ มหาวิทยาลัยสงขลานครินทร์</div>
+
+  <div id="loadingMsg" class="msg">กำลังโหลดข้อมูล...</div>
+
+  <div id="formArea">
+    <div class="card">
+      <div class="info-grid" id="infoGrid"></div>
+    </div>
+
+    <form id="evalForm">
+      <div class="card">
+        <h2 id="personalTitle"></h2>
+        <div class="points" id="personalPoints"></div>
+        <div id="personalItems"></div>
+        <div class="subtotal-row"><span>คะแนนรวมส่วนที่ 1</span><span id="personalSubtotal">0</span></div>
+      </div>
+
+      <div class="card">
+        <h2 id="secondTitle"></h2>
+        <div class="points" id="secondPoints"></div>
+        <div id="secondItems"></div>
+        <div class="subtotal-row"><span>คะแนนรวมส่วนที่ 2</span><span id="secondSubtotal">0</span></div>
+      </div>
+
+      <div class="card total-card">
+        <div class="total-row">
+          <span>คะแนนรวมทั้งหมด</span>
+          <span><span class="num" id="grandTotal">0</span> / 100</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>สรุปความเห็นของคณะกรรมการประเมินผล</h2>
+        <div id="decisionArea"></div>
+        <div class="field" style="margin-top:14px;">
+          <label class="field-label">ข้อเสนอเกี่ยวกับความถนัด ความสามารถของผู้รับการประเมิน</label>
+          <textarea id="suggestion" placeholder="(ไม่บังคับ)"></textarea>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>ผู้ประเมิน</h2>
+        <div class="field">
+          <label class="field-label">ชื่อ-นามสกุลผู้ประเมิน</label>
+          <input type="text" id="evaluatorName" required placeholder="เช่น ดร.สพ.ญ.อังคณา เดิมหลิ่ม">
+        </div>
+      </div>
+
+      <button type="submit" id="submitBtn">ส่งแบบประเมิน</button>
+    </form>
+  </div>
+</div>
+
+<script>
+// TODO: แก้เป็น URL ของ Web App ที่ deploy จาก Code.gs
+const API_URL = 'https://script.google.com/macros/s/AKfycbz8HWROtIx9FoR01h0XH_NvYnQr4R7OyHrSaTXplChtX896YAOC6wBRxZ6rWupLPaNj/exec';
+
+const VET_PERSONAL = [
+  'ปฏิภาณไหวพริบ', 'ทัศนคติในการทำงาน', 'บุคลิกภาพ อัธยาศัย', 'ใฝ่รู้ใฝ่พัฒนา', 'ทักษะการสื่อสาร'
+].map(name => ({ name, max: 6, bands: [
+  { label: 'ดีมาก', range: '6', from: 6, to: 6 },
+  { label: 'ดี', range: '4-5', from: 4, to: 5 },
+  { label: 'ปานกลาง', range: '2-3', from: 2, to: 3 },
+  { label: 'ต้องปรับปรุง', range: '0-1', from: 0, to: 1 }
+]}));
+
+const STAFF_PERSONAL = [
+  'ปฏิภาณไหวพริบ', 'ทัศนคติในการทำงาน', 'บุคลิกภาพ อัธยาศัย', 'ใฝ่รู้ใฝ่พัฒนา', 'ทักษะการสื่อสาร'
+].map(name => ({ name, max: 8, bands: [
+  { label: 'ดีมาก', range: '7-8', from: 7, to: 8 },
+  { label: 'ดี', range: '5-6', from: 5, to: 6 },
+  { label: 'พอใช้', range: '3-4', from: 3, to: 4 },
+  { label: 'ต้องปรับปรุง', range: '0-2', from: 0, to: 2 }
+]}));
+
+const VET_SECOND = [
+  { name: '2.1 ทักษะการแก้ปัญหาเฉพาะหน้า', max: 20, desc: '20: ตอบข้อซักถามได้ตรงประเด็นและชัดเจนทุกครั้ง | 15-19: ถูกต้องเป็นส่วนมาก | 10-14: ตั้งใจและพยายามตอบ | 0-10: เลี่ยงการตอบหรือตอบผิวเผิน' },
+  { name: '2.2 การวางแผนการรักษา', max: 20, desc: '20: ตอบข้อซักถามได้ตรงประเด็นและชัดเจนทุกครั้ง | 15-19: ถูกต้องเป็นส่วนมาก | 10-14: ตั้งใจและพยายามตอบ | 0-10: เลี่ยงการตอบหรือตอบผิวเผิน' },
+  { name: '2.3 การติดตามการรักษา', max: 20, desc: '20: ตอบข้อซักถามได้ตรงประเด็นและชัดเจนทุกครั้ง | 15-19: ถูกต้องเป็นส่วนมาก | 10-14: ตั้งใจและพยายามตอบ | 0-10: เลี่ยงการตอบหรือตอบผิวเผิน' },
+  { name: '2.4 จิตสาธารณะในวิชาชีพ', max: 5, desc: '4-5: มีส่วนร่วมด้วยความเต็มใจ กระตือรือร้น | 2-3: มีส่วนร่วมอยู่บ้าง | 0-1: มีน้อยหรือไม่มีเลย' },
+  { name: '2.5 ประสบการณ์ทางด้านสัตว์เลี้ยง', max: 5, desc: '4-5: มีส่วนร่วมด้วยความเต็มใจ กระตือรือร้น | 2-3: มีส่วนร่วมอยู่บ้าง | 0-1: มีน้อยหรือไม่มีเลย' }
+];
+
+const STAFF_SECOND = [
+  'ผลงาน คุณภาพ ความถูกต้องครบถ้วน ความประณีตเรียบร้อย ความละเอียดรอบคอบ',
+  'ปริมาณงานทำได้ตามมาตรฐานข้อตกลง',
+  'ความสามารถที่จะปฏิบัติงานให้เสร็จทันกำหนด',
+  'ความรอบรู้ ความสามารถในการปฏิบัติงานให้สำเร็จ',
+  'การรักษาวินัย ปฏิบัติตามระเบียบและข้อบังคับของทางราชการ',
+  'ความอุตสาหะ ความพยายาม ความขยัน และอดทน',
+  'ความรับผิดชอบต่อภาระหน้าที่ของตน ทำงานอย่างมีเหตุผลไม่ย่อท้อ',
+  'ความสามารถปฏิบัติงานร่วมกับผู้อื่นอย่างมีประสิทธิภาพ',
+  'การตัดสินใจแก้ปัญหาได้ถูกต้องตามสถานการณ์',
+  'ความคิดริเริ่ม การมองการณ์ไกล การให้ข้อเสนอแนะ เพื่อให้งานสำเร็จ'
+].map((name, i) => ({ name: `${i + 1}. ${name}`, max: 6, bands: [
+  { label: 'ดีมาก', range: '6', from: 6, to: 6 },
+  { label: 'ดี', range: '4', from: 4, to: 4 },
+  { label: 'พอใช้', range: '2', from: 2, to: 2 },
+  { label: 'ปรับปรุง', range: '0', from: 0, to: 0 }
+]}));
+
+let requestInfo = null;
+
+function qs(name) {
+  return new URLSearchParams(location.search).get(name);
+}
+
+async function api(action, payload) {
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(Object.assign({ action }, payload))
+  });
+  const json = await res.json();
+  if (!json.ok) throw new Error(json.error || 'เกิดข้อผิดพลาด');
+  return json.data;
+}
+
+function renderBandItem(container, item, idx, prefix) {
+  const wrap = document.createElement('div');
+  wrap.className = 'item';
+  const inputId = `${prefix}_${idx}`;
+  wrap.innerHTML = `
+    <div class="item-title">${item.name}</div>
+    ${item.desc ? `<div class="item-desc">${item.desc}</div>` : ''}
+    <div class="bands">
+      ${item.bands.map((b, bi) => `<div class="band-btn" data-band="${bi}">${b.label}<small>${b.range} คะแนน</small></div>`).join('')}
+    </div>
+    <div class="score-row">
+      <input type="number" min="0" max="${item.max}" id="${inputId}" value="0">
+      <span class="maxlabel">/ ${item.max} คะแนน</span>
+    </div>
+  `;
+  container.appendChild(wrap);
+
+  const input = wrap.querySelector('input');
+  const bandBtns = wrap.querySelectorAll('.band-btn');
+  bandBtns.forEach((btn, bi) => {
+    btn.addEventListener('click', () => {
+      const band = item.bands[bi];
+      input.value = band.to;
+      highlightBand();
+      recalc();
+    });
+  });
+  function highlightBand() {
+    const v = Number(input.value);
+    bandBtns.forEach((btn, bi) => {
+      const band = item.bands[bi];
+      btn.classList.toggle('active', v >= band.from && v <= band.to);
+    });
+  }
+  input.addEventListener('input', () => {
+    if (Number(input.value) > item.max) input.value = item.max;
+    if (Number(input.value) < 0) input.value = 0;
+    highlightBand();
+    recalc();
+  });
+}
+
+function recalc() {
+  const personalSum = sumInputs('personal');
+  const secondSum = sumInputs('second');
+  document.getElementById('personalSubtotal').textContent = personalSum;
+  document.getElementById('secondSubtotal').textContent = secondSum;
+  document.getElementById('grandTotal').textContent = personalSum + secondSum;
+}
+
+function sumInputs(prefix) {
+  let sum = 0;
+  document.querySelectorAll(`input[id^="${prefix}_"]`).forEach(inp => sum += Number(inp.value || 0));
+  return sum;
+}
+
+function renderDecisionArea() {
+  const area = document.getElementById('decisionArea');
+  area.innerHTML = `
+    <div class="decision-opt" data-val="pass">
+      <label><input type="radio" name="decision" value="pass"> สมควรให้ปฏิบัติงานต่อไป</label>
+    </div>
+    <div class="decision-opt" data-val="improve">
+      <label><input type="radio" name="decision" value="improve"> ควรแก้ไขปรับปรุงเกี่ยวกับคุณลักษณะ และการปฏิบัติงานของผู้รับการประเมิน</label>
+      <div class="decision-detail" data-for="improve">
+        <textarea id="improveDetail" placeholder="ระบุสิ่งที่ควรแก้ไขปรับปรุง"></textarea>
+      </div>
+    </div>
+    <div class="decision-opt" data-val="fail">
+      <label><input type="radio" name="decision" value="fail"> ไม่สมควรให้ปฏิบัติงานต่อไป</label>
+      <div class="decision-detail" data-for="fail">
+        <label class="field-label">มีผลตั้งแต่วันที่</label>
+        <input type="date" id="failDate" style="margin-bottom:8px;">
+        <label class="field-label">เหตุผล</label>
+        <textarea id="failReason" placeholder="ระบุเหตุผล"></textarea>
+      </div>
+    </div>
+  `;
+  area.querySelectorAll('input[name=decision]').forEach(radio => {
+    radio.addEventListener('change', () => {
+      area.querySelectorAll('.decision-opt').forEach(el => el.classList.toggle('active', el.dataset.val === radio.value));
+      area.querySelectorAll('.decision-detail').forEach(el => el.classList.toggle('show', el.dataset.for === radio.value));
+    });
+  });
+}
+
+function collectItems(prefix, items) {
+  return items.map((item, idx) => ({
+    name: item.name,
+    max: item.max,
+    score: Number(document.getElementById(`${prefix}_${idx}`).value || 0)
+  }));
+}
+
+async function init() {
+  const id = qs('id');
+  const loading = document.getElementById('loadingMsg');
+  if (!id) {
+    loading.textContent = 'ลิงก์ไม่ถูกต้อง (ไม่พบรหัสรายการประเมิน)';
+    loading.classList.add('error');
+    return;
+  }
+  try {
+    requestInfo = await api('getRequest', { id });
+  } catch (err) {
+    loading.textContent = err.message;
+    loading.classList.add('error');
+    return;
+  }
+
+  loading.style.display = 'none';
+  document.getElementById('formArea').style.display = 'block';
+
+  const info = requestInfo;
+  document.getElementById('infoGrid').innerHTML = `
+    <div><span>ชื่อผู้รับการประเมิน</span>${info.evaluateeName}</div>
+    <div><span>ตำแหน่ง</span>${info.position}</div>
+    <div><span>หน่วยงาน</span>${info.department}</div>
+    <div><span>วันที่จ้าง</span>${info.hireDate ? new Date(info.hireDate).toLocaleDateString('th-TH') : '-'}</div>
+    <div><span>ประเมินผลช่วงเวลา</span>${info.periodMonths} เดือน</div>
+    <div><span>รอบการประเมิน</span>ครั้งที่ ${info.round}</div>
+  `;
+
+  const isVet = info.formType === 'vet';
+  const personalItems = isVet ? VET_PERSONAL : STAFF_PERSONAL;
+  const secondItems = isVet ? VET_SECOND : STAFF_SECOND;
+  const personalMax = isVet ? 30 : 40;
+  const secondMax = isVet ? 70 : 60;
+
+  document.getElementById('personalTitle').textContent = '1. พฤติกรรมส่วนบุคคล';
+  document.getElementById('personalPoints').textContent = `เต็ม ${personalMax} คะแนน`;
+  document.getElementById('secondTitle').textContent = isVet ? '2. ทักษะและความถนัดทางวิชาชีพ' : '2. ภาระงานประจำ';
+  document.getElementById('secondPoints').textContent = `เต็ม ${secondMax} คะแนน`;
+
+  const personalContainer = document.getElementById('personalItems');
+  personalItems.forEach((item, idx) => renderBandItem(personalContainer, item, idx, 'personal'));
+
+  const secondContainer = document.getElementById('secondItems');
+  secondItems.forEach((item, idx) => renderBandItem(secondContainer, item, idx, 'second'));
+
+  renderDecisionArea();
+  recalc();
+
+  document.getElementById('evalForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const decisionRadio = document.querySelector('input[name=decision]:checked');
+    if (!decisionRadio) { alert('กรุณาเลือกสรุปความเห็นของคณะกรรมการ'); return; }
+    const evaluatorName = document.getElementById('evaluatorName').value.trim();
+    if (!evaluatorName) { alert('กรุณากรอกชื่อผู้ประเมิน'); return; }
+
+    const decision = decisionRadio.value;
+    const decisionLabels = { pass: 'สมควรให้ปฏิบัติงานต่อไป', improve: 'ควรแก้ไขปรับปรุง', fail: 'ไม่สมควรให้ปฏิบัติงานต่อไป' };
+
+    const payload = {
+      id: info.id,
+      evaluateeName: info.evaluateeName,
+      position: info.position,
+      department: info.department,
+      formType: info.formType,
+      periodMonths: info.periodMonths,
+      round: info.round,
+      evaluatorName,
+      personalItems: collectItems('personal', personalItems),
+      personalTotal: sumInputs('personal'),
+      secondItems: collectItems('second', secondItems),
+      secondTotal: sumInputs('second'),
+      decision: decisionLabels[decision],
+      decisionEffectiveDate: decision === 'fail' ? document.getElementById('failDate').value : '',
+      decisionReason: decision === 'fail' ? document.getElementById('failReason').value
+                     : decision === 'improve' ? document.getElementById('improveDetail').value : '',
+      suggestion: document.getElementById('suggestion').value.trim()
+    };
+
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true; btn.textContent = 'กำลังส่ง...';
+    try {
+      const result = await api('submitEvaluation', payload);
+      document.getElementById('formArea').innerHTML = `
+        <div class="card" style="text-align:center; padding: 40px 20px;">
+          <h2 style="margin-bottom:8px;">ส่งแบบประเมินเรียบร้อยแล้ว</h2>
+          <p style="color:var(--text-muted);">คะแนนรวม ${result.totalScore} / 100 (${result.level})</p>
+        </div>
+      `;
+    } catch (err) {
+      alert('ส่งแบบประเมินไม่สำเร็จ: ' + err.message);
+      btn.disabled = false; btn.textContent = 'ส่งแบบประเมิน';
+    }
+  });
+}
+
+init();
+</script>
+</body>
+</html>
