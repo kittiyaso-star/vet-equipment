@@ -12,7 +12,7 @@
     <h1 class="text-2xl font-bold text-slate-800 mb-1">ระบบยืม-คืนครุภัณฑ์</h1>
     <p class="text-slate-500 text-sm mb-6">โรงพยาบาลสัตว์ มหาวิทยาลัยสงขลานครินทร์</p>
 
-    <!-- เมนูแท็บสลับหน้า -->
+    <!-- เมนูแท็บ -->
     <div class="flex border-b mb-6 overflow-x-auto text-sm sm:text-base">
       <button id="tabFormBtn" onclick="switchTab('form')" class="py-2.5 px-4 font-semibold text-blue-600 border-b-2 border-blue-600 whitespace-nowrap">
         📝 แบบฟอร์มขอยืม
@@ -145,21 +145,35 @@
       }
     };
 
-    // ฟังก์ชันจัดฟอร์แมต วันที่ และ เวลา
-    function formatDateTimeDisplay(dateStr, timeStr) {
-      if (!dateStr) return '-';
-      let dateObj = new Date(dateStr);
-      if (isNaN(dateObj.getTime())) {
-        return `${dateStr} ${timeStr ? 'เวลา ' + timeStr + ' น.' : ''}`;
+    // ฟังก์ชันจัดการเวลา แก้ปัญหา 1899-12-30
+    function cleanTime(timeStr) {
+      if (!timeStr) return '';
+      if (typeof timeStr === 'string' && timeStr.includes('T')) {
+        let dateObj = new Date(timeStr);
+        if (!isNaN(dateObj.getTime())) {
+          let hh = String(dateObj.getHours()).padStart(2, '0');
+          let mm = String(dateObj.getMinutes()).padStart(2, '0');
+          return `${hh}:${mm}`;
+        }
       }
-      let yyyy = dateObj.getFullYear();
-      let mm = String(dateObj.getMonth() + 1).padStart(2, '0');
-      let dd = String(dateObj.getDate()).padStart(2, '0');
-      let timeFormatted = timeStr ? ` เวลา ${timeStr} น.` : '';
-      return `${yyyy}-${mm}-${dd}${timeFormatted}`;
+      let match = String(timeStr).match(/\d{2}:\d{2}/);
+      return match ? match[0] : timeStr;
     }
 
-    // สลับหน้าแท็บ
+    function formatDateTimeDisplay(dateStr, timeStr) {
+      if (!dateStr) return '-';
+      let dateFormatted = String(dateStr).split('T')[0];
+      let dateObj = new Date(dateStr);
+      if (!isNaN(dateObj.getTime())) {
+        let yyyy = dateObj.getFullYear();
+        let mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+        let dd = String(dateObj.getDate()).padStart(2, '0');
+        dateFormatted = `${yyyy}-${mm}-${dd}`;
+      }
+      let formattedTime = cleanTime(timeStr);
+      return `${dateFormatted}${formattedTime ? ' เวลา ' + formattedTime + ' น.' : ''}`;
+    }
+
     function switchTab(tab) {
       const form = document.getElementById('borrowForm');
       const track = document.getElementById('trackSection');
@@ -169,7 +183,6 @@
       const btnTrack = document.getElementById('tabTrackBtn');
       const btnApprove = document.getElementById('tabApproveBtn');
 
-      // ซ่อนทั้งหมดก่อน
       form.classList.add('hidden');
       track.classList.add('hidden');
       approve.classList.add('hidden');
@@ -192,7 +205,6 @@
       }
     }
 
-    // Render Dropdown
     function renderStaffDropdown(staffList) {
       const select = document.getElementById('staffSelect');
       staffList.forEach(s => {
@@ -238,7 +250,7 @@
               <div class="text-xs text-slate-500 mt-0.5">
                 <span class="bg-slate-100 px-1.5 py-0.5 rounded border">รหัส: ${eq.code}</span>
                 <span class="ml-1">📍 ${eq.location}</span>
-                <span class="ml-1">👤 ${eq.responsible}</span>
+                <span class="ml-1">👤 ผู้ดูแล: ${eq.responsible}</span>
               </div>
             </div>
           </label>
@@ -252,7 +264,6 @@
       document.getElementById('selectedCount').textContent = `เลือกแล้ว ${selectedEqCodes.size} รายการ`;
     }
 
-    // ยื่นคำขอ
     async function handleSubmit(e) {
       e.preventDefault();
       if (selectedEqCodes.size === 0) {
@@ -260,7 +271,10 @@
         return;
       }
 
-      const selectedEquipment = masterData.equipment.filter(eq => selectedEqCodes.has(eq.code));
+      const selectedEquipment = masterData.equipment
+        .filter(eq => selectedEqCodes.has(eq.code))
+        .map(eq => ({ ...eq, ownerStatus: 'รอเจ้าของตกลง', ownerCondition: 'ปกติ', ownerNote: '' }));
+
       const btn = document.getElementById('submitBtn');
       btn.disabled = true;
       btn.textContent = 'กำลังส่งข้อมูล...';
@@ -302,7 +316,7 @@
       }
     }
 
-    // ==================== 1. หน้าติดตามสถานะ (สำหรับผู้ยืม) ====================
+    // ==================== TAB 2: ติดตามสถานะ (ผู้ยืม) ====================
     async function loadTrackingRequests() {
       const container = document.getElementById('trackListContainer');
       container.innerHTML = '<div class="text-center text-slate-500 py-8">⏳ กำลังดึงข้อมูล...</div>';
@@ -319,8 +333,7 @@
           const borrowFromStr = formatDateTimeDisplay(r.borrowFrom, r.borrowFromTime);
           const borrowToStr = formatDateTimeDisplay(r.borrowTo, r.borrowToTime);
 
-          // ตรวจสอบสิทธิ์การกด "คืนครุภัณฑ์"
-          const canReturn = (r.status === 'อนุมัติแล้ว' || r.status === 'เจ้าของให้ยืมแล้ว');
+          const canReturn = (r.status === 'อนุมัติแล้ว');
 
           return `
             <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
@@ -336,15 +349,27 @@
                 <div><strong>ยืมวันที่:</strong> ${borrowFromStr}</div>
                 <div><strong>คืนวันที่:</strong> ${borrowToStr}</div>
               </div>
+
               <div class="bg-slate-50 p-2.5 rounded-lg border text-xs text-slate-600">
-                <strong>รายการครุภัณฑ์:</strong>
-                <ul class="list-disc list-inside mt-1">
-                  ${eqList.map(e => `<li>${e.name} (${e.code})</li>`).join('')}
+                <strong>รายการครุภัณฑ์ที่ยืม:</strong>
+                <ul class="list-disc list-inside mt-1 space-y-1">
+                  ${eqList.map(e => `
+                    <li>
+                      <span class="font-medium text-slate-800">${e.name}</span> (${e.code}) - ผู้ดูแล: ${e.responsible || '-'} 
+                      <span class="ml-1 px-1.5 py-0.5 rounded text-[10px] ${e.ownerStatus === 'ให้ยืมแล้ว' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}">
+                        ${e.ownerStatus || 'รอเจ้าของตกลง'}
+                      </span>
+                    </li>
+                  `).join('')}
                 </ul>
               </div>
+
+              ${r.rejectReason ? `<div class="p-2 bg-red-50 text-red-700 text-xs rounded border border-red-200"><strong>เหตุผลที่ไม่อนุมัติ:</strong> ${r.rejectReason}</div>` : ''}
+              ${r.returnNote ? `<div class="p-2 bg-blue-50 text-blue-700 text-xs rounded border border-blue-200"><strong>หมายเหตุการคืน:</strong> [สภาพ: ${r.returnCondition || 'ปกติ'}] ${r.returnNote}</div>` : ''}
+
               ${canReturn ? `
                 <div class="pt-2 flex justify-end">
-                  <button onclick="updateRequestStatus('${r.id}', 'ผู้ยืมแจ้งส่งคืนแล้ว')" class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold rounded-lg shadow transition">
+                  <button onclick="handleBorrowerReturn('${r.id}')" class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold rounded-lg shadow transition">
                     📦 กดส่งคืนครุภัณฑ์
                   </button>
                 </div>
@@ -357,7 +382,26 @@
       }
     }
 
-    // ==================== 2. หน้าอนุมัติคำขอ (เจ้าของ / ผู้มีอำนาจ) ====================
+    // ผู้ยืมกดส่งคืนครุภัณฑ์ (ระบุสภาพ + เหตุผล)
+    async function handleBorrowerReturn(id) {
+      const condition = prompt("ระบุสภาพครุภัณฑ์ก่อนส่งคืน:\nพิมพ์ 'ปกติ' หรือ 'ชำรุด'", "ปกติ");
+      if (!condition) return;
+
+      let note = "";
+      if (condition.trim() === "ชำรุด") {
+        note = prompt("ระบุสาเหตุ/รายละเอียดการชำรุด:", "");
+        if (!note) {
+          alert("กรุณาระบุสาเหตุการชำรุด");
+          return;
+        }
+      } else {
+        note = prompt("หมายเหตุเพิ่มเติม (ถ้ามี):", "ส่งคืนเรียบร้อย");
+      }
+
+      updateRequestStatus(id, 'ผู้ยืมแจ้งส่งคืนแล้ว', { returnCondition: condition, returnNote: note });
+    }
+
+    // ==================== TAB 3: อนุมัติคำขอ (เจ้าของ / ผู้มีอำนาจ) ====================
     async function loadApprovalRequests() {
       const container = document.getElementById('approveListContainer');
       container.innerHTML = '<div class="text-center text-slate-500 py-8">⏳ กำลังดึงข้อมูลคำขอ...</div>';
@@ -374,7 +418,8 @@
           const borrowFromStr = formatDateTimeDisplay(r.borrowFrom, r.borrowFromTime);
           const borrowToStr = formatDateTimeDisplay(r.borrowTo, r.borrowToTime);
 
-          const isOwnerApproved = r.status === 'เจ้าของให้ยืมแล้ว' || r.status === 'อนุมัติแล้ว' || r.status === 'ผู้ยืมแจ้งส่งคืนแล้ว' || r.status === 'รับคืนเรียบร้อย';
+          // ตรวจสอบว่าเจ้าของให้ยืมครบทุกชิ้นหรือยัง
+          const allOwnersApproved = eqList.length > 0 && eqList.every(e => e.ownerStatus === 'ให้ยืมแล้ว');
 
           return `
             <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
@@ -396,34 +441,55 @@
                 <div class="sm:col-span-2"><strong>วัตถุประสงค์:</strong> ${r.purpose || '-'}</div>
               </div>
 
-              <div class="bg-slate-50 p-2.5 rounded-lg border text-xs text-slate-600">
-                <strong>รายการครุภัณฑ์ (${eqList.length} รายการ):</strong>
-                <ul class="list-disc list-inside mt-1">
-                  ${eqList.map(e => `<li><span class="font-medium text-slate-800">${e.name}</span> (${e.code}) - ผู้ดูแล: ${e.responsible || '-'}</li>`).join('')}
-                </ul>
+              <!-- รายการครุภัณฑ์ + ปุ่มสำหรับเจ้าของแต่ละคน -->
+              <div class="bg-slate-50 p-3 rounded-lg border text-xs text-slate-600 space-y-2">
+                <strong class="text-slate-700 block">รายการครุภัณฑ์และสถานะจากผู้ดูแล (${eqList.length} รายการ):</strong>
+                <div class="space-y-2">
+                  ${eqList.map((e, index) => `
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-2 rounded border gap-2">
+                      <div>
+                        <span class="font-medium text-slate-800">${e.name}</span> (${e.code})
+                        <div class="text-[11px] text-slate-500">👤 ผู้ดูแล: <strong>${e.responsible || '-'}</strong> | สภาพ: <span class="text-blue-600 font-medium">${e.ownerCondition || 'ปกติ'}</span></div>
+                      </div>
+                      <div class="flex items-center gap-2">
+                        <span class="px-2 py-0.5 text-[10px] rounded font-semibold ${e.ownerStatus === 'ให้ยืมแล้ว' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}">
+                          ${e.ownerStatus || 'รอตกลง'}
+                        </span>
+                        ${(r.status === 'ยื่นขออนุมัติ' || !r.status) ? `
+                          <button onclick="ownerApproveItem('${r.id}', ${index})" class="px-2 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-[11px] transition">
+                            🙋‍♂️ เจ้าของ: ให้ยืม
+                          </button>
+                        ` : ''}
+                      </div>
+                    </div>
+                  `).join('')}
+                </div>
               </div>
+
+              ${r.rejectReason ? `<div class="p-2 bg-red-50 text-red-700 text-xs rounded border border-red-200"><strong>เหตุผลที่ไม่อนุมัติ:</strong> ${r.rejectReason}</div>` : ''}
+              ${r.returnNote ? `<div class="p-2 bg-blue-50 text-blue-700 text-xs rounded border border-blue-200"><strong>สภาพ/เหตุผลการคืน:</strong> [สภาพ: ${r.returnCondition || 'ปกติ'}] ${r.returnNote}</div>` : ''}
 
               <!-- ปุ่มการดำเนินงานตามลำดับ -->
               <div class="pt-2 flex flex-wrap gap-2 justify-end border-t">
-                <!-- ขั้นตอนที่ 1: เจ้าของกดให้ยืม -->
-                <button onclick="updateRequestStatus('${r.id}', 'เจ้าของให้ยืมแล้ว')" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium rounded-lg transition">
-                  🙋‍♂️ เจ้าของ: ให้ยืม
-                </button>
+                
+                <!-- ปุ่มอนุมัติ (ผู้มีอำนาจ): จะกดได้เมื่อเจ้าของทุกคนยินยอมให้ยืมแล้ว -->
+                ${r.status === 'ยื่นขออนุมัติ' || r.status === 'เจ้าของให้ยืมแล้ว' ? `
+                  <button onclick="handleExecutiveApprove('${r.id}', ${allOwnersApproved})" 
+                          class="px-3 py-1.5 ${allOwnersApproved ? 'bg-green-600 hover:bg-green-700' : 'bg-slate-300 text-slate-500 cursor-not-allowed'} text-white text-xs font-medium rounded-lg transition">
+                    ✅ ผู้มีอำนาจ: อนุมัติ
+                  </button>
+                  <button onclick="handleExecutiveReject('${r.id}')" class="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-medium rounded-lg transition">
+                    ❌ ไม่อนุมัติ
+                  </button>
+                ` : ''}
 
-                <!-- ขั้นตอนที่ 2: ผู้มีอำนาจกดอนุมัติ (กดได้ต่อเมื่อเจ้าของกดให้ยืมแล้ว) -->
-                <button onclick="checkAndApprove('${r.id}', '${r.status}')" class="px-3 py-1.5 ${isOwnerApproved ? 'bg-green-600 hover:bg-green-700' : 'bg-slate-300 text-slate-500 cursor-not-allowed'} text-white text-xs font-medium rounded-lg transition">
-                  ✅ ผู้มีอำนาจ: อนุมัติ
-                </button>
+                <!-- ขั้นตอนสุดท้าย: เจ้าของตรวจรับคืน -->
+                ${r.status === 'ผู้ยืมแจ้งส่งคืนแล้ว' ? `
+                  <button onclick="handleOwnerReceiveReturn('${r.id}')" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-lg transition">
+                    📦 เจ้าของ: ตรวจรับคืนแล้ว
+                  </button>
+                ` : ''}
 
-                <!-- ปุ่มไม่อนุมัติ -->
-                <button onclick="updateRequestStatus('${r.id}', 'ไม่อนุมัติ')" class="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-medium rounded-lg transition">
-                  ❌ ไม่อนุมัติ
-                </button>
-
-                <!-- ขั้นตอนสุดท้าย: รับคืนเรียบร้อย -->
-                <button onclick="updateRequestStatus('${r.id}', 'รับคืนเรียบร้อย')" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-lg transition">
-                  📦 เจ้าของ: รับคืนแล้ว
-                </button>
               </div>
             </div>
           `;
@@ -433,13 +499,67 @@
       }
     }
 
-    // ตรวจสอบเงื่อนไขผู้มีอำนาจกดอนุมัติ
-    function checkAndApprove(id, currentStatus) {
-      if (currentStatus !== 'เจ้าของให้ยืมแล้ว') {
-        alert('⚠️ ไม่สามารถกดอนุมัติได้: เนื่องจากเจ้าของครุภัณฑ์ยังไม่ได้กด "ให้ยืม"');
+    // เจ้าของครุภัณฑ์กด "ให้ยืม" ทีละชิ้น
+    async function ownerApproveItem(requestId, itemIndex) {
+      const condition = prompt("ระบุสภาพครุภัณฑ์ก่อนให้ยืม:\nพิมพ์ 'ปกติ' หรือ 'ชำรุด'", "ปกติ");
+      if (!condition) return;
+
+      let note = "";
+      if (condition.trim() === "ชำรุด") {
+        note = prompt("ระบุรายละเอียด/อาการชำรุด:", "");
+      }
+
+      try {
+        const res = await fetch(`${WEB_APP_URL}?action=getAll`);
+        const requests = await res.json();
+        const req = requests.find(r => r.id === requestId);
+
+        if (!req) return;
+        let eqList = Array.isArray(req.equipmentJSON) ? req.equipmentJSON : [];
+
+        eqList[itemIndex].ownerStatus = 'ให้ยืมแล้ว';
+        eqList[itemIndex].ownerCondition = condition;
+        eqList[itemIndex].ownerNote = note;
+
+        const allApproved = eqList.every(e => e.ownerStatus === 'ให้ยืมแล้ว');
+        const newStatus = allApproved ? 'เจ้าของให้ยืมแล้ว' : 'ยื่นขออนุมัติ';
+
+        updateRequestStatus(requestId, newStatus, { equipmentJSON: eqList });
+      } catch (err) {
+        alert("เกิดข้อผิดพลาด: " + err.message);
+      }
+    }
+
+    // ผู้มีอำนาจกดอนุมัติ
+    function handleExecutiveApprove(id, allOwnersApproved) {
+      if (!allOwnersApproved) {
+        alert('⚠️ ไม่สามารถอนุมัติได้: เจ้าของครุภัณฑ์ยังไม่ได้กด "ให้ยืม" ครบทุกรายการ');
         return;
       }
       updateRequestStatus(id, 'อนุมัติแล้ว');
+    }
+
+    // ผู้มีอำนาจกดไม่อนุมัติ (ระบุเหตุผล)
+    function handleExecutiveReject(id) {
+      const reason = prompt("กรุณาระบุเหตุผลที่ไม่อนุมัติคำขอนี้:");
+      if (!reason) {
+        alert("จำเป็นต้องระบุเหตุผลที่ไม่อนุมัติ");
+        return;
+      }
+      updateRequestStatus(id, 'ไม่อนุมัติ', { rejectReason: reason });
+    }
+
+    // เจ้าของกดรับคืน
+    function handleOwnerReceiveReturn(id) {
+      const condition = prompt("ระบุสภาพครุภัณฑ์ที่ได้รับคืน:\nพิมพ์ 'ปกติ' หรือ 'ชำรุด'", "ปกติ");
+      if (!condition) return;
+
+      let note = "";
+      if (condition.trim() === "ชำรุด") {
+        note = prompt("ระบุอาการชำรุดจากการใช้งาน:", "");
+      }
+
+      updateRequestStatus(id, 'รับคืนเรียบร้อย', { returnCondition: condition, returnNote: note });
     }
 
     function getStatusBadgeClass(status) {
@@ -453,14 +573,12 @@
       }
     }
 
-    // อัปเดตสถานะขึ้น Google Sheets
-    async function updateRequestStatus(id, newStatus) {
-      if (!confirm(`คุณต้องการเปลี่ยนสถานะคำขอ ${id} เป็น "${newStatus}" ใช่หรือไม่?`)) return;
-
+    async function updateRequestStatus(id, newStatus, extraData = {}) {
       try {
+        const payload = { id: id, status: newStatus, ...extraData };
         const res = await fetch(`${WEB_APP_URL}?action=updateStatus`, {
           method: 'POST',
-          body: JSON.stringify({ id: id, status: newStatus })
+          body: JSON.stringify(payload)
         });
         const result = await res.json();
 
