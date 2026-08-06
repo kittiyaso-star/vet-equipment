@@ -12,25 +12,26 @@
     <h1 class="text-2xl font-bold text-slate-800 mb-1">ระบบยืม-คืนครุภัณฑ์</h1>
     <p class="text-slate-500 text-sm mb-6">โรงพยาบาลสัตว์ มหาวิทยาลัยสงขลานครินทร์</p>
 
-    <!-- แท็บสลับหน้า -->
-    <div class="flex border-b mb-6">
-      <button id="tabFormBtn" onclick="switchTab('form')" class="py-2.5 px-5 font-semibold text-blue-600 border-b-2 border-blue-600 transition">
+    <!-- เมนูแท็บสลับหน้า -->
+    <div class="flex border-b mb-6 overflow-x-auto text-sm sm:text-base">
+      <button id="tabFormBtn" onclick="switchTab('form')" class="py-2.5 px-4 font-semibold text-blue-600 border-b-2 border-blue-600 whitespace-nowrap">
         📝 แบบฟอร์มขอยืม
       </button>
-      <button id="tabAdminBtn" onclick="switchTab('admin')" class="py-2.5 px-5 font-semibold text-slate-500 hover:text-blue-600 border-b-2 border-transparent transition">
-        📋 ติดตาม / อนุมัติคำขอ
+      <button id="tabTrackBtn" onclick="switchTab('track')" class="py-2.5 px-4 font-semibold text-slate-500 hover:text-blue-600 border-b-2 border-transparent whitespace-nowrap">
+        🔍 ติดตามสถานะ (ผู้ยืม)
+      </button>
+      <button id="tabApproveBtn" onclick="switchTab('approve')" class="py-2.5 px-4 font-semibold text-slate-500 hover:text-blue-600 border-b-2 border-transparent whitespace-nowrap">
+        🛡️ อนุมัติคำขอ (เจ้าของ/ผู้มีอำนาจ)
       </button>
     </div>
 
-    <!-- สถานะการโหลดข้อมูล -->
+    <!-- สถานะการโหลด -->
     <div id="loadingStatus" class="mb-4 p-3 bg-blue-50 text-blue-700 rounded-lg text-sm flex items-center">
-      <span>⏳ กำลังโหลดข้อมูลจากระบบ...</span>
+      <span>⏳ กำลังโหลดข้อมูล...</span>
     </div>
 
     <!-- ==================== TAB 1: แบบฟอร์มขอยืม ==================== -->
     <form id="borrowForm" onsubmit="handleSubmit(event)" class="space-y-6 hidden">
-      
-      <!-- ส่วนที่ 1: ข้อมูลผู้ยืม -->
       <div class="border-b pb-4">
         <h2 class="text-lg font-semibold text-slate-700 mb-3">1. ข้อมูลผู้ขอยืม</h2>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -55,7 +56,6 @@
         </div>
       </div>
 
-      <!-- ส่วนที่ 2: กำหนดเวลา -->
       <div class="border-b pb-4">
         <h2 class="text-lg font-semibold text-slate-700 mb-3">2. วัตถุประสงค์และกำหนดเวลา</h2>
         <div class="space-y-4">
@@ -70,7 +70,7 @@
             </div>
             <div>
               <label class="block text-sm font-medium text-slate-700 mb-1">เวลา</label>
-              <input type="time" id="borrowFromTime" class="w-full p-2.5 border border-slate-300 rounded-lg">
+              <input type="time" id="borrowFromTime" value="09:00" class="w-full p-2.5 border border-slate-300 rounded-lg">
             </div>
             <div>
               <label class="block text-sm font-medium text-slate-700 mb-1">ถึงวันที่ *</label>
@@ -78,50 +78,46 @@
             </div>
             <div>
               <label class="block text-sm font-medium text-slate-700 mb-1">เวลา</label>
-              <input type="time" id="borrowToTime" class="w-full p-2.5 border border-slate-300 rounded-lg">
+              <input type="time" id="borrowToTime" value="16:00" class="w-full p-2.5 border border-slate-300 rounded-lg">
             </div>
           </div>
         </div>
       </div>
 
-      <!-- ส่วนที่ 3: เลือกครุภัณฑ์ (พร้อมช่องค้นหา) -->
       <div>
-        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 gap-2">
+        <div class="flex justify-between items-center mb-3">
           <h2 class="text-lg font-semibold text-slate-700">3. เลือกรายการครุภัณฑ์</h2>
           <span id="selectedCount" class="text-xs bg-blue-100 text-blue-800 px-2.5 py-1 rounded-full font-medium">เลือกแล้ว 0 รายการ</span>
         </div>
-
-        <!-- ช่องค้นหาครุภัณฑ์ -->
         <div class="mb-3">
           <input type="text" id="eqSearchInput" oninput="filterEquipment()" 
                  placeholder="🔍 พิมพ์เพื่อค้นหาชื่อ, รหัสครุภัณฑ์, สถานที่ หรือผู้ดูแล..." 
                  class="w-full p-2.5 border border-blue-300 rounded-lg bg-blue-50/50 focus:bg-white focus:ring-2 focus:ring-blue-500 text-sm">
         </div>
-
-        <!-- รายการ Checkbox -->
-        <div id="equipmentContainer" class="space-y-2 max-h-72 overflow-y-auto border p-3 rounded-lg bg-slate-50">
-          <!-- JS Render -->
-        </div>
+        <div id="equipmentContainer" class="space-y-2 max-h-72 overflow-y-auto border p-3 rounded-lg bg-slate-50"></div>
       </div>
 
       <button type="submit" id="submitBtn" class="w-full py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition shadow">
         ยื่นคำขอยืมครุภัณฑ์
       </button>
-
     </form>
 
-    <!-- ==================== TAB 2: หน้าระบบติดตาม / อนุมัติ ==================== -->
-    <div id="adminSection" class="hidden space-y-4">
+    <!-- ==================== TAB 2: ติดตามสถานะ (ผู้ยืม) ==================== -->
+    <div id="trackSection" class="hidden space-y-4">
       <div class="flex justify-between items-center bg-slate-50 p-3 rounded-lg border">
-        <h2 class="text-lg font-semibold text-slate-700">รายการคำขอยืมทั้งหมด</h2>
-        <button onclick="loadAdminRequests()" class="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 rounded text-sm text-slate-700 font-medium transition">
-          🔄 รีเฟรชข้อมูล
-        </button>
+        <h2 class="text-lg font-semibold text-slate-700">รายการติดตามการยืมของคุณ</h2>
+        <button onclick="loadTrackingRequests()" class="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 rounded text-sm text-slate-700 font-medium transition">🔄 รีเฟรช</button>
       </div>
+      <div id="trackListContainer" class="space-y-4"></div>
+    </div>
 
-      <div id="adminRequestsContainer" class="space-y-4">
-        <!-- JS Render รายการคำขอ -->
+    <!-- ==================== TAB 3: อนุมัติคำขอ (เจ้าของ / ผู้มีอำนาจ) ==================== -->
+    <div id="approveSection" class="hidden space-y-4">
+      <div class="flex justify-between items-center bg-slate-50 p-3 rounded-lg border">
+        <h2 class="text-lg font-semibold text-slate-700">จัดการคำขอและอนุมัติ</h2>
+        <button onclick="loadApprovalRequests()" class="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 rounded text-sm text-slate-700 font-medium transition">🔄 รีเฟรช</button>
       </div>
+      <div id="approveListContainer" class="space-y-4"></div>
     </div>
 
   </div>
@@ -130,14 +126,12 @@
     const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzl5te2wmo-3pV-gny0srGCQiQcJxbkp8inHpyJW42vs4HTRWSXFO5cgWM2whhVDLo/exec';
 
     let masterData = { staff: [], equipment: [] };
-    let selectedEqCodes = new Set(); // บันทึกครุภัณฑ์ที่ถูกเลือกไว้
+    let selectedEqCodes = new Set();
 
-    // โหลดข้อมูลเมื่อเปิดหน้าเว็บ
     window.onload = async function() {
       try {
         const response = await fetch(`${WEB_APP_URL}?action=getMasterData`);
         masterData = await response.json();
-
         if (masterData.error) throw new Error(masterData.error);
 
         renderStaffDropdown(masterData.staff);
@@ -151,28 +145,54 @@
       }
     };
 
-    // สลับแท็บ หน้าฟอร์ม <-> หน้าจัดการ
+    // ฟังก์ชันจัดฟอร์แมต วันที่ และ เวลา
+    function formatDateTimeDisplay(dateStr, timeStr) {
+      if (!dateStr) return '-';
+      let dateObj = new Date(dateStr);
+      if (isNaN(dateObj.getTime())) {
+        return `${dateStr} ${timeStr ? 'เวลา ' + timeStr + ' น.' : ''}`;
+      }
+      let yyyy = dateObj.getFullYear();
+      let mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+      let dd = String(dateObj.getDate()).padStart(2, '0');
+      let timeFormatted = timeStr ? ` เวลา ${timeStr} น.` : '';
+      return `${yyyy}-${mm}-${dd}${timeFormatted}`;
+    }
+
+    // สลับหน้าแท็บ
     function switchTab(tab) {
       const form = document.getElementById('borrowForm');
-      const admin = document.getElementById('adminSection');
-      const tabFormBtn = document.getElementById('tabFormBtn');
-      const tabAdminBtn = document.getElementById('tabAdminBtn');
+      const track = document.getElementById('trackSection');
+      const approve = document.getElementById('approveSection');
+
+      const btnForm = document.getElementById('tabFormBtn');
+      const btnTrack = document.getElementById('tabTrackBtn');
+      const btnApprove = document.getElementById('tabApproveBtn');
+
+      // ซ่อนทั้งหมดก่อน
+      form.classList.add('hidden');
+      track.classList.add('hidden');
+      approve.classList.add('hidden');
+
+      btnForm.className = "py-2.5 px-4 font-semibold text-slate-500 hover:text-blue-600 border-b-2 border-transparent whitespace-nowrap";
+      btnTrack.className = "py-2.5 px-4 font-semibold text-slate-500 hover:text-blue-600 border-b-2 border-transparent whitespace-nowrap";
+      btnApprove.className = "py-2.5 px-4 font-semibold text-slate-500 hover:text-blue-600 border-b-2 border-transparent whitespace-nowrap";
 
       if (tab === 'form') {
         form.classList.remove('hidden');
-        admin.classList.add('hidden');
-        tabFormBtn.className = "py-2.5 px-5 font-semibold text-blue-600 border-b-2 border-blue-600 transition";
-        tabAdminBtn.className = "py-2.5 px-5 font-semibold text-slate-500 hover:text-blue-600 border-b-2 border-transparent transition";
-      } else {
-        form.classList.add('hidden');
-        admin.classList.remove('hidden');
-        tabAdminBtn.className = "py-2.5 px-5 font-semibold text-blue-600 border-b-2 border-blue-600 transition";
-        tabFormBtn.className = "py-2.5 px-5 font-semibold text-slate-500 hover:text-blue-600 border-b-2 border-transparent transition";
-        loadAdminRequests(); // โหลดรายการคำขอเมื่อเปิดแท็บ
+        btnForm.className = "py-2.5 px-4 font-semibold text-blue-600 border-b-2 border-blue-600 whitespace-nowrap";
+      } else if (tab === 'track') {
+        track.classList.remove('hidden');
+        btnTrack.className = "py-2.5 px-4 font-semibold text-blue-600 border-b-2 border-blue-600 whitespace-nowrap";
+        loadTrackingRequests();
+      } else if (tab === 'approve') {
+        approve.classList.remove('hidden');
+        btnApprove.className = "py-2.5 px-4 font-semibold text-blue-600 border-b-2 border-blue-600 whitespace-nowrap";
+        loadApprovalRequests();
       }
     }
 
-    // Dropdown บุคลากร
+    // Render Dropdown
     function renderStaffDropdown(staffList) {
       const select = document.getElementById('staffSelect');
       staffList.forEach(s => {
@@ -191,7 +211,6 @@
       document.getElementById('email').value = staff ? staff.email : '';
     }
 
-    // ระบบค้นหาครุภัณฑ์
     function filterEquipment() {
       const q = document.getElementById('eqSearchInput').value.toLowerCase().trim();
       const filtered = masterData.equipment.filter(eq => 
@@ -203,19 +222,17 @@
       renderEquipmentList(filtered);
     }
 
-    // แสดงรายการครุภัณฑ์
     function renderEquipmentList(eqList) {
       const container = document.getElementById('equipmentContainer');
       if (!eqList || eqList.length === 0) {
         container.innerHTML = '<p class="text-slate-400 text-sm py-4 text-center">ไม่พบรายการครุภัณฑ์ที่ค้นหา</p>';
         return;
       }
-
       container.innerHTML = eqList.map(eq => {
         const isChecked = selectedEqCodes.has(eq.code) ? 'checked' : '';
         return `
-          <label class="flex items-start space-x-3 p-2.5 bg-white rounded-lg border border-slate-200 hover:bg-blue-50/50 cursor-pointer text-sm transition">
-            <input type="checkbox" value="${eq.code}" ${isChecked} onchange="toggleEqSelect('${eq.code}')" class="mt-1 rounded text-blue-600 focus:ring-blue-500">
+          <label class="flex items-start space-x-3 p-2.5 bg-white rounded-lg border hover:bg-blue-50/50 cursor-pointer text-sm">
+            <input type="checkbox" value="${eq.code}" ${isChecked} onchange="toggleEqSelect('${eq.code}')" class="mt-1 rounded text-blue-600">
             <div class="flex-1">
               <div class="font-medium text-slate-800">${eq.name}</div>
               <div class="text-xs text-slate-500 mt-0.5">
@@ -230,15 +247,12 @@
     }
 
     function toggleEqSelect(code) {
-      if (selectedEqCodes.has(code)) {
-        selectedEqCodes.delete(code);
-      } else {
-        selectedEqCodes.add(code);
-      }
+      if (selectedEqCodes.has(code)) selectedEqCodes.delete(code);
+      else selectedEqCodes.add(code);
       document.getElementById('selectedCount').textContent = `เลือกแล้ว ${selectedEqCodes.size} รายการ`;
     }
 
-    // ยื่นฟอร์มขอยืม
+    // ยื่นคำขอ
     async function handleSubmit(e) {
       e.preventDefault();
       if (selectedEqCodes.size === 0) {
@@ -270,7 +284,6 @@
           body: JSON.stringify(payload)
         });
         const result = await res.json();
-
         if (result.ok) {
           alert(`บันทึกคำขอเรียบร้อยแล้ว! เลขที่คำขอ: ${result.id}`);
           document.getElementById('borrowForm').reset();
@@ -282,90 +295,165 @@
           alert(`เกิดข้อผิดพลาด: ${result.error}`);
         }
       } catch (err) {
-        alert(`เกิดข้อผิดพลาดในการส่งข้อมูล: ${err.message}`);
+        alert(`เกิดข้อผิดพลาด: ${err.message}`);
       } finally {
         btn.disabled = false;
         btn.textContent = 'ยื่นคำขอยืมครุภัณฑ์';
       }
     }
 
-    // ==================== ADMIN / APPROVER LOGIC ====================
-    async function loadAdminRequests() {
-      const container = document.getElementById('adminRequestsContainer');
-      container.innerHTML = '<div class="text-center text-slate-500 py-8">⏳ กำลังดึงรายการคำขอทั้งหมด...</div>';
-
+    // ==================== 1. หน้าติดตามสถานะ (สำหรับผู้ยืม) ====================
+    async function loadTrackingRequests() {
+      const container = document.getElementById('trackListContainer');
+      container.innerHTML = '<div class="text-center text-slate-500 py-8">⏳ กำลังดึงข้อมูล...</div>';
       try {
         const res = await fetch(`${WEB_APP_URL}?action=getAll`);
         const requests = await res.json();
-
         if (!Array.isArray(requests) || requests.length === 0) {
-          container.innerHTML = '<div class="text-center text-slate-400 py-8">ยังไม่มีรายการคำขอในระบบ</div>';
+          container.innerHTML = '<div class="text-center text-slate-400 py-8">ไม่พบข้อมูลคำขอ</div>';
           return;
         }
 
-        renderAdminRequests(requests);
+        container.innerHTML = requests.map(r => {
+          const eqList = Array.isArray(r.equipmentJSON) ? r.equipmentJSON : [];
+          const borrowFromStr = formatDateTimeDisplay(r.borrowFrom, r.borrowFromTime);
+          const borrowToStr = formatDateTimeDisplay(r.borrowTo, r.borrowToTime);
+
+          // ตรวจสอบสิทธิ์การกด "คืนครุภัณฑ์"
+          const canReturn = (r.status === 'อนุมัติแล้ว' || r.status === 'เจ้าของให้ยืมแล้ว');
+
+          return `
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
+              <div class="flex justify-between items-center border-b pb-2">
+                <span class="font-bold text-blue-700 text-base sm:text-lg">${r.id}</span>
+                <span class="px-3 py-1 text-xs font-semibold rounded-full ${getStatusBadgeClass(r.status)}">
+                  ${r.status || 'ยื่นขออนุมัติ'}
+                </span>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-slate-700">
+                <div><strong>ผู้ขอยืม:</strong> ${r.requesterName || '-'}</div>
+                <div><strong>วัตถุประสงค์:</strong> ${r.purpose || '-'}</div>
+                <div><strong>ยืมวันที่:</strong> ${borrowFromStr}</div>
+                <div><strong>คืนวันที่:</strong> ${borrowToStr}</div>
+              </div>
+              <div class="bg-slate-50 p-2.5 rounded-lg border text-xs text-slate-600">
+                <strong>รายการครุภัณฑ์:</strong>
+                <ul class="list-disc list-inside mt-1">
+                  ${eqList.map(e => `<li>${e.name} (${e.code})</li>`).join('')}
+                </ul>
+              </div>
+              ${canReturn ? `
+                <div class="pt-2 flex justify-end">
+                  <button onclick="updateRequestStatus('${r.id}', 'ผู้ยืมแจ้งส่งคืนแล้ว')" class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold rounded-lg shadow transition">
+                    📦 กดส่งคืนครุภัณฑ์
+                  </button>
+                </div>
+              ` : ''}
+            </div>
+          `;
+        }).join('');
       } catch (err) {
         container.innerHTML = `<div class="text-red-500 p-4 bg-red-50 rounded">เกิดข้อผิดพลาด: ${err.message}</div>`;
       }
     }
 
-    function renderAdminRequests(requests) {
-      const container = document.getElementById('adminRequestsContainer');
-      container.innerHTML = requests.map(r => {
-        const eqList = Array.isArray(r.equipmentJSON) ? r.equipmentJSON : [];
-        return `
-          <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
-            <div class="flex flex-wrap justify-between items-start gap-2 border-b pb-2">
-              <div>
-                <span class="font-bold text-blue-700 text-lg">${r.id}</span>
-                <span class="text-xs text-slate-400 block sm:inline sm:ml-2">ยื่นเมื่อ: ${r.createdAt ? new Date(r.createdAt).toLocaleString('th-TH') : '-'}</span>
+    // ==================== 2. หน้าอนุมัติคำขอ (เจ้าของ / ผู้มีอำนาจ) ====================
+    async function loadApprovalRequests() {
+      const container = document.getElementById('approveListContainer');
+      container.innerHTML = '<div class="text-center text-slate-500 py-8">⏳ กำลังดึงข้อมูลคำขอ...</div>';
+      try {
+        const res = await fetch(`${WEB_APP_URL}?action=getAll`);
+        const requests = await res.json();
+        if (!Array.isArray(requests) || requests.length === 0) {
+          container.innerHTML = '<div class="text-center text-slate-400 py-8">ไม่มีรายการคำขออนุมัติ</div>';
+          return;
+        }
+
+        container.innerHTML = requests.map(r => {
+          const eqList = Array.isArray(r.equipmentJSON) ? r.equipmentJSON : [];
+          const borrowFromStr = formatDateTimeDisplay(r.borrowFrom, r.borrowFromTime);
+          const borrowToStr = formatDateTimeDisplay(r.borrowTo, r.borrowToTime);
+
+          const isOwnerApproved = r.status === 'เจ้าของให้ยืมแล้ว' || r.status === 'อนุมัติแล้ว' || r.status === 'ผู้ยืมแจ้งส่งคืนแล้ว' || r.status === 'รับคืนเรียบร้อย';
+
+          return `
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
+              <div class="flex justify-between items-center border-b pb-2">
+                <div>
+                  <span class="font-bold text-blue-700 text-base sm:text-lg">${r.id}</span>
+                  <span class="text-xs text-slate-400 ml-2">ยื่นเมื่อ: ${r.createdAt ? new Date(r.createdAt).toLocaleString('th-TH') : '-'}</span>
+                </div>
+                <span class="px-3 py-1 text-xs font-semibold rounded-full ${getStatusBadgeClass(r.status)}">
+                  ${r.status || 'ยื่นขออนุมัติ'}
+                </span>
               </div>
-              <span class="px-3 py-1 text-xs font-semibold rounded-full ${getStatusBadgeClass(r.status)}">
-                ${r.status || 'ยื่นขออนุมัติ'}
-              </span>
-            </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-slate-700">
-              <div><strong>ผู้ขอยืม:</strong> ${r.requesterName || '-'} (${r.requesterDept || '-'})</div>
-              <div><strong>อีเมล:</strong> ${r.requesterEmail || '-'}</div>
-              <div><strong>วัตถุประสงค์:</strong> ${r.purpose || '-'}</div>
-              <div><strong>กำหนดการ:</strong> ${r.borrowFrom || '-'} ถึง ${r.borrowTo || '-'}</div>
-            </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-slate-700">
+                <div><strong>ผู้ขอยืม:</strong> ${r.requesterName || '-'} (${r.requesterDept || '-'})</div>
+                <div><strong>อีเมล:</strong> ${r.requesterEmail || '-'}</div>
+                <div><strong>ยืมวันที่:</strong> ${borrowFromStr}</div>
+                <div><strong>คืนวันที่:</strong> ${borrowToStr}</div>
+                <div class="sm:col-span-2"><strong>วัตถุประสงค์:</strong> ${r.purpose || '-'}</div>
+              </div>
 
-            <div class="bg-slate-50 p-3 rounded-lg border border-slate-200 text-xs">
-              <strong class="text-slate-700 block mb-1">รายการครุภัณฑ์ (${eqList.length} รายการ):</strong>
-              <ul class="list-disc list-inside space-y-0.5 text-slate-600">
-                ${eqList.map(e => `<li><span class="font-medium text-slate-800">${e.name}</span> (${e.code}) - ผู้ดูแล: ${e.responsible || '-'}</li>`).join('')}
-              </ul>
-            </div>
+              <div class="bg-slate-50 p-2.5 rounded-lg border text-xs text-slate-600">
+                <strong>รายการครุภัณฑ์ (${eqList.length} รายการ):</strong>
+                <ul class="list-disc list-inside mt-1">
+                  ${eqList.map(e => `<li><span class="font-medium text-slate-800">${e.name}</span> (${e.code}) - ผู้ดูแล: ${e.responsible || '-'}</li>`).join('')}
+                </ul>
+              </div>
 
-            <!-- ปุ่มเปลี่ยนสถานะการอนุมัติ -->
-            <div class="pt-2 flex flex-wrap gap-2 justify-end border-t">
-              <button onclick="updateRequestStatus('${r.id}', 'อนุมัติแล้ว')" class="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-medium rounded-lg transition">
-                ✅ อนุมัติ
-              </button>
-              <button onclick="updateRequestStatus('${r.id}', 'ไม่อนุมัติ')" class="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-medium rounded-lg transition">
-                ❌ ไม่อนุมัติ
-              </button>
-              <button onclick="updateRequestStatus('${r.id}', 'คืนเรียบร้อย')" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-lg transition">
-                📦 รับคืนแล้ว
-              </button>
+              <!-- ปุ่มการดำเนินงานตามลำดับ -->
+              <div class="pt-2 flex flex-wrap gap-2 justify-end border-t">
+                <!-- ขั้นตอนที่ 1: เจ้าของกดให้ยืม -->
+                <button onclick="updateRequestStatus('${r.id}', 'เจ้าของให้ยืมแล้ว')" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium rounded-lg transition">
+                  🙋‍♂️ เจ้าของ: ให้ยืม
+                </button>
+
+                <!-- ขั้นตอนที่ 2: ผู้มีอำนาจกดอนุมัติ (กดได้ต่อเมื่อเจ้าของกดให้ยืมแล้ว) -->
+                <button onclick="checkAndApprove('${r.id}', '${r.status}')" class="px-3 py-1.5 ${isOwnerApproved ? 'bg-green-600 hover:bg-green-700' : 'bg-slate-300 text-slate-500 cursor-not-allowed'} text-white text-xs font-medium rounded-lg transition">
+                  ✅ ผู้มีอำนาจ: อนุมัติ
+                </button>
+
+                <!-- ปุ่มไม่อนุมัติ -->
+                <button onclick="updateRequestStatus('${r.id}', 'ไม่อนุมัติ')" class="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-medium rounded-lg transition">
+                  ❌ ไม่อนุมัติ
+                </button>
+
+                <!-- ขั้นตอนสุดท้าย: รับคืนเรียบร้อย -->
+                <button onclick="updateRequestStatus('${r.id}', 'รับคืนเรียบร้อย')" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-lg transition">
+                  📦 เจ้าของ: รับคืนแล้ว
+                </button>
+              </div>
             </div>
-          </div>
-        `;
-      }).join('');
+          `;
+        }).join('');
+      } catch (err) {
+        container.innerHTML = `<div class="text-red-500 p-4 bg-red-50 rounded">เกิดข้อผิดพลาด: ${err.message}</div>`;
+      }
+    }
+
+    // ตรวจสอบเงื่อนไขผู้มีอำนาจกดอนุมัติ
+    function checkAndApprove(id, currentStatus) {
+      if (currentStatus !== 'เจ้าของให้ยืมแล้ว') {
+        alert('⚠️ ไม่สามารถกดอนุมัติได้: เนื่องจากเจ้าของครุภัณฑ์ยังไม่ได้กด "ให้ยืม"');
+        return;
+      }
+      updateRequestStatus(id, 'อนุมัติแล้ว');
     }
 
     function getStatusBadgeClass(status) {
       switch (status) {
+        case 'เจ้าของให้ยืมแล้ว': return 'bg-indigo-100 text-indigo-800 border border-indigo-300';
         case 'อนุมัติแล้ว': return 'bg-green-100 text-green-800 border border-green-300';
+        case 'ผู้ยืมแจ้งส่งคืนแล้ว': return 'bg-amber-100 text-amber-800 border border-amber-300';
+        case 'รับคืนเรียบร้อย': return 'bg-blue-100 text-blue-800 border border-blue-300';
         case 'ไม่อนุมัติ': return 'bg-red-100 text-red-800 border border-red-300';
-        case 'คืนเรียบร้อย': return 'bg-blue-100 text-blue-800 border border-blue-300';
-        default: return 'bg-amber-100 text-amber-800 border border-amber-300';
+        default: return 'bg-slate-100 text-slate-800 border border-slate-300';
       }
     }
 
-    // อัปเดตสถานะผ่าน API
+    // อัปเดตสถานะขึ้น Google Sheets
     async function updateRequestStatus(id, newStatus) {
       if (!confirm(`คุณต้องการเปลี่ยนสถานะคำขอ ${id} เป็น "${newStatus}" ใช่หรือไม่?`)) return;
 
@@ -377,13 +465,15 @@
         const result = await res.json();
 
         if (result.ok) {
-          alert(`อัปเดตสถานะคำขอ ${id} เป็น "${newStatus}" เรียบร้อยแล้ว (ระบบส่งอีเมลแจ้งเตือนแล้ว)`);
-          loadAdminRequests();
+          alert(`อัปเดตสถานะเป็น "${newStatus}" เรียบร้อยแล้ว`);
+          const activeTab = document.getElementById('trackSection').classList.contains('hidden') ? 'approve' : 'track';
+          if (activeTab === 'approve') loadApprovalRequests();
+          else loadTrackingRequests();
         } else {
           alert(`เกิดข้อผิดพลาด: ${result.error}`);
         }
       } catch (err) {
-        alert(`ไม่สามารถอัปเดตสถานะได้: ${err.message}`);
+        alert(`เกิดข้อผิดพลาด: ${err.message}`);
       }
     }
   </script>
