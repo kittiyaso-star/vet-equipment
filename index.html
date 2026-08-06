@@ -1,760 +1,221 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ระบบยืม-คืนครุภัณฑ์ โรงพยาบาลสัตว์ มอ.</title>
-<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
-<style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Sarabun',sans-serif;background:#f0efe9;color:#1a1a18;font-size:15px}
-.app{max-width:960px;margin:0 auto;padding:1.5rem 1rem 3rem}
-.header{background:#fff;border:0.5px solid rgba(0,0,0,.12);border-radius:12px;padding:1.25rem 1.5rem;margin-bottom:1rem;display:flex;align-items:center;gap:1rem}
-.logo{width:52px;height:52px;border-radius:50%;background:#185FA5;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.logo i{color:#fff;font-size:24px}
-.header-info{flex:1}
-.header-title{font-size:15px;font-weight:600;line-height:1.4}
-.header-sub{font-size:12px;color:#5f5e5a;margin-top:3px}
-.conn-ok{display:inline-flex;align-items:center;gap:5px;font-size:11px;background:#EAF3DE;color:#27500A;border-radius:4px;padding:2px 8px;margin-top:6px}
-.dot-g{width:7px;height:7px;border-radius:50%;background:#3B6D11;animation:pulse 2s infinite;flex-shrink:0}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
-.tabs{display:flex;gap:8px;margin-bottom:1.25rem;flex-wrap:wrap}
-.tab{padding:9px 18px;border:0.5px solid rgba(0,0,0,.15);border-radius:8px;font-size:13px;cursor:pointer;background:#fff;color:#5f5e5a;font-family:inherit;display:flex;align-items:center;gap:6px;transition:all .15s}
-.tab.active{background:#E6F1FB;border-color:#378ADD;color:#0C447C;font-weight:500}
-.badge{background:#378ADD;color:#fff;border-radius:20px;padding:1px 7px;font-size:11px}
-.card{background:#fff;border:0.5px solid rgba(0,0,0,.12);border-radius:12px;padding:1.5rem;margin-bottom:1rem}
-.section-title{font-size:13px;font-weight:500;color:#5f5e5a;border-bottom:0.5px solid rgba(0,0,0,.1);padding-bottom:10px;margin-bottom:1rem;display:flex;align-items:center;gap:6px}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.field{display:flex;flex-direction:column;gap:5px;margin-bottom:10px}
-.field label{font-size:12px;color:#5f5e5a;font-weight:500}
-.field input,.field select,.field textarea{font-size:13px;padding:8px 10px;border:0.5px solid rgba(0,0,0,.2);border-radius:8px;background:#fff;color:#1a1a18;width:100%;font-family:inherit}
-.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:#378ADD;box-shadow:0 0 0 2px rgba(55,138,221,.15)}
-.field input[readonly]{background:#f7f7f5;color:#5f5e5a}
-.field textarea{resize:vertical;min-height:70px}
-.req{color:#E24B4A}
-.ac-wrap{position:relative}
-.ac-drop{position:absolute;top:100%;left:0;right:0;background:#fff;border:0.5px solid rgba(0,0,0,.2);border-radius:8px;max-height:220px;overflow-y:auto;z-index:50;box-shadow:0 4px 16px rgba(0,0,0,.13);margin-top:2px}
-.ac-item{padding:9px 12px;font-size:13px;cursor:pointer;border-bottom:0.5px solid rgba(0,0,0,.06)}
-.ac-item:hover{background:#E6F1FB}
-.ac-item:last-child{border-bottom:none}
-.eq-row{border:0.5px solid rgba(0,0,0,.1);border-radius:8px;padding:14px;margin-bottom:10px;background:#f7f7f5}
-.eq-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
-.eq-label{font-size:12px;font-weight:500;color:#185FA5}
-.btn-remove{background:none;border:none;cursor:pointer;color:#888;font-size:18px;display:flex;align-items:center}
-.btn-remove:hover{color:#E24B4A}
-.btn-add{display:flex;align-items:center;gap:8px;padding:9px 14px;border:0.5px dashed rgba(0,0,0,.2);border-radius:8px;font-size:13px;cursor:pointer;background:transparent;color:#5f5e5a;width:100%;justify-content:center;margin-bottom:1rem;font-family:inherit}
-.btn-add:hover{background:#f0efe9}
-.info-box{background:#EAF3DE;border:0.5px solid #97C459;border-radius:8px;padding:10px 14px;font-size:12px;color:#27500A;margin-top:6px;display:flex;gap:8px;align-items:flex-start}
-.warn-box{background:#FAEEDA;border:0.5px solid #EF9F27;border-radius:8px;padding:10px 14px;font-size:12px;color:#633806;margin-top:6px;display:flex;gap:8px}
-.btn-primary{background:#185FA5;color:#fff;border:none;padding:11px 28px;border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:8px;font-family:inherit}
-.btn-primary:hover{background:#0C447C}
-.btn-primary:disabled{background:#aaa;cursor:not-allowed}
-.btn-success{background:#3B6D11;color:#fff;border:none;padding:9px 22px;border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px}
-.btn-danger{background:transparent;color:#791F1F;border:0.5px solid #F09595;padding:9px 22px;border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px}
-.btn-warn{background:#BA7517;color:#fff;border:none;padding:9px 22px;border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px}
-.sbadge{padding:3px 12px;border-radius:20px;font-size:12px;font-weight:500;display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
-.s-pending{background:#FAEEDA;color:#633806}
-.s-approved{background:#EAF3DE;color:#27500A}
-.s-rejected{background:#FCEBEB;color:#791F1F}
-.s-ack{background:#E6F1FB;color:#0C447C}
-.s-unavail{background:#f0efe9;color:#5f5e5a}
-.s-borrowed{background:#EEEDFE;color:#26215C}
-.s-returned{background:#E1F5EE;color:#04342C}
-.s-done{background:#EAF3DE;color:#27500A}
-/* Request card */
-.req-card{background:#fff;border:0.5px solid rgba(0,0,0,.12);border-radius:12px;padding:1.25rem;cursor:pointer;transition:border-color .15s;margin-bottom:10px}
-.req-card:hover{border-color:rgba(0,0,0,.28)}
-.req-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
-.req-name{font-size:14px;font-weight:500}
-.req-meta{font-size:12px;color:#5f5e5a;margin-top:3px}
-/* Date range pill — NEW */
-.date-range{display:inline-flex;align-items:center;gap:6px;background:#E6F1FB;border:0.5px solid #B5D4F4;border-radius:6px;padding:5px 12px;font-size:12px;color:#0C447C;margin-top:8px;font-weight:500}
-.date-range .arrow{color:#378ADD;font-size:14px}
-/* Modal */
-.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.42);display:flex;align-items:center;justify-content:center;z-index:200;padding:1rem}
-.modal{background:#fff;border-radius:12px;padding:1.5rem;width:100%;max-width:720px;max-height:90vh;overflow-y:auto}
-.modal-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;padding-bottom:1rem;border-bottom:0.5px solid rgba(0,0,0,.1)}
-.modal-title{font-size:15px;font-weight:600}
-.btn-close{background:none;border:none;cursor:pointer;font-size:22px;color:#5f5e5a;display:flex;align-items:center}
-.ig{display:grid;grid-template-columns:140px 1fr;gap:5px 12px;font-size:13px;margin-bottom:6px}
-.il{color:#5f5e5a;font-size:12px;padding-top:2px}
-.tl{display:flex;flex-direction:column}
-.tl-item{display:flex;gap:10px;padding-bottom:14px;position:relative}
-.tl-item:not(:last-child)::after{content:'';position:absolute;left:13px;top:30px;bottom:0;width:0.5px;background:rgba(0,0,0,.12)}
-.tl-dot{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px}
-.td-done{background:#C0DD97;color:#27500A}
-.td-cur{background:#B5D4F4;color:#0C447C}
-.td-wait{background:#f0efe9;color:#888}
-.td-bad{background:#F7C1C1;color:#791F1F}
-.tl-body{flex:1;padding-top:4px}
-.tl-t{font-size:13px;font-weight:500}
-.tl-s{font-size:11px;color:#5f5e5a;margin-top:2px}
-.divider{height:0.5px;background:rgba(0,0,0,.1);margin:1rem 0}
-.success-banner{background:#EAF3DE;border:0.5px solid #97C459;border-radius:8px;padding:12px 16px;display:flex;gap:10px;margin-bottom:1rem}
-.action-row{display:flex;gap:8px;margin-top:1rem;flex-wrap:wrap;align-items:flex-start}
-.step-label{font-size:11px;font-weight:600;color:#5f5e5a;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;display:flex;align-items:center;gap:6px}
-.eq-info-card{background:#f7f7f5;border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:8px}
-.eq-info-name{font-weight:500;color:#0C447C;margin-bottom:4px}
-.cond-sel{font-size:13px;padding:7px 10px;border:0.5px solid rgba(0,0,0,.2);border-radius:6px;font-family:inherit;background:#fff;margin-top:4px;width:100%}
-/* Approver box — NEW: clearly labeled who must act */
-.role-box{border-radius:10px;padding:14px 16px;margin-bottom:10px}
-.role-box.approver{background:#EAF3DE;border:0.5px solid #97C459}
-.role-box.responsible{background:#E6F1FB;border:0.5px solid #B5D4F4}
-.role-box.borrower{background:#EEEDFE;border:0.5px solid #AFA9EC}
-.role-box.return-check{background:#FAEEDA;border:0.5px solid #EF9F27}
-.role-box-header{display:flex;align-items:center;gap:8px;margin-bottom:8px}
-.role-icon{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
-.role-icon.g{background:#3B6D11;color:#fff}
-.role-icon.b{background:#185FA5;color:#fff}
-.role-icon.p{background:#534AB7;color:#fff}
-.role-icon.a{background:#854F0B;color:#fff}
-.role-title{font-size:13px;font-weight:500}
-.role-who{font-size:11px;margin-top:2px}
-.role-box.approver .role-title{color:#27500A}
-.role-box.approver .role-who{color:#3B6D11}
-.role-box.responsible .role-title{color:#0C447C}
-.role-box.responsible .role-who{color:#185FA5}
-.role-box.borrower .role-title{color:#26215C}
-.role-box.borrower .role-who{color:#534AB7}
-.role-box.return-check .role-title{color:#633806}
-.role-box.return-check .role-who{color:#854F0B}
-/* Loading */
-.loading-overlay{position:fixed;inset:0;background:rgba(255,255,255,.85);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:300;gap:12px}
-.spinner{width:40px;height:40px;border:3px solid rgba(24,95,165,.2);border-top-color:#185FA5;border-radius:50%;animation:spin .8s linear infinite}
-.mini-spinner{width:16px;height:16px;border:2px solid rgba(24,95,165,.2);border-top-color:#185FA5;border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0}
-@keyframes spin{to{transform:rotate(360deg)}}
-.toast{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);background:#1a1a18;color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;z-index:400;display:flex;align-items:center;gap:8px;box-shadow:0 4px 16px rgba(0,0,0,.2)}
-.toast-ok{background:#3B6D11}
-.toast-err{background:#A32D2D}
-.empty{text-align:center;padding:3.5rem 1rem;color:#5f5e5a}
-.empty i{font-size:48px;margin-bottom:16px;display:block;color:rgba(0,0,0,.15)}
-.req-footer{display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:10px;border-top:0.5px solid rgba(0,0,0,.08);font-size:11px;color:#888;flex-wrap:wrap;gap:4px}
-@media(max-width:600px){.grid2{grid-template-columns:1fr}.ig{grid-template-columns:1fr}.tabs{flex-wrap:wrap}}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ระบบยืม-คืนครุภัณฑ์ - รพ.สัตว์ มอ.</title>
+  <!-- Tailwind CSS สำหรับตกแต่งหน้าเว็บ -->
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-<div class="app" id="root"></div>
-<div id="loading-overlay" class="loading-overlay" style="display:none">
-  <div class="spinner"></div>
-  <div id="loading-text" style="font-size:13px;color:#5f5e5a">กำลังโหลด...</div>
-</div>
-<div id="toast" class="toast" style="display:none"></div>
-<script>
-const GAS_URL        =  + GAS_URL + ;
-const ADMIN_EMAIL    =  + ADMIN_EMAIL + ;
-const APPROVER_EMAIL =  + APPROVER_EMAIL + ;
-const APPROVER_NAME  =  + APPROVER_NAME + ;
+<body class="bg-slate-100 min-h-screen p-4 md:p-8">
 
-const PSU_STAFF     = [{"name": "ดร.สพ.ญ.ญาดา ดวงนำสว่าง", "position": "รองผู้อำนวยการโรงพยาบาลสัตว์ ฝ่ายบริหารผลิตภัณฑ์ และเวชภัณฑ์", "dept": "สาขาวิชาสัตวแพทยศาสตร์", "email": "yada.d@psu.ac.th"}, {"name": "กิตติยา สุนทรเจริญนนท์", "position": "นักวิชาการอุดมศึกษา", "dept": "สำนักงานบริหารคณะ", "email": "kittiya.so@psu.ac.th"}, {"name": "นลิน ต่อวิวรรธน์", "position": "นักวิชาการพัสดุ", "dept": "สำนักงานบริหารคณะ", "email": "nalin.t@psu.ac.th"}, {"name": "ปกชน คีรีลักษณ์", "position": "นักวิทยาศาสตร์", "dept": "สาขาวิชาสัตวแพทยศาสตร์", "email": "pokchon.k@psu.ac.th"}, {"name": "ราชกุล วิริยพรหม", "position": "นักวิทยาศาสตร์", "dept": "สาขาวิชาสัตวแพทยศาสตร์", "email": "ratchakul.w@psu.ac.th"}, {"name": "บารมี ชาญชญานนท์", "position": "นักวิทยาศาสตร์", "dept": "สาขาวิชาสัตวแพทยศาสตร์", "email": "baramee.c@psu.ac.th"}, {"name": "ซารีป๊ะ หมันหมู้", "position": "นักวิทยาศาสตร์", "dept": "สาขาวิชาสัตวแพทยศาสตร์", "email": "sareepah.m@psu.ac.th"}, {"name": "นวพล คุปต์ธรรมสาร", "position": "นักวิทยาศาสตร์", "dept": "สาขาวิชาสัตวแพทยศาสตร์", "email": "navapol.k@psu.ac.th"}, {"name": "นันทรัตน์ ชุติจิรัฐิติกาล", "position": "นักวิทยาศาสตร์", "dept": "สาขาวิชาสัตวแพทยศาสตร์", "email": "nantarat.c@psu.ac.th"}, {"name": "เสาวคนธ์ อินทร์ด้วง", "position": "นักวิทยาศาสตร์", "dept": "สาขาวิชาสัตวแพทยศาสตร์", "email": "saowakon.i@psu.ac.th"}, {"name": "โดมชัย แก้วน้อย", "position": "นักวิทยาศาสตร์", "dept": "สาขาวิชาสัตวแพทยศาสตร์", "email": "domechai.k@psu.ac.th"}, {"name": "จุฬาลักษณ์ เจียงสกุล", "position": "นักวิทยาศาสตร์", "dept": "สาขาวิชาสัตวแพทยศาสตร์", "email": "Julaluk.ji@psu.ac.th"}, {"name": "พีรพล สรยิง", "position": "นักวิทยาศาสตร์", "dept": "สาขาวิชาสัตวแพทยศาสตร์", "email": "peerapon.s@psu.ac.th"}, {"name": "สิริลักษณ์ แก้วมณี", "position": "นักวิทยาศาสตร์", "dept": "สาขาวิชาสัตวแพทยศาสตร์", "email": "siriluk.ka@psu.ac.th"}, {"name": "นริศรา แก้วชนะ", "position": "นักวิทยาศาสตร์", "dept": "สาขาวิชาสัตวแพทยศาสตร์", "email": "narissara.k@psu.ac.th"}, {"name": "สพ.ญ.ณัฏฐนิช  เหมทานนท์", "position": "สัตวแพทย์", "dept": "โรงพยาบาลสัตว์", "email": "natthanit.h@psu.ac.th"}, {"name": "สพ.ญ.สุภาณี  ธีรวรัชนันท์", "position": "สัตวแพทย์", "dept": "โรงพยาบาลสัตว์", "email": "supanee.t@psu.ac.th"}, {"name": "น.สพ.ทักษ์ สุวรรณโอภาส", "position": "สัตวแพทย์", "dept": "โรงพยาบาลสัตว์", "email": "thak.s@psu.ac.th"}, {"name": "น.สพ.พนธกร ศิริรักษณ์", "position": "สัตวแพทย์", "dept": "โรงพยาบาลสัตว์", "email": "pontakorn.s@psu.ac.th"}, {"name": "น.สพ.ก่อสิน จันทนะ", "position": "สัตวแพทย์", "dept": "โรงพยาบาลสัตว์", "email": "korsin.j@psu.ac.th"}, {"name": "น.สพ.ธนวัฒน์ ปัญญศิริ", "position": "สัตวแพทย์", "dept": "โรงพยาบาลสัตว์", "email": "thanawat.pu@psu.ac.th"}, {"name": "นายพิเชษ  จันทรมโน", "position": "ผู้ช่วยสัตวแพทย์", "dept": "โรงพยาบาลสัตว์", "email": "pichet.j@psu.ac.th"}, {"name": "นายถิรกร พ้นภัย", "position": "ผู้ช่วยสัตวแพทย์", "dept": "โรงพยาบาลสัตว์", "email": "thirakong.p@psu.ac.th"}, {"name": "นายเกียรติดำรงค์  ก่อลาภเจริญกุล", "position": "ผู้ช่วยสัตวแพทย์", "dept": "โรงพยาบาลสัตว์", "email": "kietdumrong.k@psu.ac.th"}, {"name": "นายพีรพัฒน์ แก้วมณี", "position": "ผู้ช่วยสัตวแพทย์", "dept": "โรงพยาบาลสัตว์", "email": "peerapat.ka@psu.ac.th"}, {"name": "นางนภัสกร  สิ่งประสงค์", "position": "ผู้ช่วยสัตวแพทย์", "dept": "โรงพยาบาลสัตว์", "email": "naphatsakon.s@psu.ac.th"}, {"name": "นางสาวเบญจมาศ  จิตรจำนงค์", "position": "ผู้ช่วยสัตวแพทย์", "dept": "โรงพยาบาลสัตว์", "email": "benjamas.ji@psu.ac.th"}, {"name": "นางสาวปูชิยา  อิสโร", "position": "ผู้ช่วยสัตวแพทย์", "dept": "โรงพยาบาลสัตว์", "email": "poochiya.i@psu.ac.th"}, {"name": "นางสาวนิศากร  แซ่โล่", "position": "ผู้ช่วยสัตวแพทย์", "dept": "โรงพยาบาลสัตว์", "email": "nisakorn.sae@psu.ac.th"}, {"name": "นางสาวอัจฉรา หมื่นชำนาญ", "position": "ผู้ช่วยสัตวแพทย์", "dept": "โรงพยาบาลสัตว์", "email": "atchara.m@psu.ac.th"}, {"name": "นางสาวกาญจนา ดินเตบ", "position": "ผู้ช่วยสัตวแพทย์", "dept": "โรงพยาบาลสัตว์", "email": "kanchana.d@psu.ac.th"}, {"name": "นางสาววรางคณา ทองสาย", "position": "ผู้ช่วยสัตวแพทย์", "dept": "โรงพยาบาลสัตว์", "email": "warangkhana.t@psu.ac.th"}, {"name": "นางสาวขวัญภิรมณ์ ช่วยคง", "position": "ผู้ช่วยสัตวแพทย์", "dept": "โรงพยาบาลสัตว์", "email": "khwanpirom.c@psu.ac.th"}, {"name": "นางสาววทันยา พลชนะ", "position": "ผู้ช่วยสัตวแพทย์", "dept": "โรงพยาบาลสัตว์", "email": "watanya.po@psu.ac.th"}, {"name": "นายณัฐนันท์ บุญมี", "position": "ผู้ช่วยสัตวแพทย์", "dept": "โรงพยาบาลสัตว์", "email": "nattanan.b@psu.ac.th"}, {"name": "นายกิตติ  ไชยพจน์", "position": "ผู้ปฏิบัติงานพยาบาลสัตว์", "dept": "โรงพยาบาลสัตว์", "email": "kitti.ch@psu.ac.th"}, {"name": "นายวัฒนา สมศรี", "position": "ผู้ปฏิบัติงานพยาบาลสัตว์", "dept": "โรงพยาบาลสัตว์", "email": "wattana.so@psu.ac.th"}, {"name": "นางนิตยา  ไกรแก้ว", "position": "ผู้ปฏิบัติงานพยาบาลสัตว์", "dept": "โรงพยาบาลสัตว์", "email": "nittaya.kra@psu.ac.th"}, {"name": "นางพรพนา พุทธพงค์", "position": "ผู้ปฏิบัติงานพยาบาลสัตว์", "dept": "โรงพยาบาลสัตว์", "email": "pornpana.p@psu.ac.th"}, {"name": "นางอาจรีย์  จันหน่อแก้ว", "position": "ผู้ปฏิบัติงานพยาบาลสัตว์", "dept": "โรงพยาบาลสัตว์", "email": "ajaree.c@psu.ac.th"}, {"name": "นางสาวจิฬาภรณ์  สังข์ทอง", "position": "ผู้ปฏิบัติงานพยาบาลสัตว์", "dept": "โรงพยาบาลสัตว์", "email": "jilaporn.s@psu.ac.th"}, {"name": "นางสาวพัชราภรณ์ แซ่เตียว", "position": "ผู้ปฏิบัติงานพยาบาลสัตว์", "dept": "โรงพยาบาลสัตว์", "email": "patcharaporn.sa@psu.ac.th"}, {"name": "นางสาววชิราภรณ์ นพรัตน์", "position": "ผู้ปฏิบัติงานพยาบาลสัตว์", "dept": "โรงพยาบาลสัตว์", "email": "wachiraporn.n@psu.ac.th"}, {"name": "นายพีรพล คชรัตน์", "position": "ผู้ปฏิบัติงานพยาบาลสัตว์", "dept": "โรงพยาบาลสัตว์", "email": "peerapol.kh@psu.ac.th"}, {"name": "นางสาวนรมน แก้วประดิษฐ", "position": "ผู้ปฏิบัติงานพยาบาลสัตว์", "dept": "โรงพยาบาลสัตว์", "email": "noramon.k@psu.ac.th"}];
-const PSU_POSITIONS = ["นักวิชาการพัสดุ", "นักวิชาการอุดมศึกษา", "นักวิทยาศาสตร์", "ผู้ช่วยสัตวแพทย์", "ผู้ปฏิบัติงานพยาบาลสัตว์", "รองผู้อำนวยการโรงพยาบาลสัตว์ ฝ่ายบริหารผลิตภัณฑ์ และเวชภัณฑ์", "สัตวแพทย์"];
-const PSU_DEPTS     = ["สาขาวิชาสัตวแพทยศาสตร์", "สำนักงานบริหารคณะ", "โรงพยาบาลสัตว์"];
+  <div class="max-w-3xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6 md:p-8">
+    <h1 class="text-2xl font-bold text-slate-800 mb-2">แบบฟอร์มขอยืมครุภัณฑ์</h1>
+    <p class="text-slate-500 text-sm mb-6">โรงพยาบาลสัตว์ มหาวิทยาลัยสงขลานครินทร์</p>
 
-let PSU_EQUIPMENT = [];
-let state = {
-  tab:'form', requests:[], loadingEq:true, syncing:false,
-  lastSync:null, submitted:false, selectedId:null, eqCnt:2,
-  form:{
-    date:today(), name:'', position:'', dept:'', email:'', purpose:'',
-    borrowFrom:'', bFromTime:'', borrowTo:'', bToTime:'',
-    equipment:[{id:1,code:'',name:'',location:'',responsible:'',responsibleEmail:'',condBefore:'',condAfter:''}]
-  }
-};
+    <!-- สถานะการโหลดข้อมูล -->
+    <div id="loadingStatus" class="mb-4 p-3 bg-blue-50 text-blue-700 rounded-lg text-sm flex items-center">
+      <span>⏳ กำลังโหลดข้อมูลต้นทางจาก Google Sheets...</span>
+    </div>
 
-function today(){return new Date().toISOString().split('T')[0];}
-function fmtDate(d){
-  if(!d||d==='-')return'—';
-  const p=String(d).split('-');
-  if(p.length!==3)return d;
-  const months=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
-  return p[2]+' '+months[parseInt(p[1])-1]+' '+(parseInt(p[0])+543);
-}
-function fmtDT(d,t){return fmtDate(d)+(t?' เวลา '+t+' น.':'');}
-function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
-function searchEquip(q){if(!q)return[];const lq=q.toLowerCase();return PSU_EQUIPMENT.filter(e=>e.name.toLowerCase().includes(lq)||e.code.toLowerCase().includes(lq)).slice(0,12);}
-function searchStaff(q){if(!q)return[];const lq=q.toLowerCase();return PSU_STAFF.filter(s=>s.name.toLowerCase().includes(lq)).slice(0,8);}
+    <form id="borrowForm" onsubmit="handleSubmit(event)" class="space-y-6 hidden">
+      
+      <!-- ส่วนที่ 1: ข้อมูลผู้ยืม -->
+      <div class="border-b pb-4">
+        <h2 class="text-lg font-semibold text-slate-700 mb-3">1. ข้อมูลผู้ขอยืม</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">เลือกชื่อผู้ขอยืม *</label>
+            <select id="staffSelect" onchange="autoFillStaffInfo()" class="w-full p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500" required>
+              <option value="">-- เลือกรายชื่อบุคลากร --</option>
+            </select>
+          </div>
 
-function showLoading(msg){document.getElementById('loading-overlay').style.display='flex';document.getElementById('loading-text').textContent=msg||'กำลังโหลด...';}
-function hideLoading(){document.getElementById('loading-overlay').style.display='none';}
-function showToast(msg,type,dur){const t=document.getElementById('toast');t.textContent=msg;t.className='toast '+(type==='ok'?'toast-ok':type==='err'?'toast-err':'');t.style.display='flex';clearTimeout(window._tt);window._tt=setTimeout(()=>t.style.display='none',dur||3500);}
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">ตำแหน่ง</label>
+            <input type="text" id="position" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg" readonly>
+          </div>
 
-async function apiCall(action,body){
-  const url=GAS_URL+'?action='+action;
-  const opts=body?{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(body)}:{method:'GET'};
-  const res=await fetch(url,opts);
-  const json=await res.json();
-  if(json&&json.error)throw new Error(json.error);
-  return json;
-}
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">สังกัด/ฝ่าย</label>
+            <input type="text" id="dept" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg" readonly>
+          </div>
 
-async function loadEquipment(){
-  try{
-    const data=await apiCall('getEquipment');
-    if(Array.isArray(data)&&data.length>0){
-      PSU_EQUIPMENT=data;
-      showToast('โหลดครุภัณฑ์ '+data.length+' รายการเรียบร้อย','ok',2500);
-    } else {
-      showToast('ไม่พบข้อมูลครุภัณฑ์ใน Sheet "ครุภัณฑ์"','err',5000);
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">อีเมล</label>
+            <input type="email" id="email" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg" readonly required>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ส่วนที่ 2: วัตถุประสงค์และกำหนดเวลา -->
+      <div class="border-b pb-4">
+        <h2 class="text-lg font-semibold text-slate-700 mb-3">2. วัตถุประสงค์และกำหนดเวลา</h2>
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">วัตถุประสงค์ในการยืม *</label>
+            <textarea id="purpose" rows="2" class="w-full p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="ระบุเหตุผลในการนำไปใช้งาน" required></textarea>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-1">ยืมตั้งแต่วันที่ *</label>
+              <input type="date" id="borrowFrom" class="w-full p-2.5 border border-slate-300 rounded-lg" required>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-1">เวลา</label>
+              <input type="time" id="borrowFromTime" class="w-full p-2.5 border border-slate-300 rounded-lg">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-1">ถึงวันที่ *</label>
+              <input type="date" id="borrowTo" class="w-full p-2.5 border border-slate-300 rounded-lg" required>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-1">เวลา</label>
+              <input type="time" id="borrowToTime" class="w-full p-2.5 border border-slate-300 rounded-lg">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ส่วนที่ 3: เลือกครุภัณฑ์ -->
+      <div>
+        <h2 class="text-lg font-semibold text-slate-700 mb-3">3. เลือกรายการครุภัณฑ์</h2>
+        <div id="equipmentContainer" class="space-y-2 max-h-60 overflow-y-auto border p-3 rounded-lg bg-slate-50">
+          <!-- แสดงรายการครุภัณฑ์ผ่าน JS -->
+        </div>
+      </div>
+
+      <!-- ปุ่มส่งข้อมูล -->
+      <button type="submit" id="submitBtn" class="w-full py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition">
+        ยื่นคำขอยืมครุภัณฑ์
+      </button>
+
+    </form>
+  </div>
+
+  <script>
+    // URL Web App ของคุณ
+    const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzl5te2wmo-3pV-gny0srGCQiQcJxbkp8inHpyJW42vs4HTRWSXFO5cgWM2whhVDLo/exec';
+
+    let masterData = { staff: [], equipment: [] };
+
+    // 1. ดึง Master Data เมื่อโหลดหน้าเว็บ
+    window.onload = async function() {
+      try {
+        const response = await fetch(`${WEB_APP_URL}?action=getMasterData`);
+        masterData = await response.json();
+
+        if(masterData.error) throw new Error(masterData.error);
+
+        renderStaffDropdown(masterData.staff);
+        renderEquipmentList(masterData.equipment);
+
+        document.getElementById('loadingStatus').classList.add('hidden');
+        document.getElementById('borrowForm').classList.remove('hidden');
+      } catch (err) {
+        document.getElementById('loadingStatus').className = "p-3 bg-red-50 text-red-700 rounded-lg text-sm";
+        document.getElementById('loadingStatus').innerHTML = `❌ ไม่สามารถโหลดข้อมูลได้: ${err.message}`;
+      }
+    };
+
+    // 2. แสดงรายชื่อบุคลากรลงใน Dropdown
+    function renderStaffDropdown(staffList) {
+      const select = document.getElementById('staffSelect');
+      staffList.forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s.name;
+        opt.textContent = `${s.name} (${s.dept})`;
+        select.appendChild(opt);
+      });
     }
-  }catch(e){showToast('โหลดครุภัณฑ์ไม่สำเร็จ: '+e.message,'err',6000);}
-  state.loadingEq=false; render();
-}
 
-async function loadRequests(){
-  if(state.syncing)return;
-  state.syncing=true; render();
-  try{
-    const data=await apiCall('getAll');
-    state.requests=Array.isArray(data)?data.map(r=>({...r,form:{
-      name:r.requesterName, position:r.requesterPosition, dept:r.requesterDept,
-      email:r.requesterEmail, purpose:r.purpose, borrowFrom:r.borrowFrom,
-      bFromTime:r.borrowFromTime, borrowTo:r.borrowTo, bToTime:r.borrowToTime,
-      date:r.createdAt?.split('T')[0]||'', equipment:r.equipmentJSON||[]
-    }})):[];
-    state.lastSync=new Date();
-  }catch(e){showToast('โหลดล้มเหลว: '+e.message,'err',4000);}
-  state.syncing=false; render();
-}
+    // 3. Auto-fill เมื่อเลือกบุคลากร
+    function autoFillStaffInfo() {
+      const selectedName = document.getElementById('staffSelect').value;
+      const staff = masterData.staff.find(s => s.name === selectedName);
 
-setInterval(()=>{if(!state.syncing&&state.tab==='list')loadRequests();},30000);
+      if (staff) {
+        document.getElementById('position').value = staff.position || '';
+        document.getElementById('dept').value = staff.dept || '';
+        document.getElementById('email').value = staff.email || '';
+      } else {
+        document.getElementById('position').value = '';
+        document.getElementById('dept').value = '';
+        document.getElementById('email').value = '';
+      }
+    }
 
-// ── STATUS BADGE ──────────────────────────────────────────
-function sbadge(s){
-  const m={
-    'ยื่นขออนุมัติ':['s-pending','⏳'],
-    'รับทราบแล้ว':['s-ack','👍'],
-    'ไม่สามารถให้ยืมได้':['s-unavail','⚠️'],
-    'อนุมัติแล้ว':['s-approved','✅'],
-    'ไม่อนุมัติ':['s-rejected','❌'],
-    'อยู่ระหว่างยืม':['s-borrowed','📦'],
-    'คืนครุภัณฑ์แล้ว':['s-returned','🔄'],
-    'ตรวจสภาพเสร็จสิ้น':['s-done','✔️']
-  };
-  const [cls,ic]=m[s]||['s-pending','❓'];
-  return `<span class="sbadge ${cls}">${ic} ${esc(s)}</span>`;
-}
+    // 4. แสดงรายการครุภัณฑ์ (Checkboxes)
+    function renderEquipmentList(eqList) {
+      const container = document.getElementById('equipmentContainer');
+      if (!eqList || eqList.length === 0) {
+        container.innerHTML = '<p class="text-slate-400 text-sm">ไม่พบรายการครุภัณฑ์ที่พร้อมใช้งาน</p>';
+        return;
+      }
 
-// ── WHO MUST ACT next (เพื่อแสดงในการ์ด) ──────────────────
-function nextActorLabel(status){
-  const m={
-    'ยื่นขออนุมัติ': {who:'ผู้รับผิดชอบครุภัณฑ์', cls:'s-ack'},
-    'รับทราบแล้ว':   {who:'รองผู้อำนวยการ (yada.d)', cls:'s-approved'},
-    'อนุมัติแล้ว':   {who:'ผู้ขอยืม — ยืนยันรับของ', cls:'s-borrowed'},
-    'อยู่ระหว่างยืม':{who:'ผู้ขอยืม — แจ้งคืน', cls:'s-returned'},
-    'คืนครุภัณฑ์แล้ว':{who:'ผู้รับผิดชอบ — ตรวจสภาพ', cls:'s-ack'},
-    'ตรวจสภาพเสร็จสิ้น':{who:'เสร็จสิ้น', cls:'s-done'},
-    'ไม่อนุมัติ':   {who:'ปิดคำขอ', cls:'s-rejected'},
-    'ไม่สามารถให้ยืมได้':{who:'ปิดคำขอ', cls:'s-unavail'},
-  };
-  const v=m[status]||{who:'—',cls:'s-pending'};
-  return `<span class="sbadge ${v.cls}" style="font-size:11px;padding:2px 9px">รอ: ${v.who}</span>`;
-}
+      container.innerHTML = eqList.map((eq, i) => `
+        <label class="flex items-start space-x-3 p-2 bg-white rounded border hover:bg-slate-100 cursor-pointer text-sm">
+          <input type="checkbox" name="selectedEq" value="${i}" class="mt-1 rounded text-blue-600">
+          <div>
+            <div class="font-medium text-slate-800">${eq.name}</div>
+            <div class="text-xs text-slate-500">รหัส: ${eq.code} | สถานที่: ${eq.location} | ผู้ดูแล: ${eq.responsible}</div>
+          </div>
+        </label>
+      `).join('');
+    }
 
-// ── RENDER FORM ───────────────────────────────────────────
-function renderForm(){
-  const f=state.form;
-  const eqRows=f.equipment.map((eq,i)=>{
-    const hasEmail=eq.responsibleEmail&&eq.responsibleEmail.length>0;
-    const infoHtml=eq.responsible?(hasEmail
-      ?`<div class="info-box"><i class="ti ti-mail" aria-hidden="true" style="flex-shrink:0;margin-top:2px"></i><div>จะส่งอีเมลแจ้ง <b>${esc(eq.responsible)}</b> (${esc(eq.responsibleEmail)})</div></div>`
-      :`<div class="warn-box"><i class="ti ti-alert-triangle" aria-hidden="true" style="flex-shrink:0;margin-top:2px"></i><div>ไม่พบอีเมลผู้รับผิดชอบ (${esc(eq.responsible)})</div></div>`):'';
-    return `<div class="eq-row">
-      <div class="eq-header">
-        <span class="eq-label"><i class="ti ti-device-laptop" aria-hidden="true"></i> ครุภัณฑ์ที่ ${i+1}</span>
-        ${f.equipment.length>1?`<button class="btn-remove" onclick="removeEq(${eq.id})"><i class="ti ti-x"></i></button>`:''}
-      </div>
-      <div class="field"><label>ชื่อครุภัณฑ์ <span class="req">*</span></label>
-        ${state.loadingEq
-          ?`<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:0.5px solid rgba(0,0,0,.2);border-radius:8px;background:#f7f7f5;font-size:13px;color:#5f5e5a"><div class="mini-spinner"></div>กำลังโหลดครุภัณฑ์...</div>`
-          :`<div class="ac-wrap"><input id="eq-name-${eq.id}" value="${esc(eq.name)}" placeholder="พิมพ์เพื่อค้นหา..." oninput="eqSearch(${eq.id},this.value)" onblur="closeAc(${eq.id},220)" autocomplete="off"><div class="ac-drop" id="eqdrop-${eq.id}" style="display:none"></div></div>`
+    // 5. ส่งฟอร์มบันทึกข้อมูล (Action: create)
+    async function handleSubmit(e) {
+      e.preventDefault();
+      
+      const selectedCheckboxes = document.querySelectorAll('input[name="selectedEq"]:checked');
+      if (selectedCheckboxes.length === 0) {
+        alert('กรุณาเลือกครุภัณฑ์อย่างน้อย 1 รายการ');
+        return;
+      }
+
+      const selectedEquipment = Array.from(selectedCheckboxes).map(cb => masterData.equipment[cb.value]);
+      const btn = document.getElementById('submitBtn');
+      btn.disabled = true;
+      btn.textContent = 'กำลังส่งข้อมูล...';
+
+      const payload = {
+        name: document.getElementById('staffSelect').value,
+        position: document.getElementById('position').value,
+        dept: document.getElementById('dept').value,
+        email: document.getElementById('email').value,
+        purpose: document.getElementById('purpose').value,
+        borrowFrom: document.getElementById('borrowFrom').value,
+        borrowFromTime: document.getElementById('borrowFromTime').value,
+        borrowTo: document.getElementById('borrowTo').value,
+        borrowToTime: document.getElementById('borrowToTime').value,
+        equipment: selectedEquipment
+      };
+
+      try {
+        const res = await fetch(`${WEB_APP_URL}?action=create`, {
+          method: 'POST',
+          body: JSON.stringify(payload)
+        });
+        const result = await res.json();
+
+        if (result.ok) {
+          alert(`บันทึกคำขอเรียบร้อยแล้ว! เลขที่คำขอ: ${result.id}`);
+          document.getElementById('borrowForm').reset();
+          autoFillStaffInfo();
+        } else {
+          alert(`เกิดข้อผิดพลาด: ${result.error}`);
         }
-      </div>
-      <div class="grid2">
-        <div class="field"><label>เลขครุภัณฑ์</label><input value="${esc(eq.code)}" readonly placeholder="(ดึงอัตโนมัติ)"></div>
-        <div class="field"><label>ผู้รับผิดชอบ</label><input value="${esc(eq.responsible)}" readonly placeholder="(ดึงอัตโนมัติ)"></div>
-      </div>
-      <div class="field"><label>สถานที่ติดตั้ง</label><input value="${esc(eq.location)}" readonly placeholder="(ดึงอัตโนมัติ)"></div>
-      ${infoHtml}
-    </div>`;
-  }).join('');
-
-  return `
-  ${state.submitted?`<div class="success-banner">
-    <i class="ti ti-circle-check" aria-hidden="true" style="font-size:20px;color:#3B6D11;flex-shrink:0;margin-top:2px"></i>
-    <div><div style="font-weight:500;color:#27500A;font-size:14px">บันทึกคำขอเรียบร้อย ✓</div>
-    <div style="font-size:12px;color:#3B6D11;margin-top:4px">ส่งอีเมลแจ้งผู้รับผิดชอบครุภัณฑ์และ ${ADMIN_EMAIL} แล้ว</div></div>
-  </div>`:''}
-  <div class="card">
-    <div class="section-title"><i class="ti ti-user" aria-hidden="true"></i> ข้อมูลผู้ขอใช้ครุภัณฑ์</div>
-    <div class="grid2">
-      <div class="field"><label>วันที่กรอกแบบฟอร์ม</label>
-        <input type="date" value="${f.date}" oninput="updF('date',this.value)"></div>
-      <div></div>
-    </div>
-    <div class="field"><label>ชื่อ - นามสกุล <span class="req">*</span></label>
-      <div class="ac-wrap">
-        <input id="req-name" value="${esc(f.name)}" placeholder="พิมพ์ชื่อเพื่อค้นหา..."
-          oninput="staffSearch(this.value)" onblur="closeStaffAc(250)" autocomplete="off">
-        <div class="ac-drop" id="staff-drop" style="display:none"></div>
-      </div>
-    </div>
-    <div class="grid2">
-      <div class="field"><label>ตำแหน่ง <span class="req">*</span></label>
-        <select onchange="updF('position',this.value)">
-          <option value="">-- เลือกตำแหน่ง --</option>
-          ${PSU_POSITIONS.map(p=>`<option value="${esc(p)}" ${f.position===p?'selected':''}>${esc(p)}</option>`).join('')}
-        </select></div>
-      <div class="field"><label>สังกัด <span class="req">*</span></label>
-        <select onchange="updF('dept',this.value)">
-          <option value="">-- เลือกสังกัด --</option>
-          ${PSU_DEPTS.map(d=>`<option value="${esc(d)}" ${f.dept===d?'selected':''}>${esc(d)}</option>`).join('')}
-        </select></div>
-    </div>
-    <div class="field"><label>Email <span class="req">*</span></label>
-      <input type="email" value="${esc(f.email)}" oninput="updF('email',this.value)" placeholder="example@psu.ac.th"></div>
-    <div class="field"><label>มีความประสงค์ขอยืมครุภัณฑ์ เพื่อ <span class="req">*</span></label>
-      <textarea oninput="updF('purpose',this.value)" placeholder="ระบุวัตถุประสงค์...">${esc(f.purpose)}</textarea></div>
-  </div>
-  <div class="card">
-    <div class="section-title"><i class="ti ti-device-laptop" aria-hidden="true"></i> รายการครุภัณฑ์ที่ขอยืม</div>
-    ${eqRows}
-    <button class="btn-add" onclick="addEq()" ${state.loadingEq?'disabled style="opacity:.5"':''}>
-      <i class="ti ti-plus" aria-hidden="true"></i> เพิ่มรายการครุภัณฑ์
-    </button>
-  </div>
-  <div class="card">
-    <div class="section-title"><i class="ti ti-calendar" aria-hidden="true"></i> ระยะเวลาการยืม</div>
-    <div class="grid2">
-      <div class="field"><label>วันที่ขอยืม <span class="req">*</span></label>
-        <input type="date" value="${f.borrowFrom}" oninput="updF('borrowFrom',this.value)"></div>
-      <div class="field"><label>เวลา</label>
-        <input type="time" value="${f.bFromTime}" oninput="updF('bFromTime',this.value)"></div>
-      <div class="field"><label>วันที่กำหนดคืน <span class="req">*</span></label>
-        <input type="date" value="${f.borrowTo}" oninput="updF('borrowTo',this.value)"></div>
-      <div class="field"><label>เวลา</label>
-        <input type="time" value="${f.bToTime}" oninput="updF('bToTime',this.value)"></div>
-    </div>
-  </div>
-  <div style="display:flex;justify-content:flex-end;margin-bottom:2rem">
-    <button class="btn-primary" onclick="submitForm()" id="submit-btn" ${state.loadingEq?'disabled':''}>
-      <i class="ti ti-send" aria-hidden="true"></i> ส่งคำขออนุมัติ
-    </button>
-  </div>`;
-}
-
-// ── RENDER LIST ───────────────────────────────────────────
-function renderList(){
-  const synBtn=`<button style="background:transparent;border:0.5px solid rgba(0,0,0,.2);border-radius:8px;padding:6px 14px;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:6px;font-family:inherit" onclick="loadRequests()" ${state.syncing?'disabled':''}>
-    <i class="ti ti-refresh" aria-hidden="true" style="${state.syncing?'animation:spin .8s linear infinite':''}"></i>
-    ${state.syncing?'กำลังโหลด...':'รีเฟรช'}
-  </button>`;
-
-  if(state.syncing&&!state.requests.length)
-    return`<div class="empty"><div class="spinner" style="margin:0 auto 16px"></div>กำลังโหลดข้อมูล...</div>`;
-
-  const reqs=state.requests;
-  if(!reqs.length)
-    return`<div style="display:flex;justify-content:flex-end;margin-bottom:12px">${synBtn}</div>
-    <div class="empty"><i class="ti ti-inbox" aria-hidden="true"></i>ยังไม่มีคำขอ</div>`;
-
-  return`<div style="display:flex;align-items:center;margin-bottom:12px;gap:8px">
-    <span style="font-size:13px;color:#5f5e5a">${reqs.length} รายการ${state.lastSync?' · อัปเดต '+state.lastSync.toLocaleTimeString('th-TH'):''}</span>
-    ${synBtn}
-  </div>
-  ${reqs.map(r=>{
-    const eqs=r.form.equipment||[];
-    const bf=r.form.borrowFrom, bt=r.form.borrowTo;
-    const bft=r.form.bFromTime, btt=r.form.bToTime;
-    // Date range display
-    const hasDate=bf&&bt;
-    const dateRangeHtml=hasDate?`
-      <div class="date-range">
-        <i class="ti ti-calendar" aria-hidden="true" style="font-size:13px"></i>
-        <span>${fmtDate(bf)}${bft?' '+bft+' น.':''}</span>
-        <span class="arrow">→</span>
-        <span>${fmtDate(bt)}${btt?' '+btt+' น.':''}</span>
-      </div>`:'';
-    return`<div class="req-card" onclick="openDetail('${r.id}')">
-      <div class="req-top">
-        <div style="min-width:0">
-          <div class="req-name">${esc(r.form.name)}</div>
-          <div class="req-meta">${esc(r.form.position)} · ${esc(r.form.dept)}</div>
-          <div class="req-meta" style="color:#185FA5;font-size:11px">${esc(r.form.email)}</div>
-        </div>
-        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
-          ${sbadge(r.status)}
-          ${nextActorLabel(r.status)}
-        </div>
-      </div>
-      <div style="font-size:12px;color:#5f5e5a;margin-top:8px">
-        <i class="ti ti-device-laptop" aria-hidden="true" style="font-size:12px"></i>
-        ${eqs.map(e=>esc(e.name||'ไม่ระบุ')).join(', ')}
-      </div>
-      ${dateRangeHtml}
-      <div class="req-footer">
-        <span>เลขที่: ${esc(r.id)}</span>
-        <span>ยื่นเมื่อ ${fmtDate(r.createdAt?.split('T')[0])}</span>
-      </div>
-    </div>`;
-  }).join('')}`;
-}
-
-// ── TIMELINE ─────────────────────────────────────────────
-function tlDot(done,cur,bad){
-  const cls=bad?'td-bad':done?'td-done':cur?'td-cur':'td-wait';
-  const icon=bad?'ti-x':done?'ti-check':cur?'ti-loader-2':'ti-clock';
-  return`<div class="tl-dot ${cls}"><i class="ti ${icon}" style="font-size:13px" aria-hidden="true"></i></div>`;
-}
-function tlItem(label,sub,done,cur,bad){
-  return`<div class="tl-item">${tlDot(done,cur,bad)}<div class="tl-body">
-    <div class="tl-t" style="color:${bad?'#791F1F':'inherit'}">${label}</div>
-    <div class="tl-s">${sub}</div>
-  </div></div>`;
-}
-
-// ── RENDER DETAIL MODAL ───────────────────────────────────
-function renderDetail(r){
-  const s=r.status;
-  const eqs=r.form.equipment||[];
-
-  const eqCards=eqs.map((eq,i)=>`<div class="eq-info-card">
-    <div class="eq-info-name">${i+1}. ${esc(eq.name)}</div>
-    <div class="ig">
-      <span class="il">เลขครุภัณฑ์</span><span>${esc(eq.code)||'—'}</span>
-      <span class="il">ผู้รับผิดชอบ</span><span>${esc(eq.responsible)||'—'}${eq.responsibleEmail?` <span style="font-size:11px;color:#5f5e5a">(${esc(eq.responsibleEmail)})</span>`:''}</span>
-      <span class="il">สถานที่</span><span>${esc(eq.location)||'—'}</span>
-      <span class="il">สภาพก่อนใช้</span><span style="color:${eq.condBefore?'inherit':'#888'}">${esc(eq.condBefore)||'รอผู้รับผิดชอบตรวจสอบ'}</span>
-      ${eq.condAfter?`<span class="il">สภาพหลังใช้</span><span>${esc(eq.condAfter)}</span>`:''}
-    </div>
-  </div>`).join('');
-
-  // Timeline steps
-  const steps=[
-    tlItem('ยื่นคำขออนุมัติ', fmtDate(r.createdAt?.split('T')[0]), true, false, false),
-    tlItem('ผู้รับผิดชอบครุภัณฑ์รับทราบและตรวจสภาพ', 'ส่งอีเมลแจ้งผู้รับผิดชอบแต่ละรายการ',
-      ['รับทราบแล้ว','อนุมัติแล้ว','อยู่ระหว่างยืม','คืนครุภัณฑ์แล้ว','ตรวจสภาพเสร็จสิ้น'].includes(s),
-      s==='ยื่นขออนุมัติ', s==='ไม่สามารถให้ยืมได้'),
-    tlItem('รองผู้อำนวยการพิจารณาอนุมัติ',
-      APPROVER_NAME+' · '+APPROVER_EMAIL,
-      ['อนุมัติแล้ว','อยู่ระหว่างยืม','คืนครุภัณฑ์แล้ว','ตรวจสภาพเสร็จสิ้น'].includes(s)||s==='ไม่อนุมัติ',
-      s==='รับทราบแล้ว', s==='ไม่อนุมัติ'),
-    tlItem('ผู้ขอยืมยืนยันรับครุภัณฑ์', '',
-      ['อยู่ระหว่างยืม','คืนครุภัณฑ์แล้ว','ตรวจสภาพเสร็จสิ้น'].includes(s), s==='อนุมัติแล้ว', false),
-    tlItem('ผู้ขอยืมนำครุภัณฑ์มาคืน', '',
-      ['คืนครุภัณฑ์แล้ว','ตรวจสภาพเสร็จสิ้น'].includes(s), s==='อยู่ระหว่างยืม', false),
-    tlItem('ผู้รับผิดชอบตรวจสภาพและปิดคำขอ', '',
-      s==='ตรวจสภาพเสร็จสิ้น', s==='คืนครุภัณฑ์แล้ว', false),
-  ].join('');
-
-  // ── ACTION PANELS — clearly labeled by role ──────────────
-  let actions='';
-
-  // ขั้น 1: ผู้รับผิดชอบครุภัณฑ์
-  if(s==='ยื่นขออนุมัติ'){
-    const condInputs=eqs.map((eq,i)=>`
-      <div style="margin-bottom:10px;background:#fff;border-radius:8px;padding:10px 14px;border:0.5px solid rgba(0,0,0,.1)">
-        <div style="font-size:13px;font-weight:500;color:#0C447C;margin-bottom:2px">${i+1}. ${esc(eq.name)}</div>
-        <div style="font-size:11px;color:#5f5e5a;margin-bottom:6px">ผู้รับผิดชอบ: ${esc(eq.responsible)}</div>
-        <label style="font-size:12px;color:#5f5e5a;font-weight:500;display:block;margin-bottom:4px">สภาพครุภัณฑ์ก่อนยืม <span class="req">*</span></label>
-        <select class="cond-sel" id="cond-${eq.id}">
-          <option value="">-- เลือกสภาพ --</option>
-          <option>ปกติ</option><option>ชำรุด</option><option>อยู่ระหว่างซ่อม</option>
-        </select>
-      </div>`).join('');
-
-    actions+=`<div class="divider"></div>
-    <div class="role-box responsible">
-      <div class="role-box-header">
-        <div class="role-icon b"><i class="ti ti-key" aria-hidden="true"></i></div>
-        <div>
-          <div class="role-title">สำหรับ: ผู้รับผิดชอบครุภัณฑ์</div>
-          <div class="role-who">ตรวจสภาพครุภัณฑ์จริง แล้วกดรับทราบหรือแจ้งปัญหา</div>
-        </div>
-      </div>
-      ${condInputs}
-      <div class="action-row">
-        <button class="btn-success" onclick="doAcknowledge('${r.id}',true)">
-          <i class="ti ti-thumb-up" aria-hidden="true"></i> รับทราบ — ครุภัณฑ์พร้อมให้ยืม
-        </button>
-        <button class="btn-danger" onclick="doAcknowledge('${r.id}',false)">
-          <i class="ti ti-thumb-down" aria-hidden="true"></i> ไม่สามารถให้ยืมได้
-        </button>
-      </div>
-    </div>`;
-  }
-
-  // ขั้น 2: รองผู้อำนวยการอนุมัติ
-  if(s==='รับทราบแล้ว'){
-    actions+=`<div class="divider"></div>
-    <div class="role-box approver">
-      <div class="role-box-header">
-        <div class="role-icon g"><i class="ti ti-shield-check" aria-hidden="true"></i></div>
-        <div>
-          <div class="role-title">สำหรับ: รองผู้อำนวยการ — ผู้มีอำนาจอนุมัติเท่านั้น</div>
-          <div class="role-who">${APPROVER_NAME} · ${APPROVER_EMAIL}</div>
-        </div>
-      </div>
-      <div style="font-size:12px;color:#27500A;margin-bottom:12px">
-        ผู้รับผิดชอบครุภัณฑ์รับทราบและตรวจสภาพแล้ว — รอการพิจารณาอนุมัติจากท่าน
-      </div>
-      <div class="action-row">
-        <button class="btn-success" onclick="doAction('${r.id}','อนุมัติแล้ว')">
-          <i class="ti ti-circle-check" aria-hidden="true"></i> อนุมัติ
-        </button>
-        <button class="btn-danger" onclick="doAction('${r.id}','ไม่อนุมัติ')">
-          <i class="ti ti-circle-x" aria-hidden="true"></i> ไม่อนุมัติ
-        </button>
-      </div>
-    </div>`;
-  }
-
-  // ขั้น 3: ผู้ขอยืมยืนยันรับ
-  if(s==='อนุมัติแล้ว'){
-    actions+=`<div class="divider"></div>
-    <div class="role-box borrower">
-      <div class="role-box-header">
-        <div class="role-icon p"><i class="ti ti-user" aria-hidden="true"></i></div>
-        <div>
-          <div class="role-title">สำหรับ: ผู้ขอยืม — ${esc(r.form.name)}</div>
-          <div class="role-who">กดยืนยันเมื่อได้รับครุภัณฑ์จริงแล้ว</div>
-        </div>
-      </div>
-      <div class="action-row">
-        <button class="btn-primary" onclick="doAction('${r.id}','อยู่ระหว่างยืม')">
-          <i class="ti ti-package" aria-hidden="true"></i> ยืนยันรับครุภัณฑ์แล้ว — เริ่มใช้งาน
-        </button>
-      </div>
-    </div>`;
-  }
-
-  // ขั้น 4: ผู้ขอยืมแจ้งคืน
-  if(s==='อยู่ระหว่างยืม'){
-    actions+=`<div class="divider"></div>
-    <div class="role-box borrower">
-      <div class="role-box-header">
-        <div class="role-icon p"><i class="ti ti-arrow-back-up" aria-hidden="true"></i></div>
-        <div>
-          <div class="role-title">สำหรับ: ผู้ขอยืม — ${esc(r.form.name)}</div>
-          <div class="role-who">กดเมื่อนำครุภัณฑ์มาคืนแล้ว</div>
-        </div>
-      </div>
-      <div class="action-row">
-        <button class="btn-warn" onclick="doAction('${r.id}','คืนครุภัณฑ์แล้ว')">
-          <i class="ti ti-arrow-back-up" aria-hidden="true"></i> แจ้งคืนครุภัณฑ์แล้ว
-        </button>
-      </div>
-    </div>`;
-  }
-
-  // ขั้น 5: ผู้รับผิดชอบตรวจสภาพหลังคืน
-  if(s==='คืนครุภัณฑ์แล้ว'){
-    const condInputs=eqs.map((eq,i)=>`
-      <div style="margin-bottom:10px;background:#fff;border-radius:8px;padding:10px 14px;border:0.5px solid rgba(0,0,0,.1)">
-        <div style="font-size:13px;font-weight:500;color:#0C447C;margin-bottom:2px">${i+1}. ${esc(eq.name)}</div>
-        <div style="font-size:11px;color:#5f5e5a;margin-bottom:2px">สภาพก่อนยืม: <b>${esc(eq.condBefore)||'ไม่ได้บันทึก'}</b></div>
-        <label style="font-size:12px;color:#5f5e5a;font-weight:500;display:block;margin-bottom:4px;margin-top:6px">สภาพหลังได้รับคืน <span class="req">*</span></label>
-        <select class="cond-sel" id="after-${eq.id}">
-          <option value="">-- เลือกสภาพ --</option>
-          <option>ปกติ</option><option>ชำรุด</option><option>อยู่ระหว่างซ่อม</option>
-        </select>
-      </div>`).join('');
-
-    actions+=`<div class="divider"></div>
-    <div class="role-box return-check">
-      <div class="role-box-header">
-        <div class="role-icon a"><i class="ti ti-clipboard-check" aria-hidden="true"></i></div>
-        <div>
-          <div class="role-title">สำหรับ: ผู้รับผิดชอบครุภัณฑ์ — ตรวจสภาพหลังได้รับคืน</div>
-          <div class="role-who">ตรวจสอบสภาพจริงแล้วบันทึกเพื่อปิดคำขอ</div>
-        </div>
-      </div>
-      ${condInputs}
-      <div class="action-row">
-        <button class="btn-success" onclick="doInspect('${r.id}')">
-          <i class="ti ti-clipboard-check" aria-hidden="true"></i> บันทึกสภาพและปิดคำขอ
-        </button>
-      </div>
-    </div>`;
-  }
-
-  // Date range in modal
-  const bf=r.form.borrowFrom, bt=r.form.borrowTo;
-  const bft=r.form.bFromTime, btt=r.form.bToTime;
-  const dateRangeModal=(bf&&bt)?`
-    <div class="date-range" style="margin-bottom:8px">
-      <i class="ti ti-calendar" aria-hidden="true" style="font-size:13px"></i>
-      <b>ยืม</b> ${fmtDate(bf)}${bft?' เวลา '+bft+' น.':''} 
-      <span class="arrow">→</span> 
-      <b>คืน</b> ${fmtDate(bt)}${btt?' เวลา '+btt+' น.':''}
-    </div>`:'';
-
-  return`
-    <div class="modal-hdr">
-      <div class="modal-title"><i class="ti ti-file-text" aria-hidden="true"></i> คำขอ ${esc(r.id)}</div>
-      <button class="btn-close" onclick="closeDetail()" aria-label="ปิด"><i class="ti ti-x" aria-hidden="true"></i></button>
-    </div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:8px">
-      ${sbadge(r.status)}
-      <span style="font-size:11px;color:#888">ยื่นเมื่อ ${fmtDate(r.createdAt?.split('T')[0])}</span>
-    </div>
-
-    ${dateRangeModal}
-
-    <div style="font-size:12px;font-weight:500;color:#5f5e5a;margin-bottom:8px">ผู้ขอใช้</div>
-    <div class="ig">
-      <span class="il">ชื่อ - นามสกุล</span><span>${esc(r.form.name)}</span>
-      <span class="il">ตำแหน่ง</span><span>${esc(r.form.position)}</span>
-      <span class="il">สังกัด</span><span>${esc(r.form.dept)}</span>
-      <span class="il">Email</span><span style="color:#185FA5">${esc(r.form.email)}</span>
-      <span class="il">วัตถุประสงค์</span><span>${esc(r.form.purpose)}</span>
-    </div>
-    <div class="divider"></div>
-    <div style="font-size:12px;font-weight:500;color:#5f5e5a;margin-bottom:8px">รายการครุภัณฑ์</div>
-    ${eqCards}
-    <div class="divider"></div>
-    <div style="font-size:12px;font-weight:500;color:#5f5e5a;margin-bottom:10px">ขั้นตอนการดำเนินการ</div>
-    <div class="tl">${steps}</div>
-    ${actions}`;
-}
-
-// ── ACTIONS ───────────────────────────────────────────────
-window.doAction=async function(id,newStatus){
-  const r=state.requests.find(x=>x.id===id);if(!r)return;
-  showLoading('กำลังอัปเดตสถานะ...');
-  try{await apiCall('updateStatus',{id,status:newStatus,equipment:r.form.equipment});showToast('อัปเดต: '+newStatus,'ok');await loadRequests();state.selectedId=null;}
-  catch(e){showToast('เกิดข้อผิดพลาด: '+e.message,'err',5000);}
-  hideLoading();render();
-};
-
-window.doAcknowledge=async function(id,ok){
-  const r=state.requests.find(x=>x.id===id);if(!r)return;
-  const eqs=[...r.form.equipment];
-  if(ok){
-    let all=true;
-    eqs.forEach(eq=>{const el=document.getElementById('cond-'+eq.id);if(el&&el.value)eq.condBefore=el.value;else all=false;});
-    if(!all){showToast('กรุณาเลือกสภาพครุภัณฑ์ก่อนยืมให้ครบ','err');return;}
-  }
-  showLoading('กำลังบันทึก...');
-  try{await apiCall('updateStatus',{id,status:ok?'รับทราบแล้ว':'ไม่สามารถให้ยืมได้',equipment:eqs});showToast(ok?'รับทราบแล้ว':'ไม่สามารถให้ยืมได้','ok');await loadRequests();state.selectedId=null;}
-  catch(e){showToast('เกิดข้อผิดพลาด: '+e.message,'err',5000);}
-  hideLoading();render();
-};
-
-window.doInspect=async function(id){
-  const r=state.requests.find(x=>x.id===id);if(!r)return;
-  const eqs=[...r.form.equipment];let all=true;
-  eqs.forEach(eq=>{const el=document.getElementById('after-'+eq.id);if(el&&el.value)eq.condAfter=el.value;else all=false;});
-  if(!all){showToast('กรุณาเลือกสภาพครุภัณฑ์หลังใช้งานให้ครบ','err');return;}
-  showLoading('กำลังบันทึกและปิดคำขอ...');
-  try{await apiCall('updateStatus',{id,status:'ตรวจสภาพเสร็จสิ้น',equipment:eqs});showToast('ปิดคำขอเรียบร้อย','ok');await loadRequests();state.selectedId=null;}
-  catch(e){showToast('เกิดข้อผิดพลาด: '+e.message,'err',5000);}
-  hideLoading();render();
-};
-
-window.submitForm=async function(){
-  const f=state.form;
-  if(!f.name||!f.position||!f.dept||!f.email||!f.purpose||!f.borrowFrom||!f.borrowTo){
-    showToast('กรุณากรอกข้อมูลที่จำเป็นให้ครบ','err');return;
-  }
-  if(f.equipment.some(e=>!e.name||!e.code)){
-    showToast('กรุณาเลือกครุภัณฑ์ให้ครบทุกรายการ','err');return;
-  }
-  const btn=document.getElementById('submit-btn');if(btn)btn.disabled=true;
-  showLoading('กำลังบันทึกและส่งอีเมล...');
-  try{
-    const result=await apiCall('create',{
-      name:f.name,position:f.position,dept:f.dept,email:f.email,
-      purpose:f.purpose,date:f.date,borrowFrom:f.borrowFrom,
-      borrowFromTime:f.bFromTime,borrowTo:f.borrowTo,borrowToTime:f.bToTime,
-      equipment:f.equipment
-    });
-    showToast('บันทึกสำเร็จ! เลขที่: '+result.id,'ok',4000);
-    state.submitted=true;
-    state.form={date:today(),name:'',position:'',dept:'',email:'',purpose:'',borrowFrom:'',bFromTime:'',borrowTo:'',bToTime:'',
-      equipment:[{id:1,code:'',name:'',location:'',responsible:'',responsibleEmail:'',condBefore:'',condAfter:''}]};
-    state.eqCnt=2;
-    await loadRequests();
-  }catch(e){showToast('บันทึกไม่สำเร็จ: '+e.message,'err',6000);if(btn)btn.disabled=false;}
-  hideLoading();render();
-};
-
-// ── AUTOCOMPLETE ──────────────────────────────────────────
-window.eqSearch=function(eqId,q){
-  const eq=state.form.equipment.find(e=>e.id===eqId);
-  if(eq){eq.name=q;eq.code='';eq.location='';eq.responsible='';eq.responsibleEmail='';}
-  const items=searchEquip(q);
-  const drop=document.getElementById('eqdrop-'+eqId);if(!drop)return;
-  if(!q||!items.length){drop.style.display='none';return;}
-  drop.innerHTML=items.map(e=>`<div class="ac-item" onmousedown="selectEq(${eqId},${JSON.stringify(e).replace(/"/g,'&quot;')})">
-    <b>${esc(e.name.length>45?e.name.slice(0,45)+'…':e.name)}</b>
-    <div style="font-size:11px;color:#5f5e5a">${esc(e.code)} · ${esc(e.responsible)}</div>
-  </div>`).join('');
-  drop.style.display='block';
-};
-window.selectEq=function(eqId,e){
-  const eq=state.form.equipment.find(x=>x.id===eqId);if(!eq)return;
-  Object.assign(eq,{code:e.code,name:e.name,location:e.location,responsible:e.responsible,responsibleEmail:e.responsibleEmail||''});
-  const inp=document.getElementById('eq-name-'+eqId);if(inp)inp.value=e.name;
-  document.getElementById('eqdrop-'+eqId).style.display='none';
-  render();
-};
-window.closeAc=function(id,d){setTimeout(()=>{const el=document.getElementById('eqdrop-'+id);if(el)el.style.display='none';},d);};
-window.staffSearch=function(q){
-  state.form.name=q;
-  const items=searchStaff(q);
-  const drop=document.getElementById('staff-drop');if(!drop)return;
-  if(!q||!items.length){drop.style.display='none';return;}
-  drop.innerHTML=items.map(s=>`<div class="ac-item" onmousedown="selectStaff(${JSON.stringify(s).replace(/"/g,'&quot;')})">
-    <b>${esc(s.name)}</b>
-    <div style="font-size:11px;color:#5f5e5a">${esc(s.position)} · ${esc(s.dept)}</div>
-  </div>`).join('');
-  drop.style.display='block';
-};
-window.selectStaff=function(s){
-  Object.assign(state.form,{name:s.name,position:s.position,dept:s.dept,email:s.email});
-  document.getElementById('staff-drop').style.display='none';
-  render();
-};
-window.closeStaffAc=function(d){setTimeout(()=>{const el=document.getElementById('staff-drop');if(el)el.style.display='none';},d);};
-
-window.setTab=async t=>{state.tab=t;state.submitted=false;render();if(t==='list')await loadRequests();};
-window.updF=(k,v)=>{state.form[k]=v;};
-window.addEq=()=>{state.form.equipment.push({id:state.eqCnt++,code:'',name:'',location:'',responsible:'',responsibleEmail:'',condBefore:'',condAfter:''});render();};
-window.removeEq=id=>{if(state.form.equipment.length<=1)return;state.form.equipment=state.form.equipment.filter(e=>e.id!==id);render();};
-window.openDetail=id=>{state.selectedId=id;render();};
-window.closeDetail=()=>{state.selectedId=null;render();};
-
-// ── MAIN RENDER ───────────────────────────────────────────
-function render(){
-  const root=document.getElementById('root');
-  const req=state.requests.find(r=>r.id===state.selectedId);
-  root.innerHTML=`
-    <div class="header">
-      <div class="logo"><i class="ti ti-building-hospital" aria-hidden="true"></i></div>
-      <div class="header-info">
-        <div class="header-title">ระบบยืม-คืนครุภัณฑ์ โรงพยาบาลสัตว์ มหาวิทยาลัยสงขลานครินทร์</div>
-        <div class="header-sub">คณะสัตวแพทยศาสตร์ · kittiya.so@psu.ac.th</div>
-        <div class="conn-ok"><span class="dot-g"></span>เชื่อมต่อ Google Sheets แล้ว · kittiya.so@psu.ac.th</div>
-      </div>
-    </div>
-    <div class="tabs">
-      <button class="tab ${state.tab==='form'?'active':''}" onclick="setTab('form')">
-        <i class="ti ti-clipboard-plus" aria-hidden="true"></i> ยืมครุภัณฑ์
-      </button>
-      <button class="tab ${state.tab==='list'?'active':''}" onclick="setTab('list')">
-        <i class="ti ti-list-check" aria-hidden="true"></i> ติดตามสถานะ
-        ${state.requests.length>0?`<span class="badge">${state.requests.length}</span>`:''}
-      </button>
-    </div>
-    <div id="main-content">${state.tab==='form'?renderForm():renderList()}</div>
-    ${req?`<div class="modal-bg" onclick="closeDetail()">
-      <div class="modal" onclick="event.stopPropagation()">${renderDetail(req)}</div>
-    </div>`:''}
-  `;
-}
-
-render();
-loadEquipment();
-</script>
+      } catch (err) {
+        alert(`เกิดข้อผิดพลาดในการส่งข้อมูล: ${err.message}`);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'ยื่นคำขอยืมครุภัณฑ์';
+      }
+    }
+  </script>
 </body>
 </html>
