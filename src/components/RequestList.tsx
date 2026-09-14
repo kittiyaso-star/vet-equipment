@@ -393,8 +393,17 @@ export const RequestList: React.FC<RequestListProps> = ({
 
                     {/* Requester Info */}
                     <td className="py-3.5 px-4">
-                      <div className="font-semibold text-slate-900 flex items-center gap-1">
+                      <div className="font-semibold text-slate-900 flex items-center gap-1.5 flex-wrap">
                         <span>{req.requesterName}</span>
+                        {req.submittedByAdmin && (
+                          <span 
+                            className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium bg-purple-50 text-purple-700 border border-purple-200 shadow-2xs"
+                            title={`แอดมิน ${req.submittedByAdminName || ''} ยื่นคำขอแทน`}
+                          >
+                            <ShieldCheck className="w-3 h-3 text-purple-600 shrink-0" />
+                            <span>แอดมินยื่นแทน</span>
+                          </span>
+                        )}
                       </div>
                       <div className="text-[11px] text-slate-500">
                         {req.requesterPosition} • {req.requesterDept}

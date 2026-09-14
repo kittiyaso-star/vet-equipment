@@ -14,7 +14,8 @@ import {
   KeyRound,
   Users,
   ShieldCheck,
-  LogOut
+  LogOut,
+  BookOpen
 } from 'lucide-react';
 import { StaffUser } from '../types';
 
@@ -244,6 +245,20 @@ export const Header: React.FC<HeaderProps> = ({
               <span className="hidden sm:inline">CSV</span>
             </button>
           )}
+
+          {/* User Manual button */}
+          <a
+            href={`${import.meta.env.BASE_URL}user-manual.html`}
+            target="_blank"
+            rel="noopener noreferrer"
+            id="btn-user-manual"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-blue-800 bg-blue-50/80 hover:bg-blue-100/80 border border-blue-200 rounded-lg transition shadow-2xs cursor-pointer"
+            title="เปิดดูคู่มือการใช้งานและผังการทำงาน (PDF / Word)"
+          >
+            <BookOpen className="w-3.5 h-3.5 text-blue-700" />
+            <span className="hidden sm:inline">คู่มือ</span>
+            <span>การใช้งาน</span>
+          </a>
 
           {/* Notifications button */}
           <button

@@ -281,6 +281,64 @@ export async function syncEquipmentToGoogleSheet(
 }
 
 /**
+ * Appends a new equipment item directly to the bottom row of Google Sheets tab 'ครุภัณฑ์'
+ * Does NOT overwrite existing items and guarantees new items are added at the bottom, not the top.
+ */
+export async function appendEquipmentToGoogleSheet(
+  item: EquipmentMaster,
+  overrideWebhookUrl?: string
+): Promise<{ success: boolean; message: string }> {
+  const url = overrideWebhookUrl || getStoredWebhookUrl();
+  if (!url) {
+    saveLastSyncInfo('idle', `บันทึกครุภัณฑ์ "${item.name}" ในระบบแล้ว`);
+    return {
+      success: false,
+      message: 'ยังไม่ได้ระบุ Webhook URL สำหรับ Google Apps Script'
+    };
+  }
+
+  try {
+    const payload = {
+      action: 'append_equipment',
+      spreadsheetId: SPREADSHEET_ID,
+      sheetName: TAB_EQUIPMENT,
+      timestamp: new Date().toISOString(),
+      equipment: {
+        code: item.code,
+        receivedDate: item.receivedDate || '',
+        name: item.name,
+        brand: item.brand || '',
+        model: item.model || '',
+        location: item.location || '',
+        serialNumber: item.serialNumber || '',
+        price: item.price !== undefined ? item.price : '',
+        responsible: item.responsible || '',
+        responsibleEmail: item.responsibleEmail || ''
+      }
+    };
+
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'text/plain;charset=utf-8'
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) {
+      throw new Error(`HTTP Error ${res.status}`);
+    }
+
+    const msg = `เพิ่มครุภัณฑ์ "${item.name}" (${item.code}) ต่อท้ายฐานข้อมูล Google Sheets เรียบร้อยแล้ว`;
+    saveLastSyncInfo('success', msg);
+    return { success: true, message: msg };
+  } catch (err: any) {
+    console.warn('Error appending equipment to Google Sheet', err);
+    return { success: false, message: err?.message || String(err) };
+  }
+}
+
+/**
  * Complete Google Apps Script code to paste into Extensions > Apps Script in Google Sheets
  */
 export function getAppsScriptCode(): string {
@@ -501,6 +559,55 @@ function doPost(e) {
       })).setMimeType(ContentService.MimeType.JSON);
     }
 
+    // -------------------------------------------------------------
+    // 4. เพิ่มครุภัณฑ์ใหม่ต่อท้ายแถวล่างสุดเสมอ (Append Equipment to Bottom)
+    // -------------------------------------------------------------
+    if (data.action === "append_equipment" && data.equipment) {
+      var sheetName = data.sheetName || "ครุภัณฑ์";
+      var sheet = ss.getSheetByName(sheetName);
+      if (!sheet) {
+        sheet = ss.insertSheet(sheetName);
+        var headers = [
+          "รหัสครุภัณฑ์",
+          "วันที่ตรวจรับ",
+          "ชื่อ",
+          "ยี่ห้อ",
+          "รุ่น",
+          "สถานที่ติดตั้ง",
+          "Serial number",
+          "ราคา"
+        ];
+        sheet.appendRow(headers);
+        sheet.getRange(1, 1, 1, headers.length)
+          .setFontWeight("bold")
+          .setBackground("#15803d")
+          .setFontColor("#ffffff");
+      }
+
+      var eq = data.equipment;
+      var newRow = [
+        eq.code || "",
+        eq.receivedDate || "",
+        eq.name || "",
+        eq.brand || "",
+        eq.model || "",
+        eq.location || "",
+        eq.serialNumber || "",
+        eq.price !== undefined ? eq.price : ""
+      ];
+      if (eq.responsible) {
+        newRow.push(eq.responsible);
+      }
+
+      sheet.appendRow(newRow); // ต่อท้ายแถวล่างสุดเสมอ ไม่ไปแทรกแถวบนสุด!
+
+      return ContentService.createTextOutput(JSON.stringify({
+        status: "success",
+        message: "เพิ่มครุภัณฑ์ " + eq.code + " (" + eq.name + ") ต่อท้ายแถวล่างสุดของชีตเรียบร้อยแล้ว",
+        row: sheet.getLastRow()
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+
     return ContentService.createTextOutput(JSON.stringify({
       status: "error",
       message: "ไม่พบคำสั่ง action ที่ระบุ: " + data.action
@@ -615,6 +722,41 @@ function sendNotificationEmail(r) {
 }
 
 function doGet(e) {
+  var action = (e && e.parameter && e.parameter.action) ? e.parameter.action : "status";
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+
+  // ดึงข้อมูลครุภัณฑ์จากชีต "ครุภัณฑ์"
+  if (action === "get_equipment") {
+    var sheet = ss.getSheetByName("ครุภัณฑ์");
+    if (!sheet) {
+      return ContentService.createTextOutput(JSON.stringify({
+        status: "error",
+        message: "ไม่พบแท็บ ครุภัณฑ์"
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+    var values = sheet.getDataRange().getValues();
+    return ContentService.createTextOutput(JSON.stringify({
+      status: "success",
+      rows: values
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+
+  // ดึงรายชื่อบุคลากรจริงจากชีต "รายชื่อ"
+  if (action === "get_staff" || action === "get_personnel") {
+    var sheet = ss.getSheetByName("รายชื่อ");
+    if (!sheet) {
+      return ContentService.createTextOutput(JSON.stringify({
+        status: "error",
+        message: "ไม่พบแท็บ รายชื่อ"
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+    var values = sheet.getDataRange().getValues();
+    return ContentService.createTextOutput(JSON.stringify({
+      status: "success",
+      rows: values
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+
   return ContentService.createTextOutput(JSON.stringify({
     status: "online",
     message: "PSU Vet Hospital Google Sheets API is running",

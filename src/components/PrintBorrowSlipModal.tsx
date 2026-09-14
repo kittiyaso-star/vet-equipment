@@ -108,6 +108,12 @@ export const PrintBorrowSlipModal: React.FC<PrintBorrowSlipModalProps> = ({
                 <span className="font-mono">{request.requesterEmail}</span>
               </div>
             </div>
+            {request.submittedByAdmin && (
+              <div className="mt-2 pt-2 border-t border-slate-200 text-[11px] text-purple-900 flex items-center gap-1.5 font-sans">
+                <span className="font-semibold">* แอดมินยื่นคำขอแทน:</span>
+                <span>ดำเนินการโดย {request.submittedByAdminName || 'ผู้ดูแลระบบ'} ({request.submittedByAdminEmail || '-'})</span>
+              </div>
+            )}
           </div>
 
           {/* Section 2: Purpose & Schedule */}

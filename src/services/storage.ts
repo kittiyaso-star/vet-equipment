@@ -127,13 +127,17 @@ export function getStoredEquipment(): EquipmentMaster[] {
     }
     const parsed: EquipmentMaster[] = JSON.parse(raw);
     
-    // Merge INITIAL_EQUIPMENT_MASTER with stored items to ensure all authentic items are present
+    // If parsed is empty or contains less than INITIAL_EQUIPMENT_MASTER, merge with INITIAL_EQUIPMENT_MASTER
     const map = new Map<string, EquipmentMaster>();
     for (const item of INITIAL_EQUIPMENT_MASTER) {
       map.set(item.code.trim().toLowerCase(), item);
     }
     for (const item of parsed) {
-      const key = item.code.trim().toLowerCase();
+      const key = (item.code || '').trim().toLowerCase();
+      if (!key || key === 'n/a') {
+        map.set(item.id, item);
+        continue;
+      }
       if (map.has(key)) {
         map.set(key, { ...map.get(key)!, ...item });
       } else {
@@ -161,6 +165,7 @@ export function saveStoredEquipment(equipment: EquipmentMaster[]): void {
 
 /**
  * Parses Google Sheets tab 'ครุภัณฑ์' (columns: รหัสครุภัณฑ์, วันที่ตรวจรับ, ชื่อ, ยี่ห้อ, รุ่น, สถานที่ติดตั้ง, Serial number, ราคา)
+ * Resilient to merged header cells, missing headers, or shifted rows.
  */
 export function parseEquipmentSheetCSV(csvText: string): EquipmentMaster[] {
   if (!csvText || !csvText.trim()) return [];
@@ -203,7 +208,15 @@ export function parseEquipmentSheetCSV(csvText: string): EquipmentMaster[] {
 
   if (rows.length === 0) return [];
 
-  // Find header row index
+  // Default standard Google Sheet columns for tab "ครุภัณฑ์":
+  // Column 0: รหัสครุภัณฑ์
+  // Column 1: วันที่ตรวจรับ
+  // Column 2: ชื่อ
+  // Column 3: ยี่ห้อ
+  // Column 4: รุ่น
+  // Column 5: สถานที่ติดตั้ง
+  // Column 6: Serial number
+  // Column 7: ราคา
   let headerIndex = -1;
   let codeIdx = 0;
   let dateIdx = 1;
@@ -213,16 +226,32 @@ export function parseEquipmentSheetCSV(csvText: string): EquipmentMaster[] {
   let locIdx = 5;
   let snIdx = 6;
   let priceIdx = 7;
+  let respIdx = -1;
+  let emailIdx = -1;
 
+  // Search for an explicit header row. A real header row MUST have at least 2 matching column titles.
   for (let r = 0; r < Math.min(rows.length, 5); r++) {
-    const rowStr = rows[r].join(' ').toLowerCase();
-    if (rowStr.includes('รหัส') || rowStr.includes('code')) {
+    const row = rows[r];
+    const rowStr = row.join(' ').toLowerCase();
+
+    const matchesCode = rowStr.includes('รหัส') || rowStr.includes('code');
+    const matchesName = rowStr.includes('ชื่อ') || rowStr.includes('name');
+    const matchesDate = rowStr.includes('ตรวจรับ') || rowStr.includes('วันที่') || rowStr.includes('date');
+    const matchesBrand = rowStr.includes('ยี่ห้อ') || rowStr.includes('brand');
+    const matchesLoc = rowStr.includes('สถานที่') || rowStr.includes('ติดตั้ง') || rowStr.includes('location');
+    const matchesSN = rowStr.includes('serial') || rowStr.includes('sn');
+    const matchesPrice = rowStr.includes('ราคา') || rowStr.includes('price');
+    const matchesResp = rowStr.includes('เจ้าของ') || rowStr.includes('ผู้รับผิดชอบ') || rowStr.includes('owner') || rowStr.includes('responsible');
+
+    const matchCount = [matchesCode, matchesName, matchesDate, matchesBrand, matchesLoc, matchesSN, matchesPrice, matchesResp].filter(Boolean).length;
+    if (matchCount >= 2) {
       headerIndex = r;
-      const row = rows[r];
       row.forEach((col, idx) => {
         const cLow = col.toLowerCase();
         if (cLow.includes('รหัส') || cLow.includes('code')) codeIdx = idx;
         else if (cLow.includes('ตรวจรับ') || cLow.includes('วันที่') || cLow.includes('date')) dateIdx = idx;
+        else if (cLow.includes('ชื่อเจ้าของ') || cLow.includes('ผู้รับผิดชอบ') || cLow.includes('เจ้าของ') || cLow.includes('owner') || cLow.includes('responsible')) respIdx = idx;
+        else if (cLow.includes('อีเมล') || cLow.includes('email')) emailIdx = idx;
         else if (cLow.includes('ชื่อ') || cLow.includes('name')) nameIdx = idx;
         else if (cLow.includes('ยี่ห้อ') || cLow.includes('brand')) brandIdx = idx;
         else if (cLow.includes('รุ่น') || cLow.includes('model')) modelIdx = idx;
@@ -234,23 +263,46 @@ export function parseEquipmentSheetCSV(csvText: string): EquipmentMaster[] {
     }
   }
 
+  // If no multi-column header found, check if row 0 is just a merged banner cell (e.g. contains 'รหัสครุภัณฑ์' while name is blank)
+  if (headerIndex === -1 && rows.length > 0) {
+    const row0 = rows[0];
+    const isBannerRow = row0.some(c => c.toLowerCase().includes('รหัสครุภัณฑ์')) && !row0[2]?.trim();
+    if (isBannerRow) {
+      headerIndex = 0; // Skip the banner row
+    }
+  }
+
   const startRow = headerIndex >= 0 ? headerIndex + 1 : 0;
   const result: EquipmentMaster[] = [];
 
   for (let i = startRow; i < rows.length; i++) {
     const cells = rows[i];
-    const code = cells[codeIdx]?.trim();
-    const name = cells[nameIdx]?.trim();
+    let code = cells[codeIdx]?.trim();
+    let name = cells[nameIdx]?.trim();
+
+    // Priority Check: If cells[0] clearly looks like an authentic equipment code (e.g. starts with 'สพ.', 'รพส', or alphanumeric code)
+    // and codeIdx was accidentally pointing elsewhere, prioritize cells[0]!
+    if (cells[0] && (cells[0].includes('สพ.') || cells[0].includes('รพส') || /^[A-Za-z0-9\.\-\/]{4,}$/.test(cells[0]))) {
+      code = cells[0].trim();
+    }
+
+    // Priority Check: If name is missing or empty, but cells[2] has Thai/English name text
+    if (!name && cells[2]?.trim() && cells[2].trim().toUpperCase() !== 'N/A') {
+      name = cells[2].trim();
+    }
+
+    // Skip corrupted, empty, or header lines
     if (!code || !name) continue;
     if (code.toLowerCase().includes('รหัสครุภัณฑ์') || name.toLowerCase().includes('ชื่อ')) continue;
+    if (code.toUpperCase() === 'N/A' && !cells[0]) continue;
 
-    const loc = cells[locIdx]?.trim() || 'N/A';
+    const loc = cells[locIdx]?.trim() || 'โรงพยาบาลสัตว์ ม.อ.';
     const brand = cells[brandIdx]?.trim() || 'N/A';
     const model = cells[modelIdx]?.trim() || 'N/A';
     const serial = cells[snIdx]?.trim() || 'N/A';
     const receivedDate = cells[dateIdx]?.trim() || '';
     const rawPrice = cells[priceIdx]?.replace(/,/g, '') || '';
-    const price = !isNaN(Number(rawPrice)) ? Number(rawPrice) : rawPrice;
+    const price = !isNaN(Number(rawPrice)) && rawPrice !== '' ? Number(rawPrice) : rawPrice;
 
     // Determine category
     let category: EquipmentMaster['category'] = 'อื่นๆ';
@@ -300,7 +352,18 @@ export function parseEquipmentSheetCSV(csvText: string): EquipmentMaster[] {
     let responsible = 'เจ้าหน้าที่พยาบาลสัตว์';
     let responsibleEmail = 'vet.hospital@psu.ac.th';
 
-    if (loc.includes('ห้องผ่าตัด') || textToMatch.includes('ห้องผ่าตัด')) {
+    if (respIdx !== -1 && cells[respIdx]?.trim() && cells[respIdx].trim().toUpperCase() !== 'N/A') {
+      responsible = cells[respIdx].trim();
+      if (emailIdx !== -1 && cells[emailIdx]?.trim() && cells[emailIdx].trim().includes('@')) {
+        responsibleEmail = cells[emailIdx].trim();
+      } else {
+        // Find staff by name
+        const foundStaff = STAFF_USERS.find(s => s.name.includes(responsible) || responsible.includes(s.name.split(' ')[0]));
+        if (foundStaff) {
+          responsibleEmail = foundStaff.email;
+        }
+      }
+    } else if (loc.includes('ห้องผ่าตัด') || textToMatch.includes('ห้องผ่าตัด')) {
       responsible = 'นภัสกร';
       responsibleEmail = 'naphatsakon.s@psu.ac.th';
     } else if (loc.includes('ศัลยกรรม') || textToMatch.includes('ศัลยกรรม')) {

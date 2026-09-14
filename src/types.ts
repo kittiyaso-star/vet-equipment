@@ -55,6 +55,10 @@ export interface BorrowRequest {
   executiveApprovedAt?: string;
   executiveApprovedBy?: string;
   executiveNotes?: string;
+  // Admin delegation fields (ยื่นขอยืมแทนโดยแอดมิน)
+  submittedByAdmin?: boolean;
+  submittedByAdminName?: string;
+  submittedByAdminEmail?: string;
 }
 
 export interface StaffUser {

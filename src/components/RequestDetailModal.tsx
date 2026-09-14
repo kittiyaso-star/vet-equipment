@@ -281,6 +281,16 @@ export const RequestDetailModal: React.FC<RequestDetailModalProps> = ({
                   <span className="font-mono text-blue-700 font-medium">{request.requesterEmail}</span>
                 </div>
               </div>
+
+              {request.submittedByAdmin && (
+                <div className="mt-3 p-2.5 rounded-lg bg-purple-50 border border-purple-200 text-purple-900 text-xs flex items-start gap-2">
+                  <ShieldCheck className="w-4 h-4 text-purple-600 shrink-0 mt-0.5" />
+                  <div className="leading-relaxed">
+                    <span className="font-semibold text-purple-950">ดำเนินการยื่นคำขอโดยผู้ดูแลระบบ:</span>{' '}
+                    <span>{request.submittedByAdminName || 'ผู้ดูแลระบบ'} ({request.submittedByAdminEmail || '-'}) ได้ดำเนินการยื่นคำขอยืมครุภัณฑ์แทนบุคลากรท่านนี้</span>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Borrow Schedule */}

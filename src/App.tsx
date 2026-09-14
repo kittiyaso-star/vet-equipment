@@ -40,7 +40,8 @@ import {
   getStoredWebhookUrl, 
   syncRequestsToGoogleSheet, 
   syncSingleRequestToGoogleSheet,
-  syncEquipmentToGoogleSheet 
+  syncEquipmentToGoogleSheet,
+  appendEquipmentToGoogleSheet
 } from './services/googleSheetsSync';
 import { fetchGoogleSheetCSV, parseEquipmentSheetCSV } from './services/storage';
 
@@ -164,11 +165,15 @@ export default function App() {
   };
 
   // Auto-sync equipment to Google Sheets
-  const triggerEquipmentSync = async (updatedEq: EquipmentMaster[]) => {
+  const triggerEquipmentSync = async (updatedEq: EquipmentMaster[], newItem?: EquipmentMaster) => {
     const webhookUrl = getStoredWebhookUrl();
     if (webhookUrl) {
       try {
-        await syncEquipmentToGoogleSheet(updatedEq, webhookUrl);
+        if (newItem) {
+          await appendEquipmentToGoogleSheet(newItem, webhookUrl);
+        } else {
+          await syncEquipmentToGoogleSheet(updatedEq, webhookUrl);
+        }
       } catch (err) {
         console.warn('Auto-sync equipment to Google Sheets failed', err);
       }
@@ -337,13 +342,13 @@ export default function App() {
     setSelectedDetailRequest(null);
   };
 
-  // Add equipment to catalog
+  // Add equipment to catalog - append to end of list so it doesn't prepend to top row of Google Sheets
   const handleAddNewEquipment = (item: EquipmentMaster) => {
-    const updatedEq = [item, ...equipment];
+    const updatedEq = [...equipment, item];
     setEquipment(updatedEq);
     saveStoredEquipment(updatedEq);
-    triggerEquipmentSync(updatedEq);
-    triggerSyncToast(`เพิ่มครุภัณฑ์ "${item.name}" สำเร็จ — บันทึกลงฐานข้อมูล Google Sheets แล้ว`);
+    triggerEquipmentSync(updatedEq, item);
+    triggerSyncToast(`เพิ่มครุภัณฑ์ "${item.name}" สำเร็จ — บันทึกลงต่อท้ายฐานข้อมูลแล้ว`);
   };
 
   // Update equipment in catalog

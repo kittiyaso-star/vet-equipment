@@ -18,6 +18,7 @@ import {
   HelpCircle,
   FileSpreadsheet,
   Check,
+  Copy,
   DollarSign,
   Calendar,
   Layers,
@@ -123,6 +124,14 @@ export const EquipmentCatalogModal: React.FC<EquipmentCatalogModalProps> = ({
   const [newModel, setNewModel] = useState('');
   const [newPrice, setNewPrice] = useState('');
   const [newReceivedDate, setNewReceivedDate] = useState('');
+  const [hasCopiedHeader, setHasCopiedHeader] = useState(false);
+
+  const handleCopyHeaderRow = () => {
+    const headerString = "รหัสครุภัณฑ์\tวันที่ตรวจรับ\tชื่อ\tยี่ห้อ\tรุ่น\tสถานที่ติดตั้ง\tSerial number\tราคา";
+    navigator.clipboard.writeText(headerString);
+    setHasCopiedHeader(true);
+    setTimeout(() => setHasCopiedHeader(false), 3000);
+  };
 
   // Date picker & Autocomplete states
   const [isResponsibleDropdownOpen, setIsResponsibleDropdownOpen] = useState(false);
@@ -756,7 +765,7 @@ export const EquipmentCatalogModal: React.FC<EquipmentCatalogModalProps> = ({
                   <label className="text-[11px] font-semibold text-slate-700 flex items-center gap-1">
                     <User className="w-3.5 h-3.5 text-amber-700" />
                     <span>ผู้รับผิดชอบ / เจ้าของ</span>
-                    <span className="text-[10px] text-amber-700 font-normal">(พิมพ์เพื่อเลือกรายชื่อ)</span>
+                    <span className="text-[10px] text-slate-500 font-normal">(พิมพ์ชื่อบุคลากรจริงได้โดยตรง หรือเลือกจากระบบ)</span>
                   </label>
                   {newResponsible && (
                     <button
@@ -1120,6 +1129,55 @@ export const EquipmentCatalogModal: React.FC<EquipmentCatalogModalProps> = ({
             </div>
 
             <div className="overflow-y-auto pr-1 mt-4 space-y-4 text-xs">
+              {/* Emergency Solution Callout for User Issues */}
+              <div className="p-4 bg-amber-50/90 border border-amber-300 rounded-xl space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-amber-950 flex items-center gap-1.5 text-xs">
+                    <AlertTriangle className="w-4 h-4 text-amber-600" />
+                    วิธีแก้ไขด่วน: กู้คืน 200+ รายการ และแก้รายการใหม่ขึ้นไปอยู่แถวบนสุด
+                  </span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-200 text-amber-900 font-semibold">
+                    ทำตาม 3 ขั้นตอนนี้
+                  </span>
+                </div>
+
+                <div className="space-y-2.5 text-slate-700 text-[11px] leading-relaxed">
+                  <div className="p-2.5 bg-white/90 rounded-lg border border-amber-200">
+                    <strong className="text-amber-950">1. แก้แถวที่ 1 ใน Google Sheet (ที่ทำให้ระบบหาข้อมูลไม่เจอ):</strong>
+                    <p className="mt-1 text-slate-600">
+                      ใน Google Sheet แถวที่ 1 กำลังถูก <strong>"ผสานเซลล์ (Merge Cells)"</strong> รวมกัน ให้คลิกที่แถวที่ 1 แล้วกดปุ่ม <strong>"ยกเลิกการผสานเซลล์"</strong> (ไอคอนตารางผสานเซลล์ด้านบน) จากนั้นกดปุ่มคัดลอกด้านล่างนี้แล้ววางลงที่เซลล์ <strong>A1</strong> เพื่อใส่หัวตารางมาตรฐาน:
+                    </p>
+                    <div className="mt-2 flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={handleCopyHeaderRow}
+                        className="px-3 py-1.5 bg-amber-700 hover:bg-amber-800 text-white rounded-lg font-semibold flex items-center gap-1.5 transition cursor-pointer shadow-xs"
+                      >
+                        {hasCopiedHeader ? <Check className="w-3.5 h-3.5 text-emerald-300" /> : <Copy className="w-3.5 h-3.5" />}
+                        <span>{hasCopiedHeader ? 'คัดลอกแล้ว! นำไปวางในเซลล์ A1 ได้เลย' : 'คลิกคัดลอกหัวตาราง 8 คอลัมน์ที่ถูกต้อง'}</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="p-2.5 bg-white/90 rounded-lg border border-amber-200">
+                    <strong className="text-amber-950">2. แก้ไขรายการใหม่ (รพส-009 Wood's lamp) ที่แทรกอยู่แถวบนสุด:</strong>
+                    <p className="mt-1 text-slate-600">
+                      ในชีต แถวที่ 2 มีรายการ <code>รพส-009</code> แทรกอยู่ ให้คลิกขวาที่แถวที่ 2 เลือก <strong>"ตัด" (Ctrl+X)</strong> แล้วเลื่อนลงไปคลิกขวาที่แถวล่างสุด (ใต้แถวที่ 200 กว่า) เลือก <strong>"วาง" (Ctrl+V)</strong> จากนั้นคลิกขวาที่แถว 2 ที่ว่างอยู่แล้วเลือก <strong>"ลบแถว"</strong>
+                    </p>
+                    <p className="mt-1 text-emerald-700 font-medium">
+                      ✓ <em>ระบบได้รับการอัปเดตแล้ว:</em> การกดเพิ่มครุภัณฑ์ใหม่หลังจากนี้ ระบบจะส่งไปต่อท้ายล่างสุดของชีตเสมอ ไม่แทรกบนสุดอีกต่อไป!
+                    </p>
+                  </div>
+
+                  <div className="p-2.5 bg-white/90 rounded-lg border border-amber-200">
+                    <strong className="text-amber-950">3. วิธีกู้คืนข้อมูล 200+ รายการกลับเข้าสู่ระบบทันที:</strong>
+                    <p className="mt-1 text-slate-600">
+                      ใน Google Sheet แท็บ <strong>"ครุภัณฑ์"</strong> กด <kbd className="px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded font-mono text-[10px]">Ctrl + A</kbd> (หรือลากคลุมแถวทั้งหมด) แล้วกด <kbd className="px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded font-mono text-[10px]">Ctrl + C</kbd> เพื่อคัดลอก จากนั้นนำมากด <strong>Ctrl + V</strong> วางลงในช่องข้อความด้านล่างนี้ได้เลย
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               {/* Option 1: Quick Copy-Paste from Google Sheets (Easiest & 100% Reliable) */}
               <div className="p-4 bg-blue-50/70 border border-blue-200 rounded-xl space-y-2">
                 <div className="flex items-center justify-between">

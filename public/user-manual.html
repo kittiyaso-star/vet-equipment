@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>คู่มือการใช้งานระบบยืม-คืนครุภัณฑ์และอุปกรณ์ทางการแพทย์ | โรงพยาบาลสัตว์ ม.อ.</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #1e3a8a;
+      --primary-light: #3b82f6;
+      --primary-subtle: #eff6ff;
+      --accent: #0284c7;
+      --success: #059669;
+      --warning: #d97706;
+      --danger: #dc2626;
+      --slate-800: #1e293b;
+      --slate-600: #475569;
+      --slate-100: #f1f5f9;
+      --border: #cbd5e1;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Sarabun', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 15px;
+      line-height: 1.65;
+      color: #334155;
+      background-color: #f8fafc;
+      padding: 0;
+    }
+
+    /* Top Action Bar for PDF & Word Download */
+    .action-bar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: #ffffff;
+      border-bottom: 2px solid #e2e8f0;
+      padding: 12px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+
+    .action-bar-title {
+      font-family: 'Prompt', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      font-family: 'Prompt', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      border-radius: 8px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      border: none;
+    }
+
+    .btn-pdf {
+      background: #dc2626;
+      color: #ffffff;
+    }
+    .btn-pdf:hover {
+      background: #b91c1c;
+      transform: translateY(-1px);
+    }
+
+    .btn-word {
+      background: #2563eb;
+      color: #ffffff;
+    }
+    .btn-word:hover {
+      background: #1d4ed8;
+      transform: translateY(-1px);
+    }
+
+    .btn-back {
+      background: #f1f5f9;
+      color: #334155;
+      border: 1px solid #cbd5e1;
+    }
+    .btn-back:hover {
+      background: #e2e8f0;
+    }
+
+    /* Document Container */
+    .document {
+      max-width: 900px;
+      margin: 24px auto;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+      padding: 48px 56px;
+    }
+
+    /* Header & Branding */
+    .manual-header {
+      border-bottom: 3px solid var(--primary);
+      padding-bottom: 24px;
+      margin-bottom: 32px;
+      text-align: center;
+    }
+
+    .manual-logo {
+      height: 70px;
+      margin-bottom: 16px;
+      object-contain: contain;
+    }
+
+    h1.manual-title {
+      font-family: 'Prompt', sans-serif;
+      font-size: 26px;
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 8px;
+      line-height: 1.3;
+    }
+
+    .manual-subtitle {
+      font-family: 'Prompt', sans-serif;
+      font-size: 16px;
+      font-weight: 500;
+      color: var(--accent);
+      margin-bottom: 12px;
+    }
+
+    .manual-meta {
+      font-size: 13px;
+      color: var(--slate-600);
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    /* Table of Contents */
+    .toc-box {
+      background: var(--primary-subtle);
+      border: 1px solid #bfdbfe;
+      border-radius: 8px;
+      padding: 20px 24px;
+      margin-bottom: 36px;
+    }
+
+    .toc-title {
+      font-family: 'Prompt', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 12px;
+    }
+
+    .toc-list {
+      list-style-type: none;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px 16px;
+    }
+
+    .toc-list a {
+      color: #1e40af;
+      text-decoration: none;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .toc-list a:hover {
+      text-decoration: underline;
+    }
+
+    /* Sections */
+    section {
+      margin-bottom: 40px;
+      page-break-inside: avoid;
+    }
+
+    h2.section-title {
+      font-family: 'Prompt', sans-serif;
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--primary);
+      border-bottom: 2px solid #e2e8f0;
+      padding-bottom: 8px;
+      margin-bottom: 18px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    h3.sub-title {
+      font-family: 'Prompt', sans-serif;
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--slate-800);
+      margin: 18px 0 10px 0;
+    }
+
+    p {
+      margin-bottom: 12px;
+      text-align: justify;
+    }
+
+    /* Step Cards */
+    .step-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-left: 4px solid var(--primary);
+      border-radius: 8px;
+      padding: 16px 20px;
+      margin-bottom: 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    }
+
+    .step-badge {
+      display: inline-block;
+      background: var(--primary);
+      color: #ffffff;
+      font-family: 'Prompt', sans-serif;
+      font-weight: 600;
+      font-size: 12px;
+      padding: 2px 10px;
+      border-radius: 9999px;
+      margin-bottom: 8px;
+    }
+
+    .step-card-title {
+      font-family: 'Prompt', sans-serif;
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--slate-800);
+      margin-bottom: 6px;
+    }
+
+    /* Status Badges */
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .badge-pending { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+    .badge-exec { background: #fef9c3; color: #854d0e; border: 1px solid #fef08a; }
+    .badge-approved { background: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe; }
+    .badge-borrowed { background: #e0e7ff; color: #3730a3; border: 1px solid #c7d2fe; }
+    .badge-returned { background: #f3e8ff; color: #6b21a8; border: 1px solid #e9d5ff; }
+    .badge-completed { background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
+    .badge-cancelled { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+
+    /* Tables */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0 24px 0;
+      font-size: 14px;
+    }
+
+    th, td {
+      border: 1px solid #cbd5e1;
+      padding: 10px 14px;
+      text-align: left;
+    }
+
+    th {
+      background: #f8fafc;
+      color: var(--slate-800);
+      font-family: 'Prompt', sans-serif;
+      font-weight: 600;
+    }
+
+    tr:nth-child(even) {
+      background-color: #fcfdfe;
+    }
+
+    /* Flowchart Visual Box */
+    .flowchart {
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      padding: 20px;
+      margin: 20px 0;
+    }
+
+    .flow-step {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      position: relative;
+      padding-bottom: 20px;
+    }
+
+    .flow-step:last-child {
+      padding-bottom: 0;
+    }
+
+    .flow-step::before {
+      content: '';
+      position: absolute;
+      left: 18px;
+      top: 36px;
+      bottom: 0;
+      width: 2px;
+      background: #cbd5e1;
+    }
+
+    .flow-step:last-child::before {
+      display: none;
+    }
+
+    .flow-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--primary);
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 14px;
+      flex-shrink: 0;
+      z-index: 1;
+    }
+
+    .flow-content {
+      flex: 1;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 12px 16px;
+    }
+
+    .flow-title {
+      font-family: 'Prompt', sans-serif;
+      font-weight: 600;
+      font-size: 15px;
+      color: var(--slate-800);
+      margin-bottom: 4px;
+    }
+
+    /* Callout Boxes */
+    .callout {
+      border-radius: 8px;
+      padding: 14px 18px;
+      margin: 16px 0;
+      font-size: 14px;
+    }
+
+    .callout-info {
+      background: #f0fdf4;
+      border-left: 4px solid var(--success);
+      color: #14532d;
+    }
+
+    .callout-warning {
+      background: #fffbeb;
+      border-left: 4px solid var(--warning);
+      color: #78350f;
+    }
+
+    .callout-tip {
+      background: #eff6ff;
+      border-left: 4px solid var(--accent);
+      color: #1e3a8a;
+    }
+
+    /* Footer */
+    .manual-footer {
+      border-top: 1px solid #e2e8f0;
+      padding-top: 20px;
+      margin-top: 40px;
+      text-align: center;
+      font-size: 12px;
+      color: #64748b;
+    }
+
+    /* Print Styles */
+    @media print {
+      body {
+        background: #ffffff;
+        font-size: 13px;
+      }
+      .action-bar {
+        display: none !important;
+      }
+      .document {
+        border: none;
+        box-shadow: none;
+        padding: 0;
+        margin: 0;
+        max-width: 100%;
+      }
+      section {
+        page-break-inside: avoid;
+      }
+      .page-break {
+        page-break-before: always;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Floating Action Bar -->
+  <div class="action-bar">
+    <div class="action-bar-title">
+      <span>📖 คู่มือการใช้งานระบบยืม-คืนครุภัณฑ์ รพ.สัตว์ ม.อ.</span>
+    </div>
+    <div class="btn-group">
+      <button class="btn btn-pdf" onclick="window.print()">
+        🖨️ พิมพ์ / บันทึกเป็น PDF
+      </button>
+      <button class="btn btn-word" onclick="downloadWordDoc()">
+        📥 บันทึกเป็นไฟล์ Word (.doc)
+      </button>
+      <a href="./" class="btn btn-back">
+        🏠 กลับสู่ระบบยืม-คืน
+      </a>
+    </div>
+  </div>
+
+  <!-- Main Document Container -->
+  <div class="document" id="manual-content">
+
+    <!-- Manual Header -->
+    <header class="manual-header">
+      <img src="./logo-vet-color-transparent.svg" alt="โรงพยาบาลสัตว์ มหาวิทยาลัยสงขลานครินทร์" class="manual-logo" onerror="this.src='./site-icon.jpg'">
+      <h1 class="manual-title">คู่มือการใช้งานระบบยืม - คืนครุภัณฑ์และอุปกรณ์ทางการแพทย์</h1>
+      <div class="manual-subtitle">โรงพยาบาลสัตว์ มหาวิทยาลัยสงขลานครินทร์ (PSU Animal Hospital)</div>
+      <div class="manual-meta">
+        <span><strong>เวอร์ชัน:</strong> 2.0 (ระบบออนไลน์เรียลไทม์)</span>
+        <span><strong>รองรับ:</strong> PSU Single Sign-On (OIDC)</span>
+        <span><strong>วันที่ปรับปรุง:</strong> กันยายน 2569</span>
+      </div>
+    </header>
+
+    <!-- Table of Contents -->
+    <div class="toc-box">
+      <div class="toc-title">📑 สารบัญหัวข้อคู่มือ (Table of Contents)</div>
+      <ul class="toc-list">
+        <li><a href="#section-intro">1. บทนำและภาพรวมระบบ</a></li>
+        <li><a href="#section-roles">2. บทบาทและสิทธิ์ผู้ใช้งาน (Roles)</a></li>
+        <li><a href="#section-flow">3. ผังขั้นตอนการทำงาน (Workflow)</a></li>
+        <li><a href="#section-user-guide">4. ขั้นตอนการยืมสำหรับผู้ขอยืม (User)</a></li>
+        <li><a href="#section-owner-guide">5. ขั้นตอนการพิจารณาสำหรับเจ้าของ</a></li>
+        <li><a href="#section-exec-guide">6. ขั้นตอนการอนุมัติของผู้บริหาร</a></li>
+        <li><a href="#section-slip-print">7. การพิมพ์ใบยืม (Borrow Slip & QR)</a></li>
+        <li><a href="#section-return-guide">8. ขั้นตอนการส่งคืนและการตรวจรับคืน</a></li>
+        <li><a href="#section-notif">9. ระบบแจ้งเตือนกำหนดส่งคืน</a></li>
+        <li><a href="#section-admin">10. เมนูและการจัดการสำหรับ Admin</a></li>
+      </ul>
+    </div>
+
+    <!-- SECTION 1 -->
+    <section id="section-intro">
+      <h2 class="section-title">1. บทนำและภาพรวมระบบ (Introduction)</h2>
+      <p>
+        <strong>ระบบยืม-คืนครุภัณฑ์และอุปกรณ์ทางการแพทย์ โรงพยาบาลสัตว์ มหาวิทยาลัยสงขลานครินทร์</strong> เป็นระบบสารสนเทศออนไลน์ที่พัฒนาขึ้นเพื่ออำนวยความสะดวกให้แก่อาจารย์ สัตวแพทย์ นักวิทยาศาสตร์ และบุคลากรทางการแพทย์ ในการขอใช้งานและส่งคืนอุปกรณ์การรักษา การตรวจวินิจฉัย และการเรียนการสอนอย่างมีประสิทธิภาพ
+      </p>
+      <div class="callout callout-tip">
+        <strong>จุดเด่นสำคัญของระบบ:</strong>
+        <ul style="margin-left: 20px; margin-top: 6px;">
+          <li>ใช้งานออนไลน์แบบเรียลไทม์ได้ 24 ชั่วโมง ผ่านคอมพิวเตอร์ แท็บเล็ต หรือสมาร์ตโฟน</li>
+          <li>เชื่อมโยงระบบยืนยันตัวตน <strong>PSU Single Sign-On (OIDC)</strong> ด้วยบัญชี PSU Passport</li>
+          <li>ระบบอนุมัติ 2 ระดับ: เจ้าของครุภัณฑ์รายบุคคลพิจารณาความยินยอม และผู้บริหารลงนามอนุมัติ</li>
+          <li>สร้าง <strong>ใบยืมครุภัณฑ์ (Borrow Slip) พร้อม QR Code</strong> สำหรับใช้ตรวจสอบ ณ จุดรับมอบ</li>
+          <li>ระบบแจ้งเตือนกำหนดส่งคืนอัตโนมัติ (ใกล้กำหนด, ครบกำหนดวันนี้, เกินกำหนด)</li>
+          <li>ซิงค์ข้อมูลกับ <strong>Google Sheets</strong> ของโรงพยาบาลสัตว์ ม.อ. แบบอัตโนมัติทันที</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- SECTION 2 -->
+    <section id="section-roles">
+      <h2 class="section-title">2. บทบาทและสิทธิ์ผู้ใช้งานในระบบ (Roles & Permissions)</h2>
+      <p>ระบบกำหนดสิทธิ์การใช้งานออกเป็น 4 บทบาทหลัก เพื่อความปลอดภัยและความคล่องตัวในการปฏิบัติงาน:</p>
+      
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 22%;">บทบาท (Role)</th>
+            <th style="width: 38%;">คำอธิบายหน้าที่</th>
+            <th style="width: 40%;">สิ่งที่ทำได้ในระบบ</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>ผู้ขอยืม (User)</strong><br><span class="badge badge-borrowed">ผู้ใช้งานทั่วไป</span></td>
+            <td>อาจารย์, สัตวแพทย์, นักวิทยาศาสตร์, บุคลากรที่ต้องการยืมอุปกรณ์เพื่อการรักษา/วิจัย/สอน</td>
+            <td>
+              • ค้นหาและดูสถานะครุภัณฑ์ในคลัง<br>
+              • ยื่นคำขอยืมครุภัณฑ์พร้อมเลือกวันเวลา<br>
+              • ติดตามสถานะคำขอ<br>
+              • พิมพ์ใบยืมครุภัณฑ์ (Borrow Slip)<br>
+              • ขอยกเลิกคำขอ (เมื่อยังไม่อนุมัติ)
+            </td>
+          </tr>
+          <tr>
+            <td><strong>เจ้าของครุภัณฑ์ (Owner)</strong><br><span class="badge badge-approved">ผู้รับผิดชอบอุปกรณ์</span></td>
+            <td>เจ้าหน้าที่ประจำห้องตรวจ/ห้องปฏิบัติการที่ดูแลครุภัณฑ์แต่ละรายการโดยตรง</td>
+            <td>
+              • ได้รับคำขอและตรวจสอบรายละเอียด<br>
+              • กด <strong>"ยินยอม"</strong> หรือ <strong>"ไม่ยินยอม"</strong> ในรายการตนเอง<br>
+              • ตรวจสอบสภาพครุภัณฑ์ตอนรับคืน<br>
+              • บันทึกหมายเหตุสภาพหลังส่งคืน
+            </td>
+          </tr>
+          <tr>
+            <td><strong>ผู้บริหาร (Executive)</strong><br><span class="badge badge-exec">ผู้อนุมัติขั้นสุดท้าย</span></td>
+            <td>รองผู้อำนวยการโรงพยาบาลสัตว์ หรือผู้มีอำนาจสั่งการตามระเบียบคณะฯ</td>
+            <td>
+              • ตรวจสอบคำขอที่ผ่านความยินยอมจากเจ้าของแล้ว<br>
+              • ลงนาม/กดอนุมัติคำขอยืมขั้นสุดท้าย<br>
+              • ระบุหมายเหตุคำสั่งการเพิ่มเติม
+            </td>
+          </tr>
+          <tr>
+            <td><strong>ผู้ดูแลระบบ (Admin)</strong><br><span class="badge badge-pending">ผู้ดูแลระบบสารสนเทศ</span></td>
+            <td>เจ้าหน้าที่บริหารงานพัสดุและระบบเทคโนโลยีสารสนเทศ รพ.สัตว์</td>
+            <td>
+              • เพิ่ม แก้ไข ปรับปรุงข้อมูลคลังครุภัณฑ์<br>
+              • จัดการสิทธิ์บุคลากรในระบบ<br>
+              • สลับมุมมองระหว่าง Portal บุคลากร และ Admin<br>
+              • อนุมัติหรือตรวจรับคืนแทนในกรณีจำเป็น<br>
+              • นำเข้า/ส่งออกข้อมูล CSV และซิงค์ Google Sheets
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- SECTION 3 -->
+    <section id="section-flow">
+      <h2 class="section-title">3. ผังขั้นตอนการทำงานของระบบ (System Workflow)</h2>
+      <p>กระบวนการยืมและคืนครุภัณฑ์ตั้งแต่เริ่มต้นจนเสร็จสมบูรณ์ มีขั้นตอนดังนี้:</p>
+
+      <div class="flowchart">
+        <!-- Step 1 -->
+        <div class="flow-step">
+          <div class="flow-icon">1</div>
+          <div class="flow-content">
+            <div class="flow-title">1. เข้าสู่ระบบ (Authentication)</div>
+            <p style="margin:0; font-size:13px; color:#475569;">
+              บุคลากรเข้าสู่ระบบผ่าน <strong>PSU Single Sign-On (OIDC)</strong> ด้วย PSU Passport หรือเลือกโปรไฟล์บุคลากร ระบบจะดึงข้อมูลชื่อ-สกุล หน่วยงาน และสิทธิ์อัตโนมัติ
+            </p>
+          </div>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="flow-step">
+          <div class="flow-icon">2</div>
+          <div class="flow-content">
+            <div class="flow-title">2. ค้นหาครุภัณฑ์และยื่นคำขอยืม (Submit Borrow Request)</div>
+            <p style="margin:0; font-size:13px; color:#475569;">
+              ผู้ขอยืมกดปุ่ม <strong>"+ ยื่นขอยืมครุภัณฑ์"</strong> เลือกอุปกรณ์ที่สถานะ <span class="badge badge-completed">พร้อมใช้งาน</span> ระบุวัตถุประสงค์ วันที่และเวลาที่ต้องการใช้งาน ระบบจะสร้างรหัสคำขอ (เช่น <code>REQ-XXXXXX</code>) และเปลี่ยนสถานะเป็น <span class="badge badge-pending">ยื่นขออนุมัติ</span>
+            </p>
+          </div>
+        </div>
+
+        <!-- Step 3 -->
+        <div class="flow-step">
+          <div class="flow-icon">3</div>
+          <div class="flow-content">
+            <div class="flow-title">3. เจ้าของครุภัณฑ์พิจารณาให้ความยินยอม (Owner Consideration)</div>
+            <p style="margin:0; font-size:13px; color:#475569;">
+              เจ้าของครุภัณฑ์แต่ละชิ้นเข้าตรวจสอบรายการของตนเอง แล้วกด <strong>"ยินยอมให้ยืม"</strong> หรือ <strong>"ไม่ยินยอม"</strong> (หากไม่ยินยอมคำขอจะยกเลิกทันที หากยินยอมครบทุกชิ้นระบบจะส่งต่อให้อัตโนมัติ) สถานะจะเปลี่ยนเป็น <span class="badge badge-exec">รอผู้บริหารอนุมัติ</span>
+            </p>
+          </div>
+        </div>
+
+        <!-- Step 4 -->
+        <div class="flow-step">
+          <div class="flow-icon">4</div>
+          <div class="flow-content">
+            <div class="flow-title">4. ผู้บริหารลงนามอนุมัติขั้นสุดท้าย (Executive Approval)</div>
+            <p style="margin:0; font-size:13px; color:#475569;">
+              รองผู้อำนวยการโรงพยาบาลสัตว์ หรือ Admin ตรวจสอบและกด <strong>"อนุมัติคำขอยืม"</strong> สถานะเปลี่ยนเป็น <span class="badge badge-approved">เจ้าของให้ยืมแล้ว</span> / <span class="badge badge-borrowed">กำลังยืมใช้งาน</span> และสถานะของครุภัณฑ์ในคลังจะเปลี่ยนเป็น <em>"ถูกยืมใช้งาน"</em> ทันที
+            </p>
+          </div>
+        </div>
+
+        <!-- Step 5 -->
+        <div class="flow-step">
+          <div class="flow-icon">5</div>
+          <div class="flow-content">
+            <div class="flow-title">5. พิมพ์ใบยืมและรับมอบอุปกรณ์ (Pick up & Print Slip)</div>
+            <p style="margin:0; font-size:13px; color:#475569;">
+              ผู้ยืมกดปุ่ม <strong>"พิมพ์ใบยืม"</strong> เพื่อพิมพ์เอกสารทางการที่มีตราสัญลักษณ์และ QR Code ไปแสดงต่อเจ้าของครุภัณฑ์ ณ สถานที่จัดเก็บ เพื่อตรวจรับอุปกรณ์และลงนามรับมอบ
+            </p>
+          </div>
+        </div>
+
+        <!-- Step 6 -->
+        <div class="flow-step">
+          <div class="flow-icon">6</div>
+          <div class="flow-content">
+            <div class="flow-title">6. ส่งคืนและตรวจรับสภาพ (Return Check-in)</div>
+            <p style="margin:0; font-size:13px; color:#475569;">
+              เมื่อเสร็จสิ้นภารกิจ ผู้ยืมนำอุปกรณ์มาส่งคืน เจ้าของหรือเจ้าหน้าที่กดปุ่ม <strong>"รับคืนครุภัณฑ์"</strong> ตรวจสอบสภาพหลังใช้งานและบันทึกข้อมูล สถานะจะเปลี่ยนเป็น <span class="badge badge-completed">รับคืนเรียบร้อย</span> และครุภัณฑ์จะกลับมา <span class="badge badge-completed">พร้อมใช้งาน</span> สำหรับผู้อื่นทันที
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 4 -->
+    <section id="section-user-guide">
+      <h2 class="section-title">4. ขั้นตอนการใช้งานสำหรับผู้ขอยืม (User Step-by-Step)</h2>
+
+      <div class="step-card">
+        <span class="step-badge">ขั้นตอนที่ 1</span>
+        <div class="step-card-title">เข้าสู่ระบบ (Login)</div>
+        <p>1. เปิดหน้าเว็บระบบ: <a href="https://kittiyaso-star.github.io/vet-equipment/" target="_blank">https://kittiyaso-star.github.io/vet-equipment/</a></p>
+        <p>2. สังเกตแถบด้านบน หากต้องการเชื่อมต่อบัญชี PSU ให้กดปุ่ม <strong>"PSU SSO"</strong> หรือคลิกที่ชื่อผู้ใช้งานเพื่อสลับบัญชีที่ท่านต้องการจำลองทดสอบ</p>
+      </div>
+
+      <div class="step-card">
+        <span class="step-badge">ขั้นตอนที่ 2</span>
+        <div class="step-card-title">ยื่นคำขอยืมครุภัณฑ์ (Create Borrow Request)</div>
+        <p>1. กดปุ่มสีน้ำเงิน <strong>"+ ยื่นขอยืมครุภัณฑ์"</strong> บริเวณมุมบนขวา</p>
+        <p>2. ระบบจะเปิดหน้าต่างฟอร์มการยืม ข้อมูลผู้ยืม (ชื่อ ตำแหน่ง สังกัด อีเมล) จะถูกกรอกให้อัตโนมัติ</p>
+        <p>3. กรอกข้อมูลการยืม:
+          <ul style="margin-left: 20px; margin-top: 4px;">
+            <li><strong>วัตถุประสงค์ในการยืม:</strong> เช่น การเรียนการสอนรายวิชาศัลยศาสตร์, ใช้ในคลินิกฉุกเฉิน, งานวิจัย</li>
+            <li><strong>วันที่และเวลายืม:</strong> กำหนดวันและเวลาที่ต้องการรับอุปกรณ์</li>
+            <li><strong>วันที่และเวลากำหนดส่งคืน:</strong> กำหนดวันและเวลาที่จะนำมาคืน</li>
+          </ul>
+        </p>
+        <p>4. <strong>เลือกรายการครุภัณฑ์:</strong> คลิกเลือกอุปกรณ์ที่ต้องการยืมจากคลัง สามารถค้นหาตามชื่อหรือรหัสครุภัณฑ์ได้ (เลือกได้หลายชิ้นในคำขอเดียว)</p>
+        <p>5. ตรวจสอบสภาพเริ่มต้น และกดปุ่ม <strong>"ยืนยันและบันทึกคำขอยืม"</strong></p>
+      </div>
+
+      <div class="step-card">
+        <span class="step-badge">ขั้นตอนที่ 3</span>
+        <div class="step-card-title">ติดตามสถานะคำขอ (Track Status)</div>
+        <p>ท่านสามารถดูรายการคำขอของท่านได้ที่ตารางหน้าแรก โดยสังเกตแถบสถานะ:</p>
+        <p>
+          • <span class="badge badge-pending">ยื่นขออนุมัติ</span> = รอให้เจ้าของครุภัณฑ์แต่ละชิ้นกดความยินยอม<br>
+          • <span class="badge badge-exec">รอผู้บริหารอนุมัติ</span> = เจ้าของยินยอมครบแล้ว รอผู้บริหารลงนาม<br>
+          • <span class="badge badge-approved">เจ้าของให้ยืมแล้ว</span> = อนุมัติเรียบร้อย สามารถพิมพ์ใบยืมไปรับอุปกรณ์ได้<br>
+          • <span class="badge badge-borrowed">กำลังยืมใช้งาน</span> = กำลังอยู่ระหว่างการนำไปใช้งาน
+        </p>
+      </div>
+    </section>
+
+    <!-- SECTION 5 -->
+    <section id="section-owner-guide">
+      <h2 class="section-title">5. ขั้นตอนสำหรับเจ้าของครุภัณฑ์ (Owner Consideration)</h2>
+      <p>เมื่อมีบุคลากรยื่นคำขอยืมอุปกรณ์ที่ท่านเป็นผู้รับผิดชอบ ท่านสามารถพิจารณาได้ดังนี้:</p>
+
+      <div class="step-card">
+        <div class="step-card-title">การพิจารณาให้ความยินยอมในรายการของตนเอง</div>
+        <p>1. คลิกที่แถวคำขอในตารางเพื่อเปิด <strong>"รายละเอียดคำขอยืม"</strong></p>
+        <p>2. ตรวจสอบวัตถุประสงค์และช่วงเวลาที่ขอยืมว่าซ้อนทับกับภารกิจของโรงพยาบาลหรือไม่</p>
+        <p>3. ในตารางรายการอุปกรณ์ ตรงรายการที่ท่านรับผิดชอบจะมีปุ่มกด:
+          <ul style="margin-left: 20px; margin-top: 4px;">
+            <li>กดปุ่มสีเขียว <strong>"ยินยอมให้ยืม"</strong>: หากอุปกรณ์พร้อมและอนุญาตให้ยืม</li>
+            <li>กดปุ่มสีแดง <strong>"ไม่ยินยอม"</strong>: หากอุปกรณ์ติดภารกิจรักษาหรือชำรุด</li>
+          </ul>
+        </p>
+        <p>4. เมื่อเจ้าของทุกรายการกด "ยินยอม" ระบบจะปรับสถานะส่งต่อไปยัง <strong>ผู้บริหาร</strong> โดยอัตโนมัติทันที</p>
+      </div>
+    </section>
+
+    <!-- SECTION 6 -->
+    <section id="section-exec-guide">
+      <h2 class="section-title">6. ขั้นตอนการอนุมัติของผู้บริหาร (Executive Approval)</h2>
+      <p>สำหรับผู้บริหาร (รองผู้อำนวยการโรงพยาบาลสัตว์ ฝ่ายบริหารผลิตภัณฑ์และเวชภัณฑ์):</p>
+      <div class="step-card" style="border-left-color: #d97706;">
+        <div class="step-card-title">การลงนามอนุมัติคำขอยืม</div>
+        <p>1. เลือกคำขอที่มีสถานะ <span class="badge badge-exec">รอผู้บริหารอนุมัติ</span></p>
+        <p>2. กดเปิดดูรายละเอียดคำขอ ตรวจสอบว่าเจ้าของครุภัณฑ์ทุกคนกด "ยินยอม" เรียบร้อยแล้ว</p>
+        <p>3. กรอกข้อความสั่งการ/ความเห็นเพิ่มเติม (ถ้ามี) แล้วกดปุ่มสีเขียว <strong>"อนุมัติคำขอยืมขั้นสุดท้าย"</strong></p>
+        <p>4. ระบบจะบันทึกชื่อผู้ลงนาม วันที่และเวลาอนุมัติ พร้อมเปลี่ยนสถานะเป็น <span class="badge badge-approved">เจ้าของให้ยืมแล้ว</span> ทันที</p>
+      </div>
+    </section>
+
+    <!-- SECTION 7 -->
+    <section id="section-slip-print">
+      <h2 class="section-title">7. การพิมพ์ใบยืมครุภัณฑ์ (Borrow Slip & QR Code)</h2>
+      <p>เมื่อคำขอได้รับการอนุมัติแล้ว ผู้ยืมจะต้องพิมพ์ใบยืมเพื่อใช้เป็นหลักฐานในการรับมอบอุปกรณ์:</p>
+      <div class="step-card" style="border-left-color: #0284c7;">
+        <div class="step-card-title">วิธีพิมพ์ใบยืมครุภัณฑ์ทางการแพทย์</div>
+        <p>1. คลิกที่คำขอที่ได้รับการอนุมัติแล้ว</p>
+        <p>2. กดปุ่ม <strong>"พิมพ์ใบยืม"</strong> (Print Slip)</p>
+        <p>3. หน้าต่างเอกสารทางการจะปรากฏขึ้น ประกอบด้วย:
+          <ul style="margin-left: 20px; margin-top: 4px;">
+            <li>ตราสัญลักษณ์ทางการ โรงพยาบาลสัตว์ คณะสัตวแพทยศาสตร์ ม.อ.</li>
+            <li>รหัสคำขอ วันที่ยืม-คืน วัตถุประสงค์ และข้อมูลผู้ยืม</li>
+            <li>ตารางครุภัณฑ์ หมายเลขทะเบียนครุภัณฑ์ และสถานที่จัดเก็บ</li>
+            <li><strong>QR Code ประจำใบยืม</strong> สำหรับใช้กล้องสมาร์ตโฟนสแกนเพื่อตรวจสอบสถานะได้ทันที</li>
+            <li>ช่องลงลายมือชื่อ: ผู้ขอยืม, เจ้าของครุภัณฑ์, ผู้อนุมัติ และผู้ส่งมอบ-รับคืน</li>
+          </ul>
+        </p>
+        <p>4. กดปุ่ม <strong>"พิมพ์เอกสาร (Print / PDF)"</strong> เพื่อสั่งพิมพ์ออกเครื่องพิมพ์ หรือบันทึกเป็นไฟล์ PDF</p>
+      </div>
+    </section>
+
+    <!-- SECTION 8 -->
+    <section id="section-return-guide">
+      <h2 class="section-title">8. ขั้นตอนการส่งคืนและการตรวจรับคืน (Return Check-In)</h2>
+      <p>เมื่อผู้ยืมนำครุภัณฑ์กลับมาส่งคืน ณ หน่วยงานหรือสถานที่จัดเก็บเดิม:</p>
+      <div class="step-card" style="border-left-color: #059669;">
+        <div class="step-card-title">ขั้นตอนการตรวจรับคืนอุปกรณ์</div>
+        <p>1. เจ้าของครุภัณฑ์หรือเจ้าหน้าที่ประจำห้องเปิดระบบ และค้นหาคำขอนั้น</p>
+        <p>2. กดปุ่ม <strong>"รับคืนครุภัณฑ์"</strong> (Return Check-in)</p>
+        <p>3. ตรวจสอบสภาพอุปกรณ์จริงเทียบกับสภาพตอนก่อนยืม:
+          <ul style="margin-left: 20px; margin-top: 4px;">
+            <li>ระบุ <strong>"สภาพหลังการใช้งาน"</strong> ของอุปกรณ์แต่ละชิ้น เช่น ปกติสมบูรณ์, มีรอยเปื้อน, ชำรุดส่งซ่อม</li>
+            <li>ระบุชื่อผู้ตรวจรับคืน และบันทึกหมายเหตุเพิ่มเติม</li>
+          </ul>
+        </p>
+        <p>4. กดปุ่ม <strong>"ยืนยันการรับคืนครุภัณฑ์"</strong></p>
+        <p>5. สถานะคำขอจะเปลี่ยนเป็น <span class="badge badge-completed">รับคืนเรียบร้อย</span> และสถานะของอุปกรณ์ในคลังจะกลับมาเป็น <span class="badge badge-completed">พร้อมใช้งาน</span> สำหรับผู้อื่นทันที</p>
+      </div>
+    </section>
+
+    <!-- SECTION 9 -->
+    <section id="section-notif">
+      <h2 class="section-title">9. ระบบแจ้งเตือนกำหนดส่งคืน (Notification System)</h2>
+      <p>ระบบมีระบบเฝ้าระวังและแจ้งเตือนอัตโนมัติ โดยสังเกตได้จากไอคอนกระดิ่ง 🔔 ที่แถบด้านบน:</p>
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 25%;">ระดับการแจ้งเตือน</th>
+            <th style="width: 25%;">เงื่อนไขเวลา</th>
+            <th style="width: 50%;">การดำเนินการที่แนะนำ</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="badge badge-approved">⏰ ใกล้ครบกำหนด</span></td>
+            <td>เหลือเวลาส่งคืนภายใน 1-2 วัน</td>
+            <td>ระบบแจ้งเตือนเพื่อเตรียมความพร้อมในการนำอุปกรณ์มาส่งคืนตามกำหนด</td>
+          </tr>
+          <tr>
+            <td><span class="badge badge-pending">⚠️ ครบกำหนดวันนี้</span></td>
+            <td>ตรงกับวันที่สิ้นสุดการยืม</td>
+            <td>กรุณานำอุปกรณ์มาตรวจรับคืนก่อนเวลาปิดทำการของโรงพยาบาลสัตว์</td>
+          </tr>
+          <tr>
+            <td><span class="badge badge-cancelled">🚨 เกินกำหนดส่งคืน</span></td>
+            <td>เลยวันและเวลาที่กำหนดส่งคืน</td>
+            <td>ระบบจะขึ้นสถานะเตือนสีแดง เจ้าหน้าที่สามารถติดตามทวงถามอุปกรณ์ได้ทันที</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- SECTION 10 -->
+    <section id="section-admin">
+      <h2 class="section-title">10. ฟังก์ชันพิเศษสำหรับผู้ดูแลระบบ (Admin Guide)</h2>
+      <p>เมื่อผู้ดูแลระบบสลับไปที่ <strong>"หน้าผู้ดูแลระบบ (Admin)"</strong> จะมีเมนูเสริมสำหรับการบริหารจัดการ ดังนี้:</p>
+      <div class="step-card">
+        <div class="step-card-title">1. คลังครุภัณฑ์ (Equipment Catalog)</div>
+        <p>คลิกที่ปุ่ม <strong>"คลังครุภัณฑ์"</strong> เพื่อดูรายการอุปกรณ์ทั้งหมด สามารถค้นหา กรองหมวดหมู่ เพิ่มครุภัณฑ์ใหม่ แก้ไขข้อมูล หรือเปลี่ยนสถานะครุภัณฑ์ (พร้อมใช้งาน, ถูกยืม, ซ่อมบำรุง, รอจำหน่าย)</p>
+      </div>
+      <div class="step-card">
+        <div class="step-card-title">2. จัดการสิทธิ์บุคลากร (User & Role Management)</div>
+        <p>คลิกที่ปุ่ม <strong>"จัดการสิทธิ์"</strong> เพื่อตรวจสอบรายชื่อบุคลากร กำหนดบทบาทหน้าที่ (User, Owner, Executive, Admin) และตั้งค่าสิทธิ์รายบุคคล</p>
+      </div>
+      <div class="step-card">
+        <div class="step-card-title">3. เชื่อมต่อและส่งข้อมูล Google Sheets</div>
+        <p>คลิกที่ปุ่ม <strong>"Google Sheets"</strong> เพื่อตรวจสอบสถานะการซิงค์ข้อมูล หรือกดซิงค์ข้อมูลคำขอยืมและคลังครุภัณฑ์ทั้งหมดไปยัง Google Sheets ของโรงพยาบาลสัตว์ได้ทันที</p>
+      </div>
+      <div class="step-card">
+        <div class="step-card-title">4. นำเข้า / ส่งออกข้อมูล (CSV Export/Import)</div>
+        <p>คลิกปุ่ม <strong>"CSV"</strong> เพื่อดาวน์โหลดข้อมูลคำขอยืมทั้งหมดออกเป็นไฟล์ CSV สำหรับนำไปวิเคราะห์ใน Excel หรือสำรองฐานข้อมูล</p>
+      </div>
+    </section>
+
+    <!-- Summary Box -->
+    <div class="callout callout-info" style="margin-top: 30px;">
+      <strong>📞 ช่องทางติดต่อและขอความช่วยเหลือ:</strong><br>
+      • <strong>หน่วยเทคโนโลยีสารสนเทศและพัสดุ:</strong> โรงพยาบาลสัตว์ มหาวิทยาลัยสงขลานครินทร์<br>
+      • <strong>โทรศัพท์ภายใน:</strong> 074-289600 - 074-289602<br>
+      • <strong>อีเมลประสานงาน:</strong> kittiya.so@psu.ac.th<br>
+      • <strong>เว็บไซต์ระบบ:</strong> <a href="https://kittiyaso-star.github.io/vet-equipment/" target="_blank">https://kittiyaso-star.github.io/vet-equipment/</a>
+    </div>
+
+    <footer class="manual-footer">
+      <p>© 2569 โรงพยาบาลสัตว์ คณะสัตวแพทยศาสตร์ มหาวิทยาลัยสงขลานครินทร์. สงวนลิขสิทธิ์.</p>
+      <p>PSU Animal Hospital Medical Equipment Borrow-Return Management System Manual</p>
+    </footer>
+
+  </div>
+
+  <!-- Word (.doc) Export Script -->
+  <script>
+    function downloadWordDoc() {
+      const content = document.getElementById('manual-content').innerHTML;
+      const preHtml = "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>คู่มือการใช้งานระบบยืมคืนครุภัณฑ์ รพ.สัตว์ ม.อ.</title><style>body{font-family:'Sarabun',Arial,sans-serif;font-size:11pt;line-height:1.5;} table{width:100%;border-collapse:collapse;margin:12pt 0;} th,td{border:1px solid #999;padding:6pt;} th{background-color:#f0f4f8;font-weight:bold;} h1{color:#1e3a8a;font-size:18pt;text-align:center;} h2{color:#1e3a8a;font-size:14pt;border-bottom:1px solid #ddd;padding-bottom:4pt;margin-top:16pt;} .badge{font-weight:bold;padding:2pt 4pt;} .step-card{border:1px solid #ddd;padding:8pt;margin-bottom:8pt;background:#fafafa;} .callout{background:#f0f8ff;border-left:4px solid #1e3a8a;padding:8pt;margin:8pt 0;}</style></head><body>";
+      const postHtml = "</body></html>";
+      const html = preHtml + content + postHtml;
+
+      const blob = new Blob(['\ufeff', html], {
+        type: 'application/msword;charset=utf-8'
+      });
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'คู่มือการใช้งานระบบยืมคืนครุภัณฑ์_รพ_สัตว์_มอ.doc';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+  </script>
+</body>
+</html>

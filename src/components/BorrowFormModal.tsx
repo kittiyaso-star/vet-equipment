@@ -15,7 +15,11 @@ import {
   AlertCircle,
   Lock,
   BadgeCheck,
-  KeyRound
+  KeyRound,
+  UserCheck,
+  Users,
+  Edit3,
+  UserPlus
 } from 'lucide-react';
 import { BorrowRequest, EquipmentMaster, BorrowedEquipmentItem, StaffUser } from '../types';
 
@@ -33,8 +37,14 @@ export const BorrowFormModal: React.FC<BorrowFormModalProps> = ({
   onClose,
   onSubmit,
   masterEquipment,
-  currentUser
+  currentUser,
+  staffDatabase = []
 }) => {
+  const isAdmin = currentUser.role === 'admin';
+  const [isBorrowingForOther, setIsBorrowingForOther] = useState(false);
+  const [otherStaffSearch, setOtherStaffSearch] = useState('');
+  const [isStaffDropdownOpen, setIsStaffDropdownOpen] = useState(false);
+
   // OIDC Claims extracted from psusso.psu.ac.th/application/o/vet-hr/.well-known/openid-configuration
   const [titleTh, setTitleTh] = useState(currentUser.title_th || '');
   const [firstNameTh, setFirstNameTh] = useState(currentUser.first_name_th || currentUser.name.split(' ')[0] || '');
@@ -59,16 +69,46 @@ export const BorrowFormModal: React.FC<BorrowFormModalProps> = ({
   const [categoryFilter, setCategoryFilter] = useState('ALL');
   const [errorMsg, setErrorMsg] = useState('');
 
+  const resetToCurrentUser = () => {
+    setTitleTh(currentUser.title_th || '');
+    setFirstNameTh(currentUser.first_name_th || currentUser.name.split(' ')[0] || '');
+    setLastNameTh(currentUser.last_name_th || currentUser.name.split(' ').slice(1).join(' ') || '');
+    setUsername(currentUser.username || currentUser.preferred_username || currentUser.email.split('@')[0]);
+    setEmail(currentUser.email);
+    setPositionTh(currentUser.position_th || currentUser.position || 'บุคลากร');
+    setFacultyTh(currentUser.faculty_th || currentUser.dept || 'คณะสัตวแพทยศาสตร์ มหาวิทยาลัยสงขลานครินทร์');
+    setOtherStaffSearch('');
+    setIsStaffDropdownOpen(false);
+  };
+
+  const handleSelectStaff = (staff: StaffUser) => {
+    setTitleTh(staff.title_th || '');
+    setFirstNameTh(staff.first_name_th || staff.name.split(' ')[0] || '');
+    setLastNameTh(staff.last_name_th || staff.name.split(' ').slice(1).join(' ') || '');
+    setUsername(staff.username || staff.preferred_username || staff.email.split('@')[0]);
+    setEmail(staff.email);
+    setPositionTh(staff.position_th || staff.position || 'บุคลากร');
+    setFacultyTh(staff.faculty_th || staff.dept || 'คณะสัตวแพทยศาสตร์ มหาวิทยาลัยสงขลานครินทร์');
+    setOtherStaffSearch(`${staff.title_th || ''}${staff.name}`.trim());
+    setIsStaffDropdownOpen(false);
+  };
+
+  // Filter staff database for autocomplete
+  const filteredStaff = staffDatabase.filter(staff => {
+    if (!otherStaffSearch) return true;
+    const q = otherStaffSearch.toLowerCase();
+    const fullName = `${staff.title_th || ''}${staff.name}`.toLowerCase();
+    const pos = (staff.position_th || staff.position || '').toLowerCase();
+    const dept = (staff.faculty_th || staff.dept || '').toLowerCase();
+    const mail = (staff.email || '').toLowerCase();
+    return fullName.includes(q) || pos.includes(q) || dept.includes(q) || mail.includes(q);
+  });
+
   // Sync with current authenticated user whenever modal opens or user changes
   useEffect(() => {
     if (isOpen) {
-      setTitleTh(currentUser.title_th || '');
-      setFirstNameTh(currentUser.first_name_th || currentUser.name.split(' ')[0] || '');
-      setLastNameTh(currentUser.last_name_th || currentUser.name.split(' ').slice(1).join(' ') || '');
-      setUsername(currentUser.username || currentUser.preferred_username || currentUser.email.split('@')[0]);
-      setEmail(currentUser.email);
-      setPositionTh(currentUser.position_th || currentUser.position || 'บุคลากร');
-      setFacultyTh(currentUser.faculty_th || currentUser.dept || 'คณะสัตวแพทยศาสตร์ มหาวิทยาลัยสงขลานครินทร์');
+      setIsBorrowingForOther(false);
+      resetToCurrentUser();
       setErrorMsg('');
     }
   }, [currentUser, isOpen]);
@@ -126,7 +166,9 @@ export const BorrowFormModal: React.FC<BorrowFormModalProps> = ({
     const randomHex = Math.random().toString(36).substring(2, 8).toUpperCase();
     const newId = `REQ-${randomHex}`;
 
-    const fullThaiName = `${titleTh ? titleTh : ''}${firstNameTh} ${lastNameTh}`.trim() || currentUser.name;
+    const fullThaiName = `${titleTh ? titleTh : ''}${firstNameTh} ${lastNameTh}`.trim() || firstNameTh || currentUser.name;
+
+    const isDelegated = isAdmin && isBorrowingForOther;
 
     const newRequest: BorrowRequest = {
       id: newId,
@@ -148,7 +190,13 @@ export const BorrowFormModal: React.FC<BorrowFormModalProps> = ({
       borrowFromTime,
       borrowTo,
       borrowToTime,
-      equipmentList: selectedItems
+      equipmentList: selectedItems,
+      submittedByAdmin: isDelegated,
+      submittedByAdminName: isDelegated ? currentUser.name : undefined,
+      submittedByAdminEmail: isDelegated ? currentUser.email : undefined,
+      notes: isDelegated
+        ? `[แอดมินยื่นคำขอแทน] ผู้ดำเนินการ: ${currentUser.name} (${currentUser.email}) ยื่นขอยืมแทน: ${fullThaiName}`
+        : undefined
     };
 
     onSubmit(newRequest);
@@ -192,8 +240,9 @@ export const BorrowFormModal: React.FC<BorrowFormModalProps> = ({
             </div>
           )}
 
-          {/* Section 1: Requester Information - Directly from PSU OIDC Claims */}
+          {/* Section 1: Requester Information */}
           <div className="space-y-3.5 bg-slate-50/70 p-4 rounded-xl border border-slate-200">
+            {/* Header of Section 1 */}
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2">
                 <div className="p-1.5 bg-blue-100 text-blue-700 rounded-lg">
@@ -204,43 +253,202 @@ export const BorrowFormModal: React.FC<BorrowFormModalProps> = ({
                     1. ข้อมูลผู้ขอยืม (Requester Profile)
                   </h4>
                   <p className="text-[11px] text-slate-500">
-                    ดึงข้อมูลอัตโนมัติจากระบบยืนยันตัวตน PSU SSO / OpenID Connect
+                    {isAdmin && isBorrowingForOther
+                      ? 'สิทธิ์แอดมิน: ยื่นคำขอแทนบุคลากร/อาจารย์ในสังกัด'
+                      : 'ดึงข้อมูลอัตโนมัติจากระบบยืนยันตัวตน PSU SSO / OpenID Connect'}
                   </p>
                 </div>
               </div>
               
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-full shadow-2xs">
-                <BadgeCheck className="w-3.5 h-3.5 text-emerald-600" />
-                <span>ยืนยันตัวตนแล้วจาก psusso.psu.ac.th</span>
-              </div>
+              {isAdmin && isBorrowingForOther ? (
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-semibold text-purple-800 bg-purple-50 border border-purple-200 rounded-full shadow-2xs">
+                  <ShieldCheck className="w-3.5 h-3.5 text-purple-600" />
+                  <span>โหมดแอดมินยื่นแทน ({currentUser.name})</span>
+                </div>
+              ) : (
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-full shadow-2xs">
+                  <BadgeCheck className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>ยืนยันตัวตนแล้วจาก psusso.psu.ac.th</span>
+                </div>
+              )}
             </div>
 
-            {/* OIDC Claims Connection Notification */}
-            <div className="p-2.5 bg-sky-50 border border-sky-200/80 rounded-lg text-xs text-sky-900 flex items-start gap-2">
-              <KeyRound className="w-4 h-4 text-sky-600 shrink-0 mt-0.5" />
-              <div className="leading-relaxed">
-                <span className="font-semibold text-sky-950">ข้อมูลจาก OpenID Connect Endpoint:</span>{' '}
-                ระบบนำค่า Claims จาก <code className="bg-sky-100/90 text-sky-900 px-1 py-0.5 rounded text-[11px] font-mono">psusso.psu.ac.th/application/o/vet-hr/.well-known/openid-configuration</code> ที่เข้าใช้งานมาแสดงในแบบฟอร์มโดยตรงเพื่อความถูกต้องของสิทธิ์ ไม่ต้องพิมพ์หรือเลือกชื่อผู้ใช้อื่น
+            {/* Admin Delegation Mode Selector */}
+            {isAdmin && (
+              <div className="p-3 bg-purple-50/90 border border-purple-200 rounded-xl space-y-2.5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <div className="p-1.5 bg-purple-200 text-purple-800 rounded-lg">
+                      <ShieldCheck className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-purple-950 flex items-center gap-1.5">
+                        <span>สิทธิ์ผู้ดูแลระบบ (Admin Delegation)</span>
+                        <span className="px-1.5 py-0.5 rounded text-[10px] bg-purple-200 text-purple-900 font-semibold">แอดมิน</span>
+                      </div>
+                      <p className="text-[11px] text-purple-700">
+                        คุณมีสิทธิ์เลือกยื่นคำขอในนามตนเอง หรือยื่นคำขอแทนบุคลากร/อาจารย์ท่านอื่นได้
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Mode Buttons */}
+                  <div className="inline-flex p-1 bg-white rounded-lg border border-purple-200 shadow-2xs self-start sm:self-auto">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsBorrowingForOther(false);
+                        resetToCurrentUser();
+                      }}
+                      className={`px-3 py-1.5 rounded-md text-xs font-medium transition cursor-pointer flex items-center gap-1.5 ${
+                        !isBorrowingForOther
+                          ? 'bg-purple-700 text-white shadow-xs font-semibold'
+                          : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                      }`}
+                    >
+                      <User className="w-3.5 h-3.5" />
+                      <span>ขอยืมด้วยตนเอง</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsBorrowingForOther(true);
+                      }}
+                      className={`px-3 py-1.5 rounded-md text-xs font-medium transition cursor-pointer flex items-center gap-1.5 ${
+                        isBorrowingForOther
+                          ? 'bg-purple-700 text-white shadow-xs font-semibold'
+                          : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                      }`}
+                    >
+                      <UserCheck className="w-3.5 h-3.5" />
+                      <span>ยื่นขอยืมแทนผู้อื่น</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* When Admin chooses to borrow for someone else */}
+                {isBorrowingForOther && (
+                  <div className="pt-2.5 border-t border-purple-200/80 space-y-2">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-semibold text-purple-950 flex items-center gap-1">
+                        <Users className="w-3.5 h-3.5 text-purple-700" />
+                        เลือกบุคลากรจากระบบ (Auto-fill ข้อมูล OIDC):
+                      </span>
+                      <span className="text-[11px] text-purple-700 font-medium">
+                        พบ {staffDatabase.length} รายชื่อ หรือพิมพ์กรอกเองด้านล่างได้
+                      </span>
+                    </div>
+
+                    <div className="relative">
+                      <div className="relative flex items-center">
+                        <Search className="w-4 h-4 text-slate-400 absolute left-3 pointer-events-none" />
+                        <input
+                          type="text"
+                          placeholder="พิมพ์ค้นหาชื่อบุคลากร, สังกัด หรืออีเมล PSU..."
+                          value={otherStaffSearch}
+                          onChange={(e) => {
+                            setOtherStaffSearch(e.target.value);
+                            setIsStaffDropdownOpen(true);
+                          }}
+                          onFocus={() => setIsStaffDropdownOpen(true)}
+                          className="w-full pl-9 pr-8 py-2 bg-white border border-purple-300 rounded-lg text-xs outline-none focus:ring-2 focus:ring-purple-500 text-slate-800 placeholder-slate-400 shadow-2xs"
+                        />
+                        {otherStaffSearch && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setOtherStaffSearch('');
+                              setIsStaffDropdownOpen(true);
+                            }}
+                            className="absolute right-2.5 p-1 text-slate-400 hover:text-slate-600"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Dropdown list */}
+                      {isStaffDropdownOpen && filteredStaff.length > 0 && (
+                        <div className="absolute z-30 left-0 right-0 mt-1 max-h-52 overflow-y-auto bg-white border border-purple-200 rounded-xl shadow-xl divide-y divide-slate-100">
+                          {filteredStaff.map((staff) => (
+                            <button
+                              key={staff.id || staff.email}
+                              type="button"
+                              onClick={() => handleSelectStaff(staff)}
+                              className="w-full px-3 py-2 text-left hover:bg-purple-50/70 transition flex items-center justify-between gap-3 text-xs"
+                            >
+                              <div>
+                                <div className="font-semibold text-slate-900 flex items-center gap-1.5">
+                                  <span>{staff.title_th || ''}{staff.name}</span>
+                                  <span className="text-[10px] text-purple-700 font-normal">({staff.roleLabel || staff.role})</span>
+                                </div>
+                                <div className="text-[11px] text-slate-500">
+                                  {staff.position_th || staff.position} • {staff.faculty_th || staff.dept}
+                                </div>
+                              </div>
+                              <div className="text-right shrink-0">
+                                <span className="font-mono text-[11px] text-blue-700">{staff.email}</span>
+                                <span className="block text-[10px] text-purple-700 font-medium">คลิกเพื่อเลือก</span>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
+            )}
+
+            {/* Notification Banner */}
+            {isAdmin && isBorrowingForOther ? (
+              <div className="p-2.5 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-900 flex items-start gap-2">
+                <ShieldCheck className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+                <div className="leading-relaxed">
+                  <span className="font-semibold text-amber-950">โหมดแอดมินยื่นคำขอแทน:</span>{' '}
+                  คุณกำลังยื่นคำขอในฐานะแอดมินแทนผู้ขอยืม คุณสามารถพิมพ์หรือแก้ไขข้อมูลผู้ขอยืมในช่องด้านล่างนี้ได้โดยตรง ระบบจะบันทึกประวัติว่าแอดมิน (<span className="font-semibold">{currentUser.name}</span>) เป็นผู้ดำเนินการให้
+                </div>
+              </div>
+            ) : (
+              <div className="p-2.5 bg-sky-50 border border-sky-200/80 rounded-lg text-xs text-sky-900 flex items-start gap-2">
+                <KeyRound className="w-4 h-4 text-sky-600 shrink-0 mt-0.5" />
+                <div className="leading-relaxed">
+                  <span className="font-semibold text-sky-950">ข้อมูลจาก OpenID Connect Endpoint:</span>{' '}
+                  ระบบนำค่า Claims จาก <code className="bg-sky-100/90 text-sky-900 px-1 py-0.5 rounded text-[11px] font-mono">psusso.psu.ac.th/application/o/vet-hr/.well-known/openid-configuration</code> ที่เข้าใช้งานมาแสดงในแบบฟอร์มโดยตรงเพื่อความถูกต้องของสิทธิ์ ไม่ต้องพิมพ์หรือเลือกชื่อผู้ใช้อื่น
+                </div>
+              </div>
+            )}
 
             {/* Row 1: Thai Name Claims (title_th, first_name_th, last_name_th) */}
             <div>
               <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1.5 flex items-center gap-1">
                 <span>ชื่อ-นามสกุล ภาษาไทย (Thai Name Claims)</span>
-                <span className="text-slate-400 font-normal lowercase">(title_th + first_name_th + last_name_th)</span>
+                <span className="text-slate-400 font-normal lowercase">
+                  {isAdmin && isBorrowingForOther ? '(แอดมินสามารถพิมพ์แก้ไขได้)' : '(title_th + first_name_th + last_name_th)'}
+                </span>
               </label>
               <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5">
                 <div className="sm:col-span-3">
                   <div className="relative">
                     <input
                       type="text"
-                      readOnly
+                      readOnly={!isAdmin || !isBorrowingForOther}
                       value={titleTh}
-                      className="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 bg-white text-slate-800 font-semibold cursor-not-allowed select-none shadow-2xs"
+                      onChange={(e) => setTitleTh(e.target.value)}
+                      placeholder="นาย / นาง / ผศ.ดร."
+                      className={`w-full px-3 py-2 text-xs rounded-lg border ${
+                        isAdmin && isBorrowingForOther
+                          ? 'border-purple-300 bg-white text-slate-800 font-semibold focus:ring-2 focus:ring-purple-500 outline-none'
+                          : 'border-slate-200 bg-white text-slate-800 font-semibold cursor-not-allowed select-none'
+                      } shadow-2xs`}
                       title="คำนำหน้านามภาษาไทย (title_th)"
                     />
-                    <Lock className="w-3 h-3 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2" />
+                    {isAdmin && isBorrowingForOther ? (
+                      <Edit3 className="w-3 h-3 text-purple-500 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    ) : (
+                      <Lock className="w-3 h-3 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2" />
+                    )}
                   </div>
                   <span className="text-[10px] text-slate-500 mt-0.5 block">คำนำหน้านาม (title_th)</span>
                 </div>
@@ -249,12 +457,22 @@ export const BorrowFormModal: React.FC<BorrowFormModalProps> = ({
                   <div className="relative">
                     <input
                       type="text"
-                      readOnly
+                      readOnly={!isAdmin || !isBorrowingForOther}
                       value={firstNameTh}
-                      className="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 bg-white text-slate-800 font-semibold cursor-not-allowed select-none shadow-2xs"
+                      onChange={(e) => setFirstNameTh(e.target.value)}
+                      placeholder="ชื่อจริง"
+                      className={`w-full px-3 py-2 text-xs rounded-lg border ${
+                        isAdmin && isBorrowingForOther
+                          ? 'border-purple-300 bg-white text-slate-800 font-semibold focus:ring-2 focus:ring-purple-500 outline-none'
+                          : 'border-slate-200 bg-white text-slate-800 font-semibold cursor-not-allowed select-none'
+                      } shadow-2xs`}
                       title="ชื่อจริงภาษาไทย (first_name_th)"
                     />
-                    <Lock className="w-3 h-3 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2" />
+                    {isAdmin && isBorrowingForOther ? (
+                      <Edit3 className="w-3 h-3 text-purple-500 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    ) : (
+                      <Lock className="w-3 h-3 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2" />
+                    )}
                   </div>
                   <span className="text-[10px] text-slate-500 mt-0.5 block">ชื่อจริงภาษาไทย (first_name_th)</span>
                 </div>
@@ -263,12 +481,22 @@ export const BorrowFormModal: React.FC<BorrowFormModalProps> = ({
                   <div className="relative">
                     <input
                       type="text"
-                      readOnly
+                      readOnly={!isAdmin || !isBorrowingForOther}
                       value={lastNameTh}
-                      className="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 bg-white text-slate-800 font-semibold cursor-not-allowed select-none shadow-2xs"
+                      onChange={(e) => setLastNameTh(e.target.value)}
+                      placeholder="นามสกุล"
+                      className={`w-full px-3 py-2 text-xs rounded-lg border ${
+                        isAdmin && isBorrowingForOther
+                          ? 'border-purple-300 bg-white text-slate-800 font-semibold focus:ring-2 focus:ring-purple-500 outline-none'
+                          : 'border-slate-200 bg-white text-slate-800 font-semibold cursor-not-allowed select-none'
+                      } shadow-2xs`}
                       title="นามสกุลภาษาไทย (last_name_th)"
                     />
-                    <Lock className="w-3 h-3 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2" />
+                    {isAdmin && isBorrowingForOther ? (
+                      <Edit3 className="w-3 h-3 text-purple-500 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    ) : (
+                      <Lock className="w-3 h-3 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2" />
+                    )}
                   </div>
                   <span className="text-[10px] text-slate-500 mt-0.5 block">นามสกุลภาษาไทย (last_name_th)</span>
                 </div>
@@ -285,11 +513,21 @@ export const BorrowFormModal: React.FC<BorrowFormModalProps> = ({
                 <div className="relative">
                   <input
                     type="text"
-                    readOnly
+                    readOnly={!isAdmin || !isBorrowingForOther}
                     value={username}
-                    className="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 bg-white text-slate-800 font-mono cursor-not-allowed select-none shadow-2xs"
+                    onChange={(e) => setUsername(e.target.value)}
+                    placeholder="e.g. somchai.p"
+                    className={`w-full px-3 py-2 text-xs rounded-lg border ${
+                      isAdmin && isBorrowingForOther
+                        ? 'border-purple-300 bg-white text-slate-800 font-mono focus:ring-2 focus:ring-purple-500 outline-none'
+                        : 'border-slate-200 bg-white text-slate-800 font-mono cursor-not-allowed select-none'
+                    } shadow-2xs`}
                   />
-                  <Lock className="w-3 h-3 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2" />
+                  {isAdmin && isBorrowingForOther ? (
+                    <Edit3 className="w-3 h-3 text-purple-500 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  ) : (
+                    <Lock className="w-3 h-3 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2" />
+                  )}
                 </div>
               </div>
 
@@ -301,11 +539,21 @@ export const BorrowFormModal: React.FC<BorrowFormModalProps> = ({
                 <div className="relative">
                   <input
                     type="email"
-                    readOnly
+                    readOnly={!isAdmin || !isBorrowingForOther}
                     value={email}
-                    className="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 bg-white text-blue-800 font-mono font-medium cursor-not-allowed select-none shadow-2xs"
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="name@psu.ac.th"
+                    className={`w-full px-3 py-2 text-xs rounded-lg border ${
+                      isAdmin && isBorrowingForOther
+                        ? 'border-purple-300 bg-white text-blue-800 font-mono font-medium focus:ring-2 focus:ring-purple-500 outline-none'
+                        : 'border-slate-200 bg-white text-blue-800 font-mono font-medium cursor-not-allowed select-none'
+                    } shadow-2xs`}
                   />
-                  <Lock className="w-3 h-3 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2" />
+                  {isAdmin && isBorrowingForOther ? (
+                    <Edit3 className="w-3 h-3 text-purple-500 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  ) : (
+                    <Lock className="w-3 h-3 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2" />
+                  )}
                 </div>
               </div>
             </div>
@@ -319,11 +567,21 @@ export const BorrowFormModal: React.FC<BorrowFormModalProps> = ({
                 <div className="relative">
                   <input
                     type="text"
-                    readOnly
+                    readOnly={!isAdmin || !isBorrowingForOther}
                     value={positionTh}
-                    className="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 bg-white text-slate-800 cursor-not-allowed select-none shadow-2xs"
+                    onChange={(e) => setPositionTh(e.target.value)}
+                    placeholder="เช่น สัตวแพทย์, อาจารย์, เจ้าหน้าที่"
+                    className={`w-full px-3 py-2 text-xs rounded-lg border ${
+                      isAdmin && isBorrowingForOther
+                        ? 'border-purple-300 bg-white text-slate-800 focus:ring-2 focus:ring-purple-500 outline-none'
+                        : 'border-slate-200 bg-white text-slate-800 cursor-not-allowed select-none'
+                    } shadow-2xs`}
                   />
-                  <Lock className="w-3 h-3 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2" />
+                  {isAdmin && isBorrowingForOther ? (
+                    <Edit3 className="w-3 h-3 text-purple-500 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  ) : (
+                    <Lock className="w-3 h-3 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2" />
+                  )}
                 </div>
               </div>
 
@@ -334,11 +592,21 @@ export const BorrowFormModal: React.FC<BorrowFormModalProps> = ({
                 <div className="relative">
                   <input
                     type="text"
-                    readOnly
+                    readOnly={!isAdmin || !isBorrowingForOther}
                     value={facultyTh}
-                    className="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 bg-white text-slate-800 cursor-not-allowed select-none shadow-2xs"
+                    onChange={(e) => setFacultyTh(e.target.value)}
+                    placeholder="คณะสัตวแพทยศาสตร์ มหาวิทยาลัยสงขลานครินทร์"
+                    className={`w-full px-3 py-2 text-xs rounded-lg border ${
+                      isAdmin && isBorrowingForOther
+                        ? 'border-purple-300 bg-white text-slate-800 focus:ring-2 focus:ring-purple-500 outline-none'
+                        : 'border-slate-200 bg-white text-slate-800 cursor-not-allowed select-none'
+                    } shadow-2xs`}
                   />
-                  <Lock className="w-3 h-3 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2" />
+                  {isAdmin && isBorrowingForOther ? (
+                    <Edit3 className="w-3 h-3 text-purple-500 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  ) : (
+                    <Lock className="w-3 h-3 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2" />
+                  )}
                 </div>
               </div>
             </div>
