@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   X, 
   Plus, 
@@ -22,6 +22,8 @@ import {
   UserPlus
 } from 'lucide-react';
 import { BorrowRequest, EquipmentMaster, BorrowedEquipmentItem, StaffUser } from '../types';
+import { formatStaffFullName } from '../services/storage';
+import { extractThaiTitleAndName } from '../services/googleSheetsSync';
 
 interface BorrowFormModalProps {
   isOpen: boolean;
@@ -70,9 +72,15 @@ export const BorrowFormModal: React.FC<BorrowFormModalProps> = ({
   const [errorMsg, setErrorMsg] = useState('');
 
   const resetToCurrentUser = () => {
-    setTitleTh(currentUser.title_th || '');
-    setFirstNameTh(currentUser.first_name_th || currentUser.name.split(' ')[0] || '');
-    setLastNameTh(currentUser.last_name_th || currentUser.name.split(' ').slice(1).join(' ') || '');
+    const title = (currentUser.title_th || '').trim();
+    setTitleTh(title);
+    let cleanName = (currentUser.name || '').trim();
+    if (title && cleanName.startsWith(title)) {
+      cleanName = cleanName.substring(title.length).trim();
+    }
+    const parts = cleanName.split(/\s+/);
+    setFirstNameTh(currentUser.first_name_th || parts[0] || '');
+    setLastNameTh(currentUser.last_name_th || parts.slice(1).join(' ') || '');
     setUsername(currentUser.username || currentUser.preferred_username || currentUser.email.split('@')[0]);
     setEmail(currentUser.email);
     setPositionTh(currentUser.position_th || currentUser.position || 'บุคลากร');
@@ -82,27 +90,90 @@ export const BorrowFormModal: React.FC<BorrowFormModalProps> = ({
   };
 
   const handleSelectStaff = (staff: StaffUser) => {
-    setTitleTh(staff.title_th || '');
-    setFirstNameTh(staff.first_name_th || staff.name.split(' ')[0] || '');
-    setLastNameTh(staff.last_name_th || staff.name.split(' ').slice(1).join(' ') || '');
+    let title = (staff.title_th || '').trim();
+    let cleanName = (staff.name || '').trim();
+
+    if (!title) {
+      const parsed = extractThaiTitleAndName(cleanName);
+      if (parsed.title) {
+        title = parsed.title;
+        cleanName = parsed.pureName;
+      }
+    } else if (cleanName.startsWith(title)) {
+      cleanName = cleanName.substring(title.length).trim();
+    }
+
+    const nameParts = cleanName.split(/\s+/).filter(Boolean);
+    let first = staff.first_name_th || nameParts[0] || '';
+    let last = staff.last_name_th || nameParts.slice(1).join(' ') || '';
+
+    // If first contains space and last is empty, split correctly
+    if (!last && first.includes(' ')) {
+      const parts = first.split(/\s+/).filter(Boolean);
+      first = parts[0] || '';
+      last = parts.slice(1).join(' ') || '';
+    }
+
+    setTitleTh(title);
+    setFirstNameTh(first);
+    setLastNameTh(last);
     setUsername(staff.username || staff.preferred_username || staff.email.split('@')[0]);
     setEmail(staff.email);
     setPositionTh(staff.position_th || staff.position || 'บุคลากร');
-    setFacultyTh(staff.faculty_th || staff.dept || 'คณะสัตวแพทยศาสตร์ มหาวิทยาลัยสงขลานครินทร์');
-    setOtherStaffSearch(`${staff.title_th || ''}${staff.name}`.trim());
+    setFacultyTh(staff.faculty_th || staff.dept || 'โรงพยาบาลสัตว์ มหาวิทยาลัยสงขลานครินทร์');
+    setOtherStaffSearch(formatStaffFullName(title, `${first} ${last}`.trim() || cleanName));
     setIsStaffDropdownOpen(false);
   };
 
-  // Filter staff database for autocomplete
-  const filteredStaff = staffDatabase.filter(staff => {
-    if (!otherStaffSearch) return true;
-    const q = otherStaffSearch.toLowerCase();
-    const fullName = `${staff.title_th || ''}${staff.name}`.toLowerCase();
-    const pos = (staff.position_th || staff.position || '').toLowerCase();
-    const dept = (staff.faculty_th || staff.dept || '').toLowerCase();
-    const mail = (staff.email || '').toLowerCase();
-    return fullName.includes(q) || pos.includes(q) || dept.includes(q) || mail.includes(q);
-  });
+  const handleApplyCustomStaffName = (customNameInput: string) => {
+    const raw = (customNameInput || '').trim();
+    if (!raw) return;
+
+    // Check if there is a close match in database
+    const rawCompact = raw.replace(/\s+/g, '').toLowerCase();
+    const matched = staffDatabase.find(s => {
+      const sFull = `${s.title_th || ''}${s.name}`.replace(/\s+/g, '').toLowerCase();
+      return sFull.includes(rawCompact) || rawCompact.includes(sFull);
+    });
+
+    if (matched) {
+      handleSelectStaff(matched);
+      return;
+    }
+
+    const parsed = extractThaiTitleAndName(raw);
+    setTitleTh(parsed.title);
+    setFirstNameTh(parsed.firstName || raw);
+    setLastNameTh(parsed.lastName);
+    
+    // Generate placeholder username/email if not set
+    const tempUser = `staff.${Date.now().toString().slice(-4)}`;
+    setUsername(tempUser);
+    setEmail(`${tempUser}@psu.ac.th`);
+    setOtherStaffSearch(raw);
+    setIsStaffDropdownOpen(false);
+  };
+
+  // Filter staff database for autocomplete with token & fuzzy matching
+  const filteredStaff = useMemo(() => {
+    if (!otherStaffSearch.trim()) return staffDatabase;
+    const q = otherStaffSearch.toLowerCase().trim();
+    const tokens = q.split(/\s+/).filter(Boolean);
+
+    return staffDatabase.filter(staff => {
+      const fullName = formatStaffFullName(staff.title_th, staff.name).toLowerCase();
+      const pureName = (staff.name || '').toLowerCase();
+      const first = (staff.first_name_th || '').toLowerCase();
+      const last = (staff.last_name_th || '').toLowerCase();
+      const pos = (staff.position_th || staff.position || '').toLowerCase();
+      const dept = (staff.faculty_th || staff.dept || '').toLowerCase();
+      const mail = (staff.email || '').toLowerCase();
+      const combined = `${fullName} ${pureName} ${first} ${last} ${pos} ${dept} ${mail}`;
+
+      if (combined.includes(q)) return true;
+      return tokens.some(tok => tok.length >= 2 && combined.includes(tok));
+    });
+  }, [staffDatabase, otherStaffSearch]);
 
   // Sync with current authenticated user whenever modal opens or user changes
   useEffect(() => {
@@ -166,7 +237,7 @@ export const BorrowFormModal: React.FC<BorrowFormModalProps> = ({
     const randomHex = Math.random().toString(36).substring(2, 8).toUpperCase();
     const newId = `REQ-${randomHex}`;
 
-    const fullThaiName = `${titleTh ? titleTh : ''}${firstNameTh} ${lastNameTh}`.trim() || firstNameTh || currentUser.name;
+    const fullThaiName = formatStaffFullName(titleTh, `${firstNameTh} ${lastNameTh}`.trim()) || firstNameTh || currentUser.name;
 
     const isDelegated = isAdmin && isBorrowingForOther;
 
@@ -345,13 +416,23 @@ export const BorrowFormModal: React.FC<BorrowFormModalProps> = ({
                         <Search className="w-4 h-4 text-slate-400 absolute left-3 pointer-events-none" />
                         <input
                           type="text"
-                          placeholder="พิมพ์ค้นหาชื่อบุคลากร, สังกัด หรืออีเมล PSU..."
+                          placeholder="พิมพ์ค้นหาชื่อบุคลากร (เช่น เสาวคนธ์, นพ., ญาดา) หรืออีเมล..."
                           value={otherStaffSearch}
                           onChange={(e) => {
                             setOtherStaffSearch(e.target.value);
                             setIsStaffDropdownOpen(true);
                           }}
                           onFocus={() => setIsStaffDropdownOpen(true)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              if (filteredStaff.length > 0) {
+                                handleSelectStaff(filteredStaff[0]);
+                              } else if (otherStaffSearch.trim()) {
+                                handleApplyCustomStaffName(otherStaffSearch);
+                              }
+                            }
+                          }}
                           className="w-full pl-9 pr-8 py-2 bg-white border border-purple-300 rounded-lg text-xs outline-none focus:ring-2 focus:ring-purple-500 text-slate-800 placeholder-slate-400 shadow-2xs"
                         />
                         {otherStaffSearch && (
@@ -369,30 +450,50 @@ export const BorrowFormModal: React.FC<BorrowFormModalProps> = ({
                       </div>
 
                       {/* Dropdown list */}
-                      {isStaffDropdownOpen && filteredStaff.length > 0 && (
-                        <div className="absolute z-30 left-0 right-0 mt-1 max-h-52 overflow-y-auto bg-white border border-purple-200 rounded-xl shadow-xl divide-y divide-slate-100">
-                          {filteredStaff.map((staff) => (
+                      {isStaffDropdownOpen && (
+                        <div className="absolute z-30 left-0 right-0 mt-1 max-h-60 overflow-y-auto bg-white border border-purple-200 rounded-xl shadow-xl divide-y divide-slate-100">
+                          {filteredStaff.length > 0 ? (
+                            filteredStaff.map((staff) => (
+                              <button
+                                key={staff.id || staff.email}
+                                type="button"
+                                onClick={() => handleSelectStaff(staff)}
+                                className="w-full px-3 py-2 text-left hover:bg-purple-50/70 transition flex items-center justify-between gap-3 text-xs"
+                              >
+                                <div>
+                                  <div className="font-semibold text-slate-900 flex items-center gap-1.5">
+                                    <span>{formatStaffFullName(staff.title_th, staff.name)}</span>
+                                    <span className="text-[10px] text-purple-700 font-normal">({staff.roleLabel || staff.role})</span>
+                                  </div>
+                                  <div className="text-[11px] text-slate-500">
+                                    {staff.position_th || staff.position} • {staff.faculty_th || staff.dept}
+                                  </div>
+                                </div>
+                                <div className="text-right shrink-0">
+                                  <span className="font-mono text-[11px] text-blue-700">{staff.email}</span>
+                                  <span className="block text-[10px] text-purple-700 font-medium">คลิกเพื่อเลือก</span>
+                                </div>
+                              </button>
+                            ))
+                          ) : (
+                            <div className="p-3 text-xs text-slate-500 text-center">
+                              ไม่พบบุคลากรที่ตรงกับคำว่า &quot;{otherStaffSearch}&quot;
+                            </div>
+                          )}
+
+                          {otherStaffSearch.trim() && (
                             <button
-                              key={staff.id || staff.email}
                               type="button"
-                              onClick={() => handleSelectStaff(staff)}
-                              className="w-full px-3 py-2 text-left hover:bg-purple-50/70 transition flex items-center justify-between gap-3 text-xs"
+                              onClick={() => handleApplyCustomStaffName(otherStaffSearch)}
+                              className="w-full px-3 py-2.5 text-left bg-purple-50 hover:bg-purple-100 text-purple-900 text-xs font-medium flex items-center justify-between gap-2 border-t border-purple-200"
                             >
-                              <div>
-                                <div className="font-semibold text-slate-900 flex items-center gap-1.5">
-                                  <span>{staff.title_th || ''}{staff.name}</span>
-                                  <span className="text-[10px] text-purple-700 font-normal">({staff.roleLabel || staff.role})</span>
-                                </div>
-                                <div className="text-[11px] text-slate-500">
-                                  {staff.position_th || staff.position} • {staff.faculty_th || staff.dept}
-                                </div>
-                              </div>
-                              <div className="text-right shrink-0">
-                                <span className="font-mono text-[11px] text-blue-700">{staff.email}</span>
-                                <span className="block text-[10px] text-purple-700 font-medium">คลิกเพื่อเลือก</span>
-                              </div>
+                              <span className="flex items-center gap-1.5 truncate">
+                                <Check className="w-3.5 h-3.5 text-purple-700 shrink-0" />
+                                <span>นำชื่อนี้ไปใช้ทันที: <strong className="font-semibold text-purple-950">&quot;{otherStaffSearch.trim()}&quot;</strong></span>
+                              </span>
+                              <span className="text-[11px] text-purple-700 shrink-0 underline">กรอกลงฟอร์ม</span>
                             </button>
-                          ))}
+                          )}
                         </div>
                       )}
                     </div>

@@ -883,7 +883,7 @@ export const STAFF_USERS: StaffUser[] = [
   },
   {
     id: "STAFF-EXE",
-    name: "ดร.สพ.ญ.ญาดา ดวงนำสว่าง",
+    name: "ญาดา ดวงนำสว่าง",
     username: "yada.d",
     preferred_username: "yada.d",
     title_th: "ดร.สพ.ญ.",

@@ -1,5 +1,5 @@
-import { BorrowRequest, EquipmentMaster } from '../types';
-import { convertRequestsToCSV, parseRequestsCSV } from './storage';
+import { BorrowRequest, EquipmentMaster, StaffUser } from '../types';
+import { convertRequestsToCSV, parseRequestsCSV, formatStaffFullName, fetchGoogleSheetCSV, parseEquipmentSheetCSV } from './storage';
 
 export const SPREADSHEET_ID = '1jGol5v7T8hyZO8dBNo8i-MaoCnW_b7WSsGn2P63MYts';
 export const SPREADSHEET_URL = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/edit?gid=326365193#gid=326365193`;
@@ -8,6 +8,9 @@ export const TAB_EQUIPMENT = 'ครุภัณฑ์';
 export const TAB_STAFF = 'รายชื่อ';
 export const GID_EQUIPMENT = '326365193';
 
+// Official Web App URL deployed by PSU Vet Hospital Apps Script
+export const DEFAULT_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbwdkkTIlImb3ZlqgnXqwVXZwEpBb_H0VAvWCYx2tQJucTxactjfff0XpZ16o7DXYMNi/exec';
+
 const STORAGE_KEY_WEBHOOK = 'psu_vet_sheets_webhook_url_v1';
 const STORAGE_KEY_LAST_SYNC_TIME = 'psu_vet_sheets_last_sync_time_v1';
 const STORAGE_KEY_LAST_SYNC_STATUS = 'psu_vet_sheets_last_sync_status_v1';
@@ -15,9 +18,11 @@ const STORAGE_KEY_LAST_SYNC_MSG = 'psu_vet_sheets_last_sync_msg_v1';
 
 export function getStoredWebhookUrl(): string {
   try {
-    return localStorage.getItem(STORAGE_KEY_WEBHOOK) || '';
+    const saved = localStorage.getItem(STORAGE_KEY_WEBHOOK);
+    if (saved && saved.trim()) return saved.trim();
+    return DEFAULT_WEBHOOK_URL;
   } catch {
-    return '';
+    return DEFAULT_WEBHOOK_URL;
   }
 }
 
@@ -356,7 +361,7 @@ export function getAppsScriptCode(): string {
  * 5. คลิกที่รูปฟันเฟือง เลือกประเภทเป็น "เว็บแอป" (Web App)
  *    - คำอธิบาย: Webhook ระบบยืมคืนครุภัณฑ์
  *    - ดำเนินการในฐานะ: บัญชีของฉัน (Me)
- *    - ผู้มีสิทธิ์เข้าถึง: ทุกคน (Anyone) หรือ ทุกคนใน psu.ac.th
+ *    - ผู้มีสิทธิ์เข้าถึง: ทุกคน (Anyone) **(สำคัญที่สุด: ต้องเลือก "ทุกคน" เพื่อไม่ให้ระบบแจ้งเตือน 404)**
  * 6. กดปุ่ม "ทำให้ใช้งานได้" (Deploy) และให้สิทธิ์การเข้าถึง (Authorize access)
  * 7. คัดลอก "URL ของเว็บแอป" (Web App URL) นำมาใส่ในหน้าระบบยืมคืนได้ทันที!
  * ==============================================================================
@@ -765,4 +770,446 @@ function doGet(e) {
   })).setMimeType(ContentService.MimeType.JSON);
 }
 `;
+}
+
+/**
+ * Parse 2D rows from Google Sheets tab 'ครุภัณฑ์' into EquipmentMaster array
+ */
+export function parseEquipmentRows(rows: any[][]): EquipmentMaster[] {
+  if (!rows || rows.length < 2) return [];
+  const headerRow = rows[0].map((h: any) => String(h || '').trim().toLowerCase());
+
+  const findCol = (keywords: string[], fallbackIdx: number) => {
+    const idx = headerRow.findIndex(h => keywords.some(k => h.includes(k)));
+    return idx !== -1 ? idx : fallbackIdx;
+  };
+
+  const colCode = findCol(['รหัสครุภัณฑ์', 'รหัส', 'code', 'asset'], 0);
+  const colDate = findCol(['วันที่ตรวจรับ', 'วันที่รับ', 'ตรวจรับ', 'date'], 1);
+  const colName = findCol(['ชื่อ', 'รายการ', 'name', 'item'], 2);
+  const colBrand = findCol(['ยี่ห้อ', 'brand'], 3);
+  const colModel = findCol(['รุ่น', 'model'], 4);
+  const colLocation = findCol(['สถานที่', 'ห้อง', 'location'], 5);
+  const colSerial = findCol(['serial', 's/n', 'ซีเรียล'], 6);
+  const colPrice = findCol(['ราคา', 'price'], 7);
+  const colResp = findCol(['ผู้รับผิดชอบ', 'เจ้าของ', 'responsible', 'owner'], 8);
+  const colRespEmail = findCol(['อีเมล', 'email'], 9);
+  const colCategory = findCol(['หมวด', 'ประเภท', 'category'], -1);
+
+  const items: EquipmentMaster[] = [];
+  for (let i = 1; i < rows.length; i++) {
+    const row = rows[i];
+    if (!row || row.length === 0) continue;
+    const code = String(row[colCode] || '').trim();
+    const name = String(row[colName] || '').trim();
+    if (!code && !name) continue;
+
+    const catRaw = colCategory >= 0 ? String(row[colCategory] || '').trim() : '';
+    let category: EquipmentMaster['category'] = 'อื่นๆ';
+    if (catRaw.includes('วินิจฉัย') || catRaw.includes('เอ็กซเรย์') || name.includes('X-Ray') || name.includes('Ultrasound') || name.includes('เอ็กซเรย์')) {
+      category = 'เครื่องมือวินิจฉัย/เอ็กซเรย์';
+    } else if (catRaw.includes('ผ่าตัด') || catRaw.includes('ศัลยกรรม') || name.includes('ผ่าตัด') || name.includes('ดมยา')) {
+      category = 'เครื่องมือผ่าตัด/ศัลยกรรม';
+    } else if (catRaw.includes('ตรวจ') || catRaw.includes('เฝ้าระวัง') || name.includes('Monitor') || name.includes('วัด') || name.includes('ตรวจ')) {
+      category = 'เครื่องมือตรวจและเฝ้าระวัง';
+    } else if (catRaw.includes('กายภาพ') || catRaw.includes('ฟื้นฟู') || name.includes('เลเซอร์') || name.includes('ธารา')) {
+      category = 'อุปกรณ์กายภาพ/เวชศาสตร์ฟื้นฟู';
+    }
+
+    items.push({
+      id: code || `EQ-${i}`,
+      code: code || `ITEM-${i}`,
+      name: name || code,
+      category,
+      receivedDate: String(row[colDate] || '').trim(),
+      brand: String(row[colBrand] || '').trim(),
+      model: String(row[colModel] || '').trim(),
+      location: String(row[colLocation] || '').trim() || 'รพ.สัตว์ ม.อ.',
+      serialNumber: String(row[colSerial] || '').trim(),
+      price: row[colPrice] !== undefined && row[colPrice] !== '' ? (isNaN(Number(row[colPrice])) ? String(row[colPrice]) : Number(row[colPrice])) : '',
+      responsible: String(row[colResp] || '').trim() || 'รพ.สัตว์ ม.อ.',
+      responsibleEmail: String(row[colRespEmail] || '').trim(),
+      status: 'พร้อมใช้งาน',
+      condition: 'ปกติสมบูรณ์'
+    });
+  }
+  return items;
+}
+
+/**
+ * Extract Thai title, first name, last name from a combined full string
+ * e.g. "นางสาวเสาวคนธ์ อินทร์ด้วง" -> title: "นางสาว", firstName: "เสาวคนธ์", lastName: "อินทร์ด้วง"
+ * e.g. "สพ.ญ.ณัฏฐนิช  เหมทานนท์" -> title: "สพ.ญ.", firstName: "ณัฏฐนิช", lastName: "เหมทานนท์"
+ * e.g. "น.สพ.ทักษ์ สุวรรณโอภาส" -> title: "น.สพ.", firstName: "ทักษ์", lastName: "สุวรรณโอภาส"
+ */
+export function extractThaiTitleAndName(rawString: string): {
+  title: string;
+  firstName: string;
+  lastName: string;
+  pureName: string;
+  displayName: string;
+} {
+  const trimmed = (rawString || '').trim().replace(/\s+/g, ' ');
+  if (!trimmed) {
+    return { title: '', firstName: '', lastName: '', pureName: '', displayName: '' };
+  }
+
+  // Ordered from longest to shortest prefix to prevent greedy partial match
+  const KNOWN_TITLES = [
+    'ศ.ดร.', 'รศ.ดร.', 'ผศ.ดร.', 'สพ.ญ.ดร.', 'น.สพ.ดร.',
+    'สพ.ญ.', 'สพ.ญ', 'น.สพ.', 'น.สพ', 'นางสาว',
+    'นาย', 'นาง', 'ผศ.', 'รศ.', 'ศ.', 'ดร.', 'อ.',
+    'นพ.', 'พญ.', 'ทพ.', 'ทพญ.', 'น.ส.'
+  ];
+
+  let detectedTitle = '';
+  let remainder = trimmed;
+
+  for (const t of KNOWN_TITLES) {
+    if (remainder.startsWith(t)) {
+      detectedTitle = t;
+      remainder = remainder.substring(t.length).trim();
+      break;
+    }
+  }
+
+  const parts = remainder.split(/\s+/).filter(Boolean);
+  const firstName = parts[0] || '';
+  const lastName = parts.slice(1).join(' ') || '';
+  const pureName = lastName ? `${firstName} ${lastName}` : firstName;
+  const displayName = detectedTitle ? `${detectedTitle} ${pureName}` : pureName;
+
+  return {
+    title: detectedTitle,
+    firstName,
+    lastName,
+    pureName,
+    displayName
+  };
+}
+
+/**
+ * Parse 2D rows from Google Sheets tab 'รายชื่อ' into StaffUser array
+ */
+export function parseStaffRows(rows: any[][]): StaffUser[] {
+  if (!rows || rows.length < 2) return [];
+  const headerRow = rows[0].map((h: any) => String(h || '').trim().toLowerCase());
+
+  const findCol = (keywords: string[]) => {
+    return headerRow.findIndex(h => keywords.some(k => h.includes(k)));
+  };
+
+  const colTitle = findCol(['คำนำหน้า', 'title', 'คำนำหน้านาม']);
+  const colFullName = findCol(['ชื่อ-สกุล', 'ชื่อ - สกุล', 'ชื่อ สกุล', 'ชื่อและนามสกุล', 'fullname']);
+  const colFirstName = findCol(['ชื่อจริง', 'ชื่อ', 'first_name', 'firstname']);
+  const colLastName = findCol(['นามสกุล', 'last_name', 'lastname']);
+  const colEmail = findCol(['อีเมล', 'อีเมล์', 'email', 'e-mail', 'mail']);
+  const colPosition = findCol(['ตำแหน่ง', 'position']);
+  const colDept = findCol(['หน่วยงาน', 'สังกัด', 'คณะ', 'ฝ่าย', 'dept', 'faculty']);
+  const colRole = findCol(['สิทธิ์', 'บทบาท', 'สถานะ', 'role']);
+  const colPhone = findCol(['โทร', 'เบอร์', 'phone', 'tel']);
+  const colUsername = findCol(['username', 'ชื่อผู้ใช้', 'account']);
+
+  const staffList: StaffUser[] = [];
+
+  for (let i = 1; i < rows.length; i++) {
+    const row = rows[i];
+    if (!row || row.length === 0) continue;
+
+    let titleRaw = colTitle !== -1 ? String(row[colTitle] || '').trim() : '';
+    let firstRaw = colFirstName !== -1 ? String(row[colFirstName] || '').trim() : '';
+    let lastRaw = colLastName !== -1 ? String(row[colLastName] || '').trim() : '';
+    const fullRaw = colFullName !== -1 ? String(row[colFullName] || '').trim() : '';
+
+    const combinedName = fullRaw || (colLastName === -1 ? firstRaw : '');
+    if (combinedName && (!lastRaw || colLastName === -1)) {
+      const parsed = extractThaiTitleAndName(combinedName);
+      if (!titleRaw && parsed.title) titleRaw = parsed.title;
+      firstRaw = parsed.firstName;
+      lastRaw = parsed.lastName;
+    } else {
+      // Prevent duplicate title if first name already starts with title
+      if (titleRaw && firstRaw.startsWith(titleRaw)) {
+        firstRaw = firstRaw.substring(titleRaw.length).trim();
+      }
+    }
+
+    const emailRaw = colEmail !== -1 ? String(row[colEmail] || '').trim() : '';
+    const posRaw = colPosition !== -1 ? String(row[colPosition] || '').trim() : 'บุคลากร';
+    const deptRaw = colDept !== -1 ? String(row[colDept] || '').trim() : 'โรงพยาบาลสัตว์ มหาวิทยาลัยสงขลานครินทร์';
+    const phoneRaw = colPhone !== -1 ? String(row[colPhone] || '').trim() : '';
+    const roleRaw = colRole !== -1 ? String(row[colRole] || '').trim().toLowerCase() : '';
+
+    if (!firstRaw && !emailRaw) continue;
+
+    let role: 'admin' | 'executive' | 'user' = 'user';
+    let roleLabel = 'ผู้ขอยืม (User)';
+
+    if (roleRaw.includes('admin') || roleRaw.includes('ดูแล') || roleRaw.includes('แอดมิน') || emailRaw === 'kittiya.so@psu.ac.th') {
+      role = 'admin';
+      roleLabel = 'ผู้ดูแลระบบ (Admin)';
+    } else if (roleRaw.includes('exec') || roleRaw.includes('บริหาร') || roleRaw.includes('ผอ') || emailRaw === 'yada.d@psu.ac.th') {
+      role = 'executive';
+      roleLabel = 'ผู้มีอำนาจอนุมัติ (รอง ผอ. รพ.สัตว์)';
+    }
+
+    const username = (colUsername !== -1 && row[colUsername]) 
+      ? String(row[colUsername]).trim()
+      : (emailRaw ? emailRaw.split('@')[0] : `user-${i}`);
+
+    const email = emailRaw ? (emailRaw.includes('@') ? emailRaw : `${emailRaw}@psu.ac.th`) : `${username}@psu.ac.th`;
+    const pureName = `${firstRaw} ${lastRaw}`.trim();
+    const displayName = formatStaffFullName(titleRaw, pureName);
+
+    staffList.push({
+      id: `STAFF-GS-${i}`,
+      name: pureName || displayName,
+      username,
+      preferred_username: username,
+      title_th: titleRaw || undefined,
+      first_name_th: firstRaw || undefined,
+      last_name_th: lastRaw || undefined,
+      position_th: posRaw,
+      faculty_th: deptRaw,
+      display_name_th: displayName,
+      email,
+      position: posRaw,
+      dept: deptRaw,
+      role,
+      roleLabel,
+      phone: phoneRaw,
+      authProvider: 'psu_sso',
+      permissions: {
+        canManageEquipment: role === 'admin' || role === 'executive',
+        canManageUsers: role === 'admin',
+        canApproveExecutive: role === 'admin' || role === 'executive',
+        canReceiveReturn: role === 'admin' || role === 'executive',
+      }
+    });
+  }
+
+  return staffList;
+}
+
+/**
+ * Parses raw CSV string from tab 'รายชื่อ' into StaffUser array
+ */
+export function parseStaffCSV(csvText: string): StaffUser[] {
+  const lines = csvText.trim().split('\n').filter(l => l.trim().length > 0);
+  if (lines.length < 2) return [];
+
+  const rows: string[][] = lines.map(line => {
+    const result: string[] = [];
+    let current = '';
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      if (char === '"') {
+        if (inQuotes && line[i + 1] === '"') {
+          current += '"';
+          i++;
+        } else {
+          inQuotes = !inQuotes;
+        }
+      } else if (char === ',' && !inQuotes) {
+        result.push(current.trim());
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+    result.push(current.trim());
+    return result;
+  });
+
+  return parseStaffRows(rows);
+}
+
+/**
+ * Fetches real equipment catalog from Google Sheet (via Webhook or direct CSV)
+ */
+export async function fetchEquipmentFromGoogleSheets(
+  overrideWebhookUrl?: string
+): Promise<{ success: boolean; equipment: EquipmentMaster[]; message: string }> {
+  const url = (overrideWebhookUrl || getStoredWebhookUrl()).trim();
+
+  if (url) {
+    try {
+      const sep = url.includes('?') ? '&' : '?';
+      const targetUrl = `${url}${sep}action=get_equipment&t=${Date.now()}`;
+      const res = await fetch(targetUrl, {
+        method: 'GET'
+      });
+
+      if (!res.ok) {
+        throw new Error(`HTTP Error ${res.status}`);
+      }
+
+      const data = await res.json();
+      if (data.status === 'success' && Array.isArray(data.rows)) {
+        const parsed = parseEquipmentRows(data.rows);
+        if (parsed.length > 0) {
+          saveLastSyncInfo('success', `ดึงข้อมูลครุภัณฑ์ ${parsed.length} รายการจากชีตสำเร็จ`);
+          return { success: true, equipment: parsed, message: `ดึงข้อมูลครุภัณฑ์ ${parsed.length} รายการจากชีตสำเร็จ` };
+        }
+      } else if (data.status === 'error') {
+        throw new Error(data.message || 'Apps Script รายงานข้อผิดพลาด');
+      }
+    } catch (err: any) {
+      console.warn('Failed to fetch equipment via webhook, attempting direct fallback...', err);
+    }
+  }
+
+  // Fallback: direct Google Sheets CSV export
+  try {
+    const csvText = await fetchGoogleSheetCSV();
+    const parsed = parseEquipmentSheetCSV(csvText);
+    if (parsed.length > 0) {
+      return { success: true, equipment: parsed, message: `ดึงข้อมูลครุภัณฑ์ ${parsed.length} รายการสำเร็จ (Direct CSV)` };
+    }
+  } catch (err: any) {
+    if (!url) {
+      return {
+        success: false,
+        equipment: [],
+        message: 'ยังไม่ได้ระบุ Webhook URL สำหรับ Google Apps Script (เนื่องจากสเปรดชีตอยู่ในโดเมน PSU จึงต้องใช้ Webhook URL ในการเชื่อมต่อ)'
+      };
+    }
+    return {
+      success: false,
+      equipment: [],
+      message: `ไม่สามารถดึงข้อมูลครุภัณฑ์ได้: ${err?.message || err}`
+    };
+  }
+
+  return { success: false, equipment: [], message: 'ไม่พบรายการครุภัณฑ์ในชีต "ครุภัณฑ์"' };
+}
+
+/**
+ * Fetches real staff list from Google Sheet tab 'รายชื่อ' (via Webhook or direct CSV)
+ */
+export async function fetchStaffFromGoogleSheets(
+  overrideWebhookUrl?: string
+): Promise<{ success: boolean; staff: StaffUser[]; message: string }> {
+  const url = (overrideWebhookUrl || getStoredWebhookUrl()).trim();
+
+  if (url) {
+    try {
+      const sep = url.includes('?') ? '&' : '?';
+      const targetUrl = `${url}${sep}action=get_staff&t=${Date.now()}`;
+      const res = await fetch(targetUrl, {
+        method: 'GET'
+      });
+
+      if (!res.ok) {
+        throw new Error(`HTTP Error ${res.status}`);
+      }
+
+      const data = await res.json();
+      if (data.status === 'success' && Array.isArray(data.rows)) {
+        const parsed = parseStaffRows(data.rows);
+        if (parsed.length > 0) {
+          saveLastSyncInfo('success', `ดึงรายชื่อบุคลากรจริง ${parsed.length} ท่านจากชีต "รายชื่อ" สำเร็จ`);
+          return { success: true, staff: parsed, message: `ดึงรายชื่อบุคลากรจริง ${parsed.length} ท่านจากชีต "รายชื่อ" สำเร็จ` };
+        }
+      } else if (data.status === 'error') {
+        throw new Error(data.message || 'Apps Script แจ้งเตือน: ไม่พบแท็บ "รายชื่อ"');
+      }
+    } catch (err: any) {
+      console.warn('Failed to fetch staff via webhook...', err);
+    }
+  }
+
+  // Fallback: direct export if sheet is shared
+  try {
+    const directUrl = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(TAB_STAFF)}`;
+    const res = await fetch(directUrl);
+    if (res.ok) {
+      const text = await res.text();
+      if (!text.includes('<!DOCTYPE html>') && !text.includes('accounts.google.com')) {
+        const parsed = parseStaffCSV(text);
+        if (parsed.length > 0) {
+          return { success: true, staff: parsed, message: `ดึงรายชื่อบุคลากร ${parsed.length} ท่านสำเร็จ (Direct)` };
+        }
+      }
+    }
+  } catch {
+    // fallback failed
+  }
+
+  if (!url) {
+    return {
+      success: false,
+      staff: [],
+      message: 'ยังไม่ได้ระบุ Webhook URL สำหรับ Google Apps Script (เนื่องจากชีตอยู่ในโดเมนองค์กร กรุณาบันทึก Webhook URL เพื่อให้อ่านแท็บ "รายชื่อ" ได้)'
+    };
+  }
+
+  return {
+    success: false,
+    staff: [],
+    message: 'ไม่สามารถดึงข้อมูลจากแท็บ "รายชื่อ" ได้ กรุณาตรวจสอบว่ามีแท็บชื่อ "รายชื่อ" อยู่ใน Google Sheet และบันทึก Webhook แล้ว'
+  };
+}
+
+/**
+ * Tests Webhook connection and verifies Apps Script Web App responds correctly
+ */
+export async function testWebhookConnection(
+  overrideWebhookUrl?: string
+): Promise<{ success: boolean; status: string; message: string; details?: any }> {
+  const url = (overrideWebhookUrl || getStoredWebhookUrl()).trim();
+  if (!url) {
+    return {
+      success: false,
+      status: 'no_url',
+      message: 'ยังไม่ได้ระบุ Webhook URL กรุณากรอก Web App URL ที่ได้จาก Apps Script'
+    };
+  }
+
+  if (url.includes('/edit') || url.includes('/home/projects/')) {
+    return {
+      success: false,
+      status: 'invalid_url_type',
+      message: '⚠️ URL ที่ระบุเป็นหน้าแก้ไขโค้ด Apps Script (/edit) ไม่ใช่ Web App URL กรุณากดปุ่ม Deploy > New deployment > Web App และคัดลอก URL ที่ลงท้ายด้วย /exec'
+    };
+  }
+
+  try {
+    const sep = url.includes('?') ? '&' : '?';
+    const testUrl = `${url}${sep}action=status&t=${Date.now()}`;
+    const res = await fetch(testUrl, {
+      method: 'GET'
+    });
+
+    if (res.status === 404) {
+      return {
+        success: false,
+        status: '404_not_found',
+        message: 'Google แจ้งเตือน 404 Not Found: URL ไม่ถูกต้อง หรือยังไม่ได้ทำการ Deploy เป็น "เว็บแอป" (Web App) โดยเลือก Who has access: Anyone'
+      };
+    }
+
+    if (!res.ok) {
+      return {
+        success: false,
+        status: `http_${res.status}`,
+        message: `เชื่อมต่อไม่สำเร็จ HTTP Error ${res.status}`
+      };
+    }
+
+    const data = await res.json();
+    return {
+      success: true,
+      status: 'ok',
+      message: 'การเชื่อมต่อสำเร็จ! Webhook ออนไลน์และพร้อมรับส่งข้อมูลสองทิศทางกับ Google Sheets อัตโนมัติ',
+      details: data
+    };
+  } catch (err: any) {
+    return {
+      success: false,
+      status: 'network_error',
+      message: `ไม่สามารถเชื่อมต่อได้: ${err?.message || err} (กรุณาตรวจสอบว่าเลือก Who has access: Anyone ในการ Deploy)`
+    };
+  }
 }

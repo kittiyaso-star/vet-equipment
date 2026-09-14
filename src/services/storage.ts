@@ -726,3 +726,21 @@ export function parseRequestsCSV(csvText: string): BorrowRequest[] {
 
   return parsedRows;
 }
+
+/**
+ * Safely format staff full name with Thai title without duplicate prefix
+ * e.g., prevents "นางสาวนางสาวกิตติยา" or "ดร.สพ.ญ.ดร.สพ.ญ.ญาดา"
+ */
+export function formatStaffFullName(title?: string, name?: string): string {
+  const cleanName = (name || '').trim();
+  const cleanTitle = (title || '').trim();
+  if (!cleanTitle) return cleanName;
+  if (!cleanName) return cleanTitle;
+  
+  // If cleanName already starts with cleanTitle, don't duplicate
+  if (cleanName.startsWith(cleanTitle)) {
+    return cleanName;
+  }
+  
+  return `${cleanTitle}${cleanName}`;
+}

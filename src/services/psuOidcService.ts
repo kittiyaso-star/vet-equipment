@@ -163,8 +163,10 @@ export function verifyAndMatchStaffWithDatabase(
       last_name_th: claims.last_name_th || existing.last_name_th,
       position_th: claims.position_th || existing.position_th || existing.position,
       faculty_th: claims.faculty_th || existing.faculty_th || existing.dept,
-      display_name_th: claims.display_name_th || existing.display_name_th || `${claims.title_th}${claims.first_name_th} ${claims.last_name_th}`,
-      name: claims.display_name_th || `${claims.first_name_th} ${claims.last_name_th}`,
+      display_name_th: claims.display_name_th || existing.display_name_th || `${claims.title_th}${claims.first_name_th} ${claims.last_name_th}`.trim(),
+      name: (claims.first_name_th && claims.last_name_th) 
+        ? `${claims.first_name_th} ${claims.last_name_th}`.trim() 
+        : (existing.name || claims.display_name_th || claims.email),
       position: claims.position_th || existing.position,
       dept: claims.faculty_th || existing.dept,
       authProvider: 'psu_sso',

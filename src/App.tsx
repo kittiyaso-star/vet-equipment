@@ -41,7 +41,9 @@ import {
   syncRequestsToGoogleSheet, 
   syncSingleRequestToGoogleSheet,
   syncEquipmentToGoogleSheet,
-  appendEquipmentToGoogleSheet
+  appendEquipmentToGoogleSheet,
+  fetchEquipmentFromGoogleSheets,
+  fetchStaffFromGoogleSheets
 } from './services/googleSheetsSync';
 import { fetchGoogleSheetCSV, parseEquipmentSheetCSV } from './services/storage';
 
@@ -101,6 +103,36 @@ export default function App() {
         setCurrentPortal('admin');
       }
     }
+
+    // Auto-fetch latest staff and equipment from Google Sheets in the background
+    const syncFromLiveSheets = async () => {
+      try {
+        const [staffRes, eqRes] = await Promise.allSettled([
+          fetchStaffFromGoogleSheets(),
+          fetchEquipmentFromGoogleSheets()
+        ]);
+
+        if (staffRes.status === 'fulfilled' && staffRes.value.success && staffRes.value.staff.length > 0) {
+          const liveStaff = staffRes.value.staff;
+          setStaffDatabase(liveStaff);
+          saveStoredStaffUsers(liveStaff);
+          const currentActive = getStoredActiveUserEmail();
+          const matchedLive = liveStaff.find(u => u.email.toLowerCase() === currentActive.toLowerCase());
+          if (matchedLive) {
+            setCurrentUser(matchedLive);
+          }
+        }
+
+        if (eqRes.status === 'fulfilled' && eqRes.value.success && eqRes.value.equipment.length > 0) {
+          setEquipment(eqRes.value.equipment);
+          saveStoredEquipment(eqRes.value.equipment);
+        }
+      } catch (err) {
+        console.warn('Background sync from Google Sheets:', err);
+      }
+    };
+
+    syncFromLiveSheets();
   }, []);
 
   const handleSelectUser = (u: StaffUser) => {
@@ -368,18 +400,28 @@ export default function App() {
     triggerSyncToast(`อัปเดตข้อมูลครุภัณฑ์ ${items.length} รายการจากชีตเรียบร้อยแล้ว`);
   };
 
-  // Refresh equipment directly from Google Sheets (GID 326365193)
-  const handleRefreshEquipmentFromSheet = async () => {
-    try {
-      const csvText = await fetchGoogleSheetCSV();
-      const parsedItems = parseEquipmentSheetCSV(csvText);
-      if (parsedItems.length > 0) {
-        handleBatchUpdateEquipment(parsedItems);
-      }
-    } catch (err: any) {
-      console.warn('Failed to refresh from sheet', err);
-      throw err;
+  // Refresh equipment directly from Google Sheets (tab 'ครุภัณฑ์')
+  const handleRefreshEquipmentFromSheet = async (overrideWebhookUrl?: string) => {
+    const res = await fetchEquipmentFromGoogleSheets(overrideWebhookUrl);
+    if (res.success && res.equipment.length > 0) {
+      setEquipment(res.equipment);
+      saveStoredEquipment(res.equipment);
+      triggerSyncToast(`ดึงข้อมูลครุภัณฑ์ ${res.equipment.length} รายการจากชีต "ครุภัณฑ์" เรียบร้อยแล้ว`);
+      return res;
     }
+    throw new Error(res.message || 'ไม่สามารถดึงข้อมูลครุภัณฑ์ได้');
+  };
+
+  // Refresh staff list directly from Google Sheets (tab 'รายชื่อ')
+  const handleRefreshStaffFromSheet = async (overrideWebhookUrl?: string) => {
+    const res = await fetchStaffFromGoogleSheets(overrideWebhookUrl);
+    if (res.success && res.staff.length > 0) {
+      setStaffDatabase(res.staff);
+      saveStoredStaffUsers(res.staff);
+      triggerSyncToast(`ดึงรายชื่อบุคลากรจริง ${res.staff.length} ท่านจากชีต "รายชื่อ" เรียบร้อยแล้ว`);
+      return res;
+    }
+    throw new Error(res.message || 'ไม่สามารถดึงรายชื่อบุคลากรได้');
   };
 
   // Reset to initial dataset
@@ -598,7 +640,9 @@ export default function App() {
         onClose={() => setIsGoogleSheetsSyncModalOpen(false)}
         requests={requests}
         equipment={equipment}
+        staffList={staffDatabase}
         onRefreshEquipmentFromSheet={handleRefreshEquipmentFromSheet}
+        onRefreshStaffFromSheet={handleRefreshStaffFromSheet}
       />
 
       {/* Floating Real-Time Sync Notification Toast */}

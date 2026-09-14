@@ -17,21 +17,27 @@ import {
   ChevronDown,
   ChevronUp,
   Database,
-  Mail
+  Mail,
+  Users,
+  AlertTriangle,
+  Zap
 } from 'lucide-react';
-import { BorrowRequest, EquipmentMaster } from '../types';
+import { BorrowRequest, EquipmentMaster, StaffUser } from '../types';
 import { 
   SPREADSHEET_ID, 
   SPREADSHEET_URL, 
   TAB_REQUESTS, 
   TAB_EQUIPMENT, 
+  TAB_STAFF,
+  DEFAULT_WEBHOOK_URL,
   getStoredWebhookUrl, 
   saveStoredWebhookUrl, 
   getLastSyncInfo, 
   syncRequestsToGoogleSheet, 
   syncEquipmentToGoogleSheet, 
   getAppsScriptCode, 
-  convertEquipmentToCSV 
+  convertEquipmentToCSV,
+  testWebhookConnection
 } from '../services/googleSheetsSync';
 import { convertRequestsToCSV } from '../services/storage';
 
@@ -40,7 +46,9 @@ interface GoogleSheetsSyncModalProps {
   onClose: () => void;
   requests: BorrowRequest[];
   equipment: EquipmentMaster[];
-  onRefreshEquipmentFromSheet?: () => Promise<void>;
+  staffList?: StaffUser[];
+  onRefreshEquipmentFromSheet?: (overrideWebhookUrl?: string) => Promise<any>;
+  onRefreshStaffFromSheet?: (overrideWebhookUrl?: string) => Promise<any>;
 }
 
 export const GoogleSheetsSyncModal: React.FC<GoogleSheetsSyncModalProps> = ({
@@ -48,13 +56,18 @@ export const GoogleSheetsSyncModal: React.FC<GoogleSheetsSyncModalProps> = ({
   onClose,
   requests,
   equipment,
-  onRefreshEquipmentFromSheet
+  staffList = [],
+  onRefreshEquipmentFromSheet,
+  onRefreshStaffFromSheet
 }) => {
   const [webhookUrl, setWebhookUrl] = useState('');
   const [isSavedWebhook, setIsSavedWebhook] = useState(false);
   const [isSyncingRequests, setIsSyncingRequests] = useState(false);
   const [isSyncingEquipment, setIsSyncingEquipment] = useState(false);
   const [isRefreshingSheet, setIsRefreshingSheet] = useState(false);
+  const [isRefreshingStaff, setIsRefreshingStaff] = useState(false);
+  const [isTestingWebhook, setIsTestingWebhook] = useState(false);
+  const [webhookTestResult, setWebhookTestResult] = useState<{ success: boolean; message: string } | null>(null);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [copiedCode, setCopiedCode] = useState(false);
   const [copiedRequestsCsv, setCopiedRequestsCsv] = useState(false);
@@ -69,10 +82,13 @@ export const GoogleSheetsSyncModal: React.FC<GoogleSheetsSyncModalProps> = ({
       setIsSavedWebhook(!!saved);
       setLastSync(getLastSyncInfo());
       setFeedback(null);
+      setWebhookTestResult(null);
     }
   }, [isOpen]);
 
   if (!isOpen) return null;
+
+  const isInvalidUrl = webhookUrl.includes('/edit') || webhookUrl.includes('/home/projects/');
 
   const handleSaveWebhook = () => {
     saveStoredWebhookUrl(webhookUrl);
@@ -80,10 +96,34 @@ export const GoogleSheetsSyncModal: React.FC<GoogleSheetsSyncModalProps> = ({
     setFeedback({
       type: 'success',
       message: webhookUrl.trim() 
-        ? 'บันทึก Webhook URL เรียบร้อยแล้ว ระบบจะทำการส่งข้อมูลไปยัง Google Sheets อัตโนมัติทุกครั้งที่มีการแก้ไข'
+        ? 'บันทึก Webhook URL เรียบร้อยแล้ว ระบบจะทำการส่งข้อมูลไปยัง Google Sheets อัตโนมัติทุกครั้งที่มีการบันทึกหรือแก้ไข'
         : 'ลบ Webhook URL เรียบร้อยแล้ว'
     });
     setLastSync(getLastSyncInfo());
+  };
+
+  const handleTestWebhook = async () => {
+    if (!webhookUrl.trim()) {
+      setFeedback({ type: 'error', message: 'กรุณากรอก Webhook URL ก่อนกดทดสอบ' });
+      return;
+    }
+    setIsTestingWebhook(true);
+    setWebhookTestResult(null);
+    setFeedback(null);
+    try {
+      const res = await testWebhookConnection(webhookUrl);
+      setWebhookTestResult({ success: res.success, message: res.message });
+      if (res.success) {
+        setFeedback({ type: 'success', message: '✓ ทดสอบการเชื่อมต่อสำเร็จ! Webhook ออนไลน์และตอบสนองถูกต้อง' });
+      } else {
+        setFeedback({ type: 'error', message: res.message });
+      }
+    } catch (err: any) {
+      setWebhookTestResult({ success: false, message: `เกิดข้อผิดพลาด: ${err?.message || err}` });
+      setFeedback({ type: 'error', message: `ทดสอบไม่สำเร็จ: ${err?.message || err}` });
+    } finally {
+      setIsTestingWebhook(false);
+    }
   };
 
   const handleSyncRequests = async () => {
@@ -127,12 +167,26 @@ export const GoogleSheetsSyncModal: React.FC<GoogleSheetsSyncModalProps> = ({
     setIsRefreshingSheet(true);
     setFeedback(null);
     try {
-      await onRefreshEquipmentFromSheet();
-      setFeedback({ type: 'success', message: 'ดึงข้อมูลครุภัณฑ์ล่าสุดจาก Google Sheets สำเร็จแล้ว' });
+      await onRefreshEquipmentFromSheet(webhookUrl);
+      setFeedback({ type: 'success', message: 'ดึงข้อมูลครุภัณฑ์ล่าสุดจากแท็บ "ครุภัณฑ์" เรียบร้อยแล้ว' });
     } catch (err: any) {
-      setFeedback({ type: 'error', message: `ไม่สามารถดึงข้อมูลได้: ${err?.message || err}` });
+      setFeedback({ type: 'error', message: `ไม่สามารถดึงข้อมูลครุภัณฑ์ได้: ${err?.message || err}` });
     } finally {
       setIsRefreshingSheet(false);
+    }
+  };
+
+  const handleRefreshStaffClick = async () => {
+    if (!onRefreshStaffFromSheet) return;
+    setIsRefreshingStaff(true);
+    setFeedback(null);
+    try {
+      await onRefreshStaffFromSheet(webhookUrl);
+      setFeedback({ type: 'success', message: 'ดึงรายชื่อบุคลากรจริงจากแท็บ "รายชื่อ" ใน Google Sheet สำเร็จแล้ว' });
+    } catch (err: any) {
+      setFeedback({ type: 'error', message: `ไม่สามารถดึงข้อมูลจากแท็บ "รายชื่อ" ได้: ${err?.message || err}` });
+    } finally {
+      setIsRefreshingStaff(false);
     }
   };
 
@@ -238,9 +292,10 @@ export const GoogleSheetsSyncModal: React.FC<GoogleSheetsSyncModalProps> = ({
               </a>
             </div>
 
-            {/* Sub-tabs stats */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-              <div className="bg-white/90 p-3 rounded-lg border border-emerald-100 flex items-center justify-between">
+            {/* Sub-tabs stats - 3 Primary Tabs */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+              {/* Tab 1: Requests */}
+              <div className="bg-white/90 p-3 rounded-lg border border-emerald-100 flex flex-col justify-between gap-2">
                 <div>
                   <div className="text-[11px] text-slate-500 font-medium">แท็บที่ 1: คำขอยืมครุภัณฑ์</div>
                   <div className="text-xs font-bold text-slate-800 flex items-center gap-1.5 mt-0.5">
@@ -250,21 +305,22 @@ export const GoogleSheetsSyncModal: React.FC<GoogleSheetsSyncModalProps> = ({
                     </span>
                   </div>
                   <div className="text-[10px] text-slate-400 mt-1">
-                    14 คอลัมน์ (id, status, ผู้ขอ, วัตถุประสงค์, วันที่ยืม-คืน, รายการ)
+                    14 คอลัมน์ (สถานะ, ผู้ขอ, วันที่, รายการ)
                   </div>
                 </div>
                 <button
                   onClick={handleSyncRequests}
                   disabled={isSyncingRequests}
-                  className="px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg text-xs font-semibold transition cursor-pointer flex items-center gap-1 shrink-0"
+                  className="w-full px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg text-xs font-semibold transition cursor-pointer flex items-center justify-center gap-1.5"
                   title="ส่งคำขอยืมทั้งหมดไปยังชีต"
                 >
                   <Upload className={`w-3.5 h-3.5 ${isSyncingRequests ? 'animate-bounce' : ''}`} />
-                  <span>{isSyncingRequests ? 'กำลังส่ง...' : 'ซิงค์แท็บนี้'}</span>
+                  <span>{isSyncingRequests ? 'กำลังส่ง...' : 'ส่งข้อมูลไปชีต'}</span>
                 </button>
               </div>
 
-              <div className="bg-white/90 p-3 rounded-lg border border-emerald-100 flex items-center justify-between">
+              {/* Tab 2: Equipment Master */}
+              <div className="bg-white/90 p-3 rounded-lg border border-emerald-100 flex flex-col justify-between gap-2">
                 <div>
                   <div className="text-[11px] text-slate-500 font-medium">แท็บที่ 2: ครุภัณฑ์และอุปกรณ์</div>
                   <div className="text-xs font-bold text-slate-800 flex items-center gap-1.5 mt-0.5">
@@ -274,28 +330,57 @@ export const GoogleSheetsSyncModal: React.FC<GoogleSheetsSyncModalProps> = ({
                     </span>
                   </div>
                   <div className="text-[10px] text-slate-400 mt-1">
-                    8 คอลัมน์ (รหัส, วันที่ตรวจรับ, ชื่อ, ยี่ห้อ, รุ่น, ห้อง, S/N, ราคา)
+                    8 คอลัมน์ (รหัส, ชื่อ, ยี่ห้อ, ห้อง, ราคา)
                   </div>
                 </div>
-                <div className="flex flex-col gap-1 shrink-0">
+                <div className="flex gap-1.5">
                   <button
                     onClick={handleSyncEquipment}
                     disabled={isSyncingEquipment}
-                    className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded text-[11px] font-semibold transition cursor-pointer flex items-center gap-1"
+                    className="flex-1 px-2 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded text-xs font-semibold transition cursor-pointer flex items-center justify-center gap-1"
                     title="ส่งข้อมูลครุภัณฑ์ทั้งหมดไปยังชีต"
                   >
                     <Upload className={`w-3 h-3 ${isSyncingEquipment ? 'animate-bounce' : ''}`} />
-                    <span>{isSyncingEquipment ? 'กำลังส่ง...' : 'ซิงค์แท็บนี้'}</span>
+                    <span>ส่งไปชีต</span>
                   </button>
                   {onRefreshEquipmentFromSheet && (
                     <button
                       onClick={handleRefreshFromSheet}
                       disabled={isRefreshingSheet}
-                      className="px-2.5 py-1 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 rounded text-[10px] font-medium transition cursor-pointer flex items-center gap-1"
-                      title="ดึงข้อมูลล่าสุดจากชีต"
+                      className="flex-1 px-2 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 rounded text-xs font-semibold transition cursor-pointer flex items-center justify-center gap-1"
+                      title="ดึงข้อมูลครุภัณฑ์ล่าสุดจากชีต"
                     >
                       <RefreshCw className={`w-3 h-3 ${isRefreshingSheet ? 'animate-spin' : ''}`} />
-                      <span>ดึงจากชีต</span>
+                      <span>{isRefreshingSheet ? 'กำลังดึง...' : 'ดึงจากชีต'}</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Tab 3: Staff Roster */}
+              <div className="bg-white/90 p-3 rounded-lg border border-emerald-100 flex flex-col justify-between gap-2">
+                <div>
+                  <div className="text-[11px] text-slate-500 font-medium">แท็บที่ 3: รายชื่อบุคลากร</div>
+                  <div className="text-xs font-bold text-slate-800 flex items-center gap-1.5 mt-0.5">
+                    <span>"{TAB_STAFF}"</span>
+                    <span className="text-[11px] px-2 py-0.2 rounded-full bg-purple-50 text-purple-700 font-semibold border border-purple-200">
+                      {staffList.length} ท่าน
+                    </span>
+                  </div>
+                  <div className="text-[10px] text-slate-400 mt-1">
+                    บุคลากร, คำนำหน้า, สังกัด, อีเมล, สิทธิ์
+                  </div>
+                </div>
+                <div>
+                  {onRefreshStaffFromSheet && (
+                    <button
+                      onClick={handleRefreshStaffClick}
+                      disabled={isRefreshingStaff}
+                      className="w-full px-2.5 py-1.5 bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 rounded-lg text-xs font-semibold transition cursor-pointer flex items-center justify-center gap-1.5"
+                      title="ดึงรายชื่อบุคลากรจริงจากชีต"
+                    >
+                      <RefreshCw className={`w-3.5 h-3.5 ${isRefreshingStaff ? 'animate-spin' : ''}`} />
+                      <span>{isRefreshingStaff ? 'กำลังดึงข้อมูล...' : 'ดึงรายชื่อจากชีต'}</span>
                     </button>
                   )}
                 </div>
@@ -306,7 +391,7 @@ export const GoogleSheetsSyncModal: React.FC<GoogleSheetsSyncModalProps> = ({
             <div className="text-[11px] text-emerald-900 bg-emerald-100/50 p-2.5 rounded-lg flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0" />
               <span>
-                <strong>การจัดเก็บข้อมูล:</strong> ข้อมูลทั้งหมดที่สร้างหรือแก้ไขในระบบ (คำขอยืมใหม่, การอนุมัติ, ตรวจรับคืน, เพิ่ม/แก้ไขครุภัณฑ์) จะถูกบันทึกอย่างปลอดภัยในระบบทันที และพร้อมซิงค์เข้า Google Sheets อัตโนมัติ
+                <strong>การจัดเก็บข้อมูล:</strong> บันทึกคำขอใหม่, การอนุมัติ, ตรวจรับคืน, และครุภัณฑ์ลงระบบทันที พร้อมซิงค์เข้า-ออกกับ Google Sheets ทั้ง 3 แท็บอัตโนมัติ
               </span>
             </div>
           </div>
@@ -332,20 +417,34 @@ export const GoogleSheetsSyncModal: React.FC<GoogleSheetsSyncModalProps> = ({
             <div className="flex items-center justify-between">
               <div className="text-xs font-bold text-slate-900 flex items-center gap-2">
                 <Link2 className="w-4 h-4 text-blue-600" />
-                <span>ตั้งค่าการซิงค์แบบเรียลไทม์อัตโนมัติ (Google Apps Script Webhook URL)</span>
+                <span>ตั้งค่าการซิงค์ผ่าน Google Apps Script (Webhook URL)</span>
               </div>
               <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold border ${
                 isSavedWebhook 
                   ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                   : 'bg-amber-50 text-amber-800 border-amber-200'
               }`}>
-                {isSavedWebhook ? '✓ เปิดใช้งานการส่งอัตโนมัติ' : 'ยังไม่ได้เชื่อม Webhook'}
+                {isSavedWebhook ? '✓ เชื่อมต่อ Webhook แล้ว' : 'ยังไม่ได้เชื่อม Webhook'}
               </span>
             </div>
 
             <p className="text-xs text-slate-500">
-              นำ <strong>URL ของเว็บแอป (Web App URL)</strong> ที่ได้จากการ Deploy ใน Google Apps Script ของชีตนี้มาวาง เพื่อให้ระบบส่งข้อมูลไปอัปเดตแถวใน Google Sheet ทันทีทุกครั้งที่มีการบันทึกหรือแก้ไข
+              นำ <strong>URL ของเว็บแอป (Web App URL)</strong> ที่ได้จากการ Deploy ใน Google Apps Script ของชีตนี้มาวาง เพื่อให้ระบบดึงข้อมูลจากชีต <strong>"ครุภัณฑ์"</strong> และ <strong>"รายชื่อ"</strong> รวมถึงส่งข้อมูลกลับไปอัปเดตอัตโนมัติ
             </p>
+
+            {/* Warning if user pasted edit URL */}
+            {isInvalidUrl && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-xs text-red-800 flex items-start gap-2.5">
+                <AlertTriangle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <div className="font-bold text-red-900">⚠️ ตรวจพบ URL ผิดประเภท (หน้าแก้ไขโค้ด /edit)</div>
+                  <div>URL ที่คุณระบุลงท้ายด้วย <code>/edit</code> ซึ่งเป็นหน้าแก้ไขสคริปต์ ไม่ใช่ API endpoint จึงทำให้ Google ส่งกลับ <strong>404 Not Found</strong> เสมอ</div>
+                  <div className="text-[11px] text-red-700">
+                    👉 <strong>วิธีแก้ไข:</strong> ในหน้า Apps Script ให้กดปุ่ม <strong>"ทำให้ใช้งานได้" (Deploy)</strong> &gt; <strong>"การทำให้ใช้งานได้ใหม่" (New deployment)</strong> &gt; เลือกประเภท <strong>"เว็บแอป"</strong> &gt; ผู้มีสิทธิ์เข้าถึง: <strong>"ทุกคน (Anyone)"</strong> &gt; แล้วคัดลอก URL ที่ลงท้ายด้วย <code>/exec</code> มาวางแทน
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div className="flex flex-col sm:flex-row items-center gap-2">
               <input
@@ -353,25 +452,93 @@ export const GoogleSheetsSyncModal: React.FC<GoogleSheetsSyncModalProps> = ({
                 placeholder="https://script.google.com/macros/s/.../exec"
                 value={webhookUrl}
                 onChange={(e) => setWebhookUrl(e.target.value)}
-                className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-mono outline-none focus:ring-2 focus:ring-blue-500 text-slate-800"
+                className={`w-full px-3 py-2 bg-white border rounded-lg text-xs font-mono outline-none focus:ring-2 text-slate-800 ${
+                  isInvalidUrl ? 'border-red-400 focus:ring-red-400' : 'border-slate-300 focus:ring-blue-500'
+                }`}
               />
-              <button
-                onClick={handleSaveWebhook}
-                className="w-full sm:w-auto px-4 py-2 bg-blue-700 hover:bg-blue-800 text-white rounded-lg text-xs font-semibold whitespace-nowrap transition cursor-pointer shadow-xs"
-              >
-                บันทึกการตั้งค่า
-              </button>
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                <button
+                  onClick={handleSaveWebhook}
+                  className="flex-1 sm:flex-initial px-4 py-2 bg-blue-700 hover:bg-blue-800 text-white rounded-lg text-xs font-semibold whitespace-nowrap transition cursor-pointer shadow-xs"
+                >
+                  บันทึก URL
+                </button>
+                <button
+                  onClick={handleTestWebhook}
+                  disabled={isTestingWebhook || !webhookUrl.trim()}
+                  className="flex-1 sm:flex-initial px-3 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-lg text-xs font-semibold whitespace-nowrap transition cursor-pointer flex items-center justify-center gap-1.5"
+                  title="ทดสอบว่า Webhook ใช้งานได้หรือไม่"
+                >
+                  <Zap className={`w-3.5 h-3.5 text-amber-600 ${isTestingWebhook ? 'animate-pulse' : ''}`} />
+                  <span>{isTestingWebhook ? 'กำลังทดสอบ...' : 'ทดสอบเชื่อมต่อ'}</span>
+                </button>
+              </div>
             </div>
 
-            {/* Quick Actions if webhook is present */}
+            {webhookUrl !== DEFAULT_WEBHOOK_URL && (
+              <div className="flex items-center gap-2 pt-0.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setWebhookUrl(DEFAULT_WEBHOOK_URL);
+                    saveStoredWebhookUrl(DEFAULT_WEBHOOK_URL);
+                    setIsSavedWebhook(true);
+                    setFeedback({ type: 'success', message: 'รีเซ็ตเป็น Web App URL หลักของระบบเรียบร้อยแล้ว' });
+                  }}
+                  className="text-[11px] text-blue-700 hover:text-blue-900 underline font-medium cursor-pointer"
+                >
+                  ↺ คลิกเพื่อใช้ Web App URL ล่าสุดของ รพ.สัตว์ ม.อ. (ตั้งต้น)
+                </button>
+              </div>
+            )}
+
+            {/* Test result display */}
+            {webhookTestResult && (
+              <div className={`p-3 rounded-lg border text-xs flex items-start gap-2 ${
+                webhookTestResult.success
+                  ? 'bg-emerald-50 border-emerald-200 text-emerald-900'
+                  : 'bg-amber-50 border-amber-200 text-amber-900'
+              }`}>
+                {webhookTestResult.success ? (
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                ) : (
+                  <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                )}
+                <div className="flex-1">{webhookTestResult.message}</div>
+              </div>
+            )}
+
+            {/* Quick Actions Bar */}
             <div className="flex flex-wrap items-center gap-2 pt-1">
+              {onRefreshEquipmentFromSheet && (
+                <button
+                  onClick={handleRefreshFromSheet}
+                  disabled={isRefreshingSheet}
+                  className="px-3 py-1.5 bg-white border border-emerald-300 hover:bg-emerald-50 rounded-lg text-xs font-semibold text-emerald-800 transition cursor-pointer flex items-center gap-1.5 shadow-xs"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 text-emerald-600 ${isRefreshingSheet ? 'animate-spin' : ''}`} />
+                  <span>ดึงข้อมูลครุภัณฑ์จากชีต ({equipment.length})</span>
+                </button>
+              )}
+
+              {onRefreshStaffFromSheet && (
+                <button
+                  onClick={handleRefreshStaffClick}
+                  disabled={isRefreshingStaff}
+                  className="px-3 py-1.5 bg-white border border-purple-300 hover:bg-purple-50 rounded-lg text-xs font-semibold text-purple-800 transition cursor-pointer flex items-center gap-1.5 shadow-xs"
+                >
+                  <Users className={`w-3.5 h-3.5 text-purple-600 ${isRefreshingStaff ? 'animate-pulse' : ''}`} />
+                  <span>ดึงรายชื่อบุคลากรจากชีต ({staffList.length})</span>
+                </button>
+              )}
+
               <button
                 onClick={handleSyncRequests}
                 disabled={isSyncingRequests}
                 className="px-3 py-1.5 bg-white border border-slate-300 hover:bg-slate-100 rounded-lg text-xs font-semibold text-slate-700 transition cursor-pointer flex items-center gap-1.5 shadow-xs"
               >
-                <RefreshCw className={`w-3.5 h-3.5 text-blue-600 ${isSyncingRequests ? 'animate-spin' : ''}`} />
-                <span>ส่งคำขอยืมทั้งหมด ({requests.length}) ไป Google Sheets เดี๋ยวนี้</span>
+                <Upload className={`w-3.5 h-3.5 text-blue-600 ${isSyncingRequests ? 'animate-bounce' : ''}`} />
+                <span>ส่งคำขอยืม ({requests.length}) ไปชีต</span>
               </button>
 
               <button
@@ -379,9 +546,28 @@ export const GoogleSheetsSyncModal: React.FC<GoogleSheetsSyncModalProps> = ({
                 disabled={isSyncingEquipment}
                 className="px-3 py-1.5 bg-white border border-slate-300 hover:bg-slate-100 rounded-lg text-xs font-semibold text-slate-700 transition cursor-pointer flex items-center gap-1.5 shadow-xs"
               >
-                <RefreshCw className={`w-3.5 h-3.5 text-emerald-600 ${isSyncingEquipment ? 'animate-spin' : ''}`} />
-                <span>ส่งครุภัณฑ์ทั้งหมด ({equipment.length}) ไป Google Sheets เดี๋ยวนี้</span>
+                <Upload className={`w-3.5 h-3.5 text-emerald-600 ${isSyncingEquipment ? 'animate-bounce' : ''}`} />
+                <span>ส่งครุภัณฑ์ ({equipment.length}) ไปชีต</span>
               </button>
+            </div>
+          </div>
+
+          {/* Dedicated Troubleshooting & 404 Resolution Guide */}
+          <div className="p-4 rounded-xl bg-amber-50/70 border border-amber-200/90 space-y-2.5 text-xs text-amber-950">
+            <div className="font-bold flex items-center gap-2 text-amber-900">
+              <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+              <span>ทำไม Google Sheet จึงไม่ดึงข้อมูล หรือขึ้นแจ้งเตือน 404 Not Found?</span>
+            </div>
+            <div className="space-y-1.5 pl-6 text-slate-700 leading-relaxed">
+              <div>
+                <strong>1. สิทธิ์การเข้าถึง (Who has access) สำคัญที่สุด:</strong> ใน Google Apps Script ตอนกด <code>Deploy &gt; New deployment &gt; Web app</code> ช่อง <strong>"ผู้มีสิทธิ์เข้าถึง (Who has access)"</strong> ต้องเลือกเป็น <strong>"ทุกคน (Anyone)"</strong> เท่านั้น (หากเลือกเป็น "เฉพาะฉัน" หรือ "PSU" Google จะบล็อกการเรียกจากหน้าเว็บ และตอบกลับเป็น 404 เสมอ)
+              </div>
+              <div>
+                <strong>2. ตรวจสอบลิงก์ Web App URL:</strong> ต้องคัดลอกลิงก์ที่ลงท้ายด้วย <code>/exec</code> มาวาง (ห้ามใช้ลิงก์หน้าโค้ดที่ลงท้ายด้วย <code>/edit</code>)
+              </div>
+              <div>
+                <strong>3. ตรวจสอบชื่อแท็บใน Google Sheet:</strong> ในไฟล์ Google Sheet ต้องมีแท็บชื่อ <strong>"ครุภัณฑ์"</strong> และแท็บชื่อ <strong>"รายชื่อ"</strong> สะกดตรงตามนี้เป๊ะ
+              </div>
             </div>
           </div>
 

@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { EquipmentMaster, StaffUser } from '../types';
 import { fetchGoogleSheetCSV, parseEquipmentSheetCSV, getStoredStaffUsers } from '../services/storage';
+import { fetchEquipmentFromGoogleSheets } from '../services/googleSheetsSync';
 
 interface EquipmentCatalogModalProps {
   isOpen: boolean;
@@ -332,41 +333,54 @@ export const EquipmentCatalogModal: React.FC<EquipmentCatalogModalProps> = ({
     setShowAddForm(false);
   };
 
-  // Sync from Google Sheets (GID 326365193)
+  // Sync from Google Sheets (via Webhook with fallback to direct CSV)
   const handleSyncFromGoogleSheet = async () => {
     setIsSyncing(true);
     setSyncStatus({ type: 'idle' });
 
     try {
-      const csvText = await fetchGoogleSheetCSV();
-      const parsedItems = parseEquipmentSheetCSV(csvText);
-
-      if (parsedItems.length === 0) {
-        setSyncStatus({
-          type: 'error',
-          message: 'ไม่พบรายการข้อมูลครุภัณฑ์ที่ถูกต้องในชีต'
-        });
-      } else {
+      const res = await fetchEquipmentFromGoogleSheets();
+      if (res.success && res.equipment.length > 0) {
         if (onBatchUpdateEquipment) {
-          onBatchUpdateEquipment(parsedItems);
+          onBatchUpdateEquipment(res.equipment);
         }
         setSyncStatus({
           type: 'success',
-          count: parsedItems.length,
-          message: `ซิงค์สำเร็จ ดึงข้อมูลครุภัณฑ์จากชีตได้ทั้งหมด ${parsedItems.length} รายการ`
+          count: res.equipment.length,
+          message: `ซิงค์สำเร็จ ดึงข้อมูลครุภัณฑ์จากชีตได้ทั้งหมด ${res.equipment.length} รายการ`
         });
+      } else {
+        // Fallback to direct CSV if webhook returned 0 or wasn't configured
+        const csvText = await fetchGoogleSheetCSV();
+        const parsedItems = parseEquipmentSheetCSV(csvText);
+
+        if (parsedItems.length === 0) {
+          setSyncStatus({
+            type: 'error',
+            message: res.message || 'ไม่พบรายการข้อมูลครุภัณฑ์ในชีต หรือยังไม่ได้บันทึก Webhook URL'
+          });
+        } else {
+          if (onBatchUpdateEquipment) {
+            onBatchUpdateEquipment(parsedItems);
+          }
+          setSyncStatus({
+            type: 'success',
+            count: parsedItems.length,
+            message: `ซิงค์สำเร็จ ดึงข้อมูลครุภัณฑ์จากชีตได้ทั้งหมด ${parsedItems.length} รายการ`
+          });
+        }
       }
     } catch (err: any) {
       console.warn('Sync failed:', err);
       if (err.message === 'RESTRICTED_ACCESS' || err.message?.includes('404') || err.message?.includes('401')) {
         setSyncStatus({
           type: 'restricted',
-          message: 'ไม่สามารถดึงข้อมูลตรงได้ เนื่องจากสิทธิ์การแชร์ของ Google Sheets ตั้งค่าเป็น "จำกัด (Restricted)"'
+          message: 'ไม่สามารถดึงข้อมูลได้ กรุณาตรวจสอบการตั้งค่า Webhook URL ในหน้าเชื่อมต่อ Google Sheets หรือตั้งสิทธิ์เป็น Anyone'
         });
       } else {
         setSyncStatus({
           type: 'error',
-          message: `การเชื่อมต่อขัดข้อง (${err.message || 'Network Error'}) กรุณาใช้ตัวเลือกนำเข้าไฟล์ CSV`
+          message: `การเชื่อมต่อขัดข้อง (${err.message || 'Network Error'}) กรุณาตั้งค่า Webhook URL ในหน้า Google Sheets Sync`
         });
       }
     } finally {
