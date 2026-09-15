@@ -4,7 +4,7 @@ import { INITIAL_BORROW_REQUESTS, INITIAL_EQUIPMENT_MASTER, STAFF_USERS } from '
 const STORAGE_KEY_REQUESTS = 'psu_vet_borrow_requests_v1';
 const STORAGE_KEY_EQUIPMENT = 'psu_vet_equipment_master_v2';
 const STORAGE_KEY_NOTIFS = 'psu_vet_notifications_v1';
-const STORAGE_KEY_STAFF = 'psu_vet_staff_users_v2';
+const STORAGE_KEY_STAFF = 'psu_vet_staff_users_v3';
 const STORAGE_KEY_ACTIVE_USER = 'psu_vet_active_user_email_v2';
 const STORAGE_KEY_AUTH_STATUS = 'psu_vet_auth_is_authenticated_v1';
 
@@ -41,9 +41,14 @@ export function getStoredStaffUsers(): StaffUser[] {
       return STAFF_USERS;
     }
     const parsed: StaffUser[] = JSON.parse(raw);
+    // If stored count is less than built-in database (e.g. old 14 entries), merge full 45 entries
+    const existingEmails = new Set(parsed.map(u => (u.email || '').toLowerCase()));
+    const missingFromBuiltin = STAFF_USERS.filter(u => !existingEmails.has((u.email || '').toLowerCase()));
+    const combined = [...parsed, ...missingFromBuiltin];
+
     // Ensure all items have title_th, first_name_th, last_name_th, display_name_th
-    const merged = parsed.map(user => {
-      const initial = STAFF_USERS.find(s => s.email.toLowerCase() === user.email.toLowerCase());
+    const merged = combined.map(user => {
+      const initial = STAFF_USERS.find(s => s.email.toLowerCase() === (user.email || '').toLowerCase());
       return {
         ...initial,
         ...user,
@@ -55,6 +60,11 @@ export function getStoredStaffUsers(): StaffUser[] {
         roleLabel: user.roleLabel || initial?.roleLabel || 'ผู้ใช้งาน',
       };
     });
+
+    if (missingFromBuiltin.length > 0) {
+      saveStoredStaffUsers(merged);
+    }
+
     return merged;
   } catch (err) {
     console.error('Error reading staff users from storage', err);
