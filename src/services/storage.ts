@@ -1,8 +1,8 @@
 import { BorrowRequest, EquipmentMaster, SystemNotification, BorrowedEquipmentItem, StaffUser } from '../types';
 import { INITIAL_BORROW_REQUESTS, INITIAL_EQUIPMENT_MASTER, STAFF_USERS } from '../data/initialData';
 
-const STORAGE_KEY_REQUESTS = 'psu_vet_borrow_requests_v1';
-const STORAGE_KEY_EQUIPMENT = 'psu_vet_equipment_master_v2';
+const STORAGE_KEY_REQUESTS = 'psu_vet_borrow_requests_v3';
+const STORAGE_KEY_EQUIPMENT = 'psu_vet_equipment_master_v3';
 const STORAGE_KEY_NOTIFS = 'psu_vet_notifications_v1';
 const STORAGE_KEY_STAFF = 'psu_vet_staff_users_v3';
 const STORAGE_KEY_ACTIVE_USER = 'psu_vet_active_user_email_v2';
@@ -98,21 +98,28 @@ export function saveStoredActiveUserEmail(email: string): void {
 
 export function getStoredRequests(): BorrowRequest[] {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY_REQUESTS);
+    let raw = localStorage.getItem(STORAGE_KEY_REQUESTS);
+    // If v3 doesn't exist yet, check older versions so user's previous work isn't lost
+    if (!raw) {
+      const v2Raw = localStorage.getItem('psu_vet_borrow_requests_v2');
+      const v1Raw = localStorage.getItem('psu_vet_borrow_requests_v1');
+      raw = v2Raw || v1Raw;
+    }
+
     if (!raw) {
       localStorage.setItem(STORAGE_KEY_REQUESTS, JSON.stringify(INITIAL_BORROW_REQUESTS));
       return INITIAL_BORROW_REQUESTS;
     }
+
     const parsed: BorrowRequest[] = JSON.parse(raw);
-    // Ensure all 8 canonical requests from the Google Sheet exist
+    // Ensure all canonical requests exist in the list
     const existingIds = new Set(parsed.map(r => r.id));
     const missing = INITIAL_BORROW_REQUESTS.filter(r => !existingIds.has(r.id));
-    if (missing.length > 0) {
-      const merged = [...parsed, ...missing];
-      localStorage.setItem(STORAGE_KEY_REQUESTS, JSON.stringify(merged));
-      return merged;
-    }
-    return parsed;
+    
+    // Also if parsed has fewer items than INITIAL_BORROW_REQUESTS, guarantee full catalog of requests
+    const merged = missing.length > 0 ? [...parsed, ...missing] : parsed;
+    localStorage.setItem(STORAGE_KEY_REQUESTS, JSON.stringify(merged));
+    return merged;
   } catch (err) {
     console.error('Error reading requests from storage', err);
     return INITIAL_BORROW_REQUESTS;

@@ -762,6 +762,22 @@ function doGet(e) {
     })).setMimeType(ContentService.MimeType.JSON);
   }
 
+  // ดึงรายการคำขอยืมครุภัณฑ์จากชีต "คำขอยืมครุภัณฑ์"
+  if (action === "get_requests" || action === "get_borrow_requests") {
+    var sheet = ss.getSheetByName("คำขอยืมครุภัณฑ์");
+    if (!sheet) {
+      return ContentService.createTextOutput(JSON.stringify({
+        status: "error",
+        message: "ไม่พบแท็บ คำขอยืมครุภัณฑ์"
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+    var values = sheet.getDataRange().getValues();
+    return ContentService.createTextOutput(JSON.stringify({
+      status: "success",
+      rows: values
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+
   return ContentService.createTextOutput(JSON.stringify({
     status: "online",
     message: "PSU Vet Hospital Google Sheets API is running",
@@ -1149,6 +1165,110 @@ export async function fetchStaffFromGoogleSheets(
     success: false,
     staff: [],
     message: 'ไม่สามารถดึงข้อมูลจากแท็บ "รายชื่อ" ได้ กรุณาตรวจสอบว่ามีแท็บชื่อ "รายชื่อ" อยู่ใน Google Sheet และบันทึก Webhook แล้ว'
+  };
+}
+
+/**
+ * Parses rows array from Google Sheet tab 'คำขอยืมครุภัณฑ์' into BorrowRequest array
+ */
+export function parseRequestRows(rows: any[][]): BorrowRequest[] {
+  if (!rows || rows.length < 2) return [];
+
+  const requests: BorrowRequest[] = [];
+  for (let i = 1; i < rows.length; i++) {
+    const row = rows[i];
+    if (!row || !row[0]) continue;
+
+    const id = String(row[0]).trim();
+    if (!id) continue;
+
+    let equipmentList: any[] = [];
+    const eqRaw = row[13];
+    if (eqRaw) {
+      try {
+        equipmentList = typeof eqRaw === 'string' ? JSON.parse(eqRaw) : eqRaw;
+      } catch (e) {
+        console.warn('Could not parse equipment JSON from row', id, e);
+      }
+    }
+
+    requests.push({
+      id,
+      status: (row[1] as any) || 'ยื่นขออนุมัติ',
+      createdAt: row[2] ? String(row[2]) : new Date().toISOString(),
+      updatedAt: row[3] ? String(row[3]) : new Date().toISOString(),
+      requesterName: row[4] ? String(row[4]).trim() : '',
+      requesterPosition: row[5] ? String(row[5]).trim() : '',
+      requesterDept: row[6] ? String(row[6]).trim() : '',
+      requesterEmail: row[7] ? String(row[7]).trim() : '',
+      purpose: row[8] ? String(row[8]).trim() : '',
+      borrowFrom: row[9] ? String(row[9]).trim() : '',
+      borrowFromTime: row[10] ? String(row[10]).trim() : '',
+      borrowTo: row[11] ? String(row[11]).trim() : '',
+      borrowToTime: row[12] ? String(row[12]).trim() : '',
+      equipmentList: Array.isArray(equipmentList) ? equipmentList : []
+    });
+  }
+
+  return requests;
+}
+
+/**
+ * Fetches real borrow requests from Google Sheet tab 'คำขอยืมครุภัณฑ์' (via Webhook or direct CSV)
+ */
+export async function fetchRequestsFromGoogleSheets(
+  overrideWebhookUrl?: string
+): Promise<{ success: boolean; requests: BorrowRequest[]; message: string }> {
+  const url = (overrideWebhookUrl || getStoredWebhookUrl()).trim();
+
+  if (url) {
+    try {
+      const sep = url.includes('?') ? '&' : '?';
+      const targetUrl = `${url}${sep}action=get_requests&t=${Date.now()}`;
+      const res = await fetch(targetUrl, {
+        method: 'GET'
+      });
+
+      if (!res.ok) {
+        throw new Error(`HTTP Error ${res.status}`);
+      }
+
+      const data = await res.json();
+      if (data.status === 'success' && Array.isArray(data.rows)) {
+        const parsed = parseRequestRows(data.rows);
+        if (parsed.length > 0) {
+          saveLastSyncInfo('success', `ดึงรายการคำขอยืม ${parsed.length} รายการจากชีต "คำขอยืมครุภัณฑ์" สำเร็จ`);
+          return { success: true, requests: parsed, message: `ดึงรายการคำขอยืม ${parsed.length} รายการจากชีตสำเร็จ` };
+        }
+      } else if (data.status === 'error') {
+        throw new Error(data.message || 'Apps Script แจ้งเตือน: ไม่พบแท็บ "คำขอยืมครุภัณฑ์"');
+      }
+    } catch (err: any) {
+      console.warn('Failed to fetch requests via webhook, checking direct fallback...', err);
+    }
+  }
+
+  // Direct CSV fallback
+  try {
+    const directUrl = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(TAB_REQUESTS)}`;
+    const res = await fetch(directUrl);
+    if (res.ok) {
+      const text = await res.text();
+      if (!text.includes('<!DOCTYPE html>') && !text.includes('accounts.google.com')) {
+        const parsed = parseRequestsCSV(text);
+        if (parsed.length > 0) {
+          return { success: true, requests: parsed, message: `ดึงรายการคำขอยืม ${parsed.length} รายการสำเร็จ (Direct)` };
+        }
+      }
+    }
+  } catch {
+    // fallback failed
+  }
+
+  return {
+    success: false,
+    requests: [],
+    message: 'ยังไม่สามารถดึงข้อมูลรายการคำขอยืมจากชีตได้'
   };
 }
 

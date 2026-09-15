@@ -43,7 +43,8 @@ import {
   syncEquipmentToGoogleSheet,
   appendEquipmentToGoogleSheet,
   fetchEquipmentFromGoogleSheets,
-  fetchStaffFromGoogleSheets
+  fetchStaffFromGoogleSheets,
+  fetchRequestsFromGoogleSheets
 } from './services/googleSheetsSync';
 import { fetchGoogleSheetCSV, parseEquipmentSheetCSV } from './services/storage';
 
@@ -104,12 +105,13 @@ export default function App() {
       }
     }
 
-    // Auto-fetch latest staff and equipment from Google Sheets in the background
+    // Auto-fetch latest staff, equipment, and requests from Google Sheets in the background
     const syncFromLiveSheets = async () => {
       try {
-        const [staffRes, eqRes] = await Promise.allSettled([
+        const [staffRes, eqRes, reqRes] = await Promise.allSettled([
           fetchStaffFromGoogleSheets(),
-          fetchEquipmentFromGoogleSheets()
+          fetchEquipmentFromGoogleSheets(),
+          fetchRequestsFromGoogleSheets()
         ]);
 
         if (staffRes.status === 'fulfilled' && staffRes.value.success && staffRes.value.staff.length > 0) {
@@ -126,6 +128,18 @@ export default function App() {
         if (eqRes.status === 'fulfilled' && eqRes.value.success && eqRes.value.equipment.length > 0) {
           setEquipment(eqRes.value.equipment);
           saveStoredEquipment(eqRes.value.equipment);
+        }
+
+        if (reqRes.status === 'fulfilled' && reqRes.value.success && reqRes.value.requests.length > 0) {
+          const liveReqs = reqRes.value.requests;
+          // Merge with current state so no local unsynced edits are lost
+          const existingIds = new Set(liveReqs.map(r => r.id));
+          const currentLocal = getStoredRequests();
+          const localOnly = currentLocal.filter(r => !existingIds.has(r.id));
+          const merged = [...liveReqs, ...localOnly];
+          setRequests(merged);
+          saveStoredRequests(merged);
+          setNotifications(generateSystemNotifications(merged));
         }
       } catch (err) {
         console.warn('Background sync from Google Sheets:', err);
@@ -424,6 +438,23 @@ export default function App() {
     throw new Error(res.message || 'ไม่สามารถดึงรายชื่อบุคลากรได้');
   };
 
+  // Refresh borrow requests directly from Google Sheets (tab 'คำขอยืมครุภัณฑ์')
+  const handleRefreshRequestsFromSheet = async (overrideWebhookUrl?: string) => {
+    const res = await fetchRequestsFromGoogleSheets(overrideWebhookUrl);
+    if (res.success && res.requests.length > 0) {
+      const existingIds = new Set(res.requests.map(r => r.id));
+      const currentLocal = getStoredRequests();
+      const localOnly = currentLocal.filter(r => !existingIds.has(r.id));
+      const merged = [...res.requests, ...localOnly];
+      setRequests(merged);
+      saveStoredRequests(merged);
+      setNotifications(generateSystemNotifications(merged));
+      triggerSyncToast(`ดึงรายการคำขอยืม ${res.requests.length} รายการจากชีตเรียบร้อยแล้ว`);
+      return res;
+    }
+    throw new Error(res.message || 'ไม่สามารถดึงข้อมูลคำขอยืมจากชีตได้');
+  };
+
   // Reset to initial dataset
   const handleResetData = () => {
     resetToDefaults();
@@ -643,6 +674,7 @@ export default function App() {
         staffList={staffDatabase}
         onRefreshEquipmentFromSheet={handleRefreshEquipmentFromSheet}
         onRefreshStaffFromSheet={handleRefreshStaffFromSheet}
+        onRefreshRequestsFromSheet={handleRefreshRequestsFromSheet}
       />
 
       {/* Floating Real-Time Sync Notification Toast */}

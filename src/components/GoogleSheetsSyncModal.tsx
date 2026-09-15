@@ -49,6 +49,7 @@ interface GoogleSheetsSyncModalProps {
   staffList?: StaffUser[];
   onRefreshEquipmentFromSheet?: (overrideWebhookUrl?: string) => Promise<any>;
   onRefreshStaffFromSheet?: (overrideWebhookUrl?: string) => Promise<any>;
+  onRefreshRequestsFromSheet?: (overrideWebhookUrl?: string) => Promise<any>;
 }
 
 export const GoogleSheetsSyncModal: React.FC<GoogleSheetsSyncModalProps> = ({
@@ -58,7 +59,8 @@ export const GoogleSheetsSyncModal: React.FC<GoogleSheetsSyncModalProps> = ({
   equipment,
   staffList = [],
   onRefreshEquipmentFromSheet,
-  onRefreshStaffFromSheet
+  onRefreshStaffFromSheet,
+  onRefreshRequestsFromSheet
 }) => {
   const [webhookUrl, setWebhookUrl] = useState('');
   const [isSavedWebhook, setIsSavedWebhook] = useState(false);
@@ -66,6 +68,7 @@ export const GoogleSheetsSyncModal: React.FC<GoogleSheetsSyncModalProps> = ({
   const [isSyncingEquipment, setIsSyncingEquipment] = useState(false);
   const [isRefreshingSheet, setIsRefreshingSheet] = useState(false);
   const [isRefreshingStaff, setIsRefreshingStaff] = useState(false);
+  const [isRefreshingRequests, setIsRefreshingRequests] = useState(false);
   const [isTestingWebhook, setIsTestingWebhook] = useState(false);
   const [webhookTestResult, setWebhookTestResult] = useState<{ success: boolean; message: string } | null>(null);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
@@ -187,6 +190,20 @@ export const GoogleSheetsSyncModal: React.FC<GoogleSheetsSyncModalProps> = ({
       setFeedback({ type: 'error', message: `ไม่สามารถดึงข้อมูลจากแท็บ "รายชื่อ" ได้: ${err?.message || err}` });
     } finally {
       setIsRefreshingStaff(false);
+    }
+  };
+
+  const handleRefreshRequestsClick = async () => {
+    if (!onRefreshRequestsFromSheet) return;
+    setIsRefreshingRequests(true);
+    setFeedback(null);
+    try {
+      await onRefreshRequestsFromSheet(webhookUrl);
+      setFeedback({ type: 'success', message: 'ดึงรายการคำขอยืมครุภัณฑ์จากแท็บ "คำขอยืมครุภัณฑ์" สำเร็จแล้ว' });
+    } catch (err: any) {
+      setFeedback({ type: 'error', message: `ไม่สามารถดึงข้อมูลคำขอยืมได้: ${err?.message || err}` });
+    } finally {
+      setIsRefreshingRequests(false);
     }
   };
 
@@ -529,6 +546,17 @@ export const GoogleSheetsSyncModal: React.FC<GoogleSheetsSyncModalProps> = ({
                 >
                   <Users className={`w-3.5 h-3.5 text-purple-600 ${isRefreshingStaff ? 'animate-pulse' : ''}`} />
                   <span>ดึงรายชื่อบุคลากรจากชีต ({staffList.length})</span>
+                </button>
+              )}
+
+              {onRefreshRequestsFromSheet && (
+                <button
+                  onClick={handleRefreshRequestsClick}
+                  disabled={isRefreshingRequests}
+                  className="px-3 py-1.5 bg-white border border-blue-300 hover:bg-blue-50 rounded-lg text-xs font-semibold text-blue-800 transition cursor-pointer flex items-center gap-1.5 shadow-xs"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 text-blue-600 ${isRefreshingRequests ? 'animate-spin' : ''}`} />
+                  <span>ดึงรายการคำขอยืมจากชีต ({requests.length})</span>
                 </button>
               )}
 

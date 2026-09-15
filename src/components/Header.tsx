@@ -206,18 +206,16 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           )}
 
-          {/* Catalog view button - ONLY FOR ADMIN */}
-          {currentPortal === 'admin' && (
-            <button
-              onClick={onOpenCatalog}
-              id="btn-open-catalog"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition shadow-2xs cursor-pointer"
-              title="คลังครุภัณฑ์และอุปกรณ์ (เฉพาะผู้ดูแลระบบ)"
-            >
-              <Database className="w-3.5 h-3.5 text-blue-600" />
-              <span>คลังครุภัณฑ์</span>
-            </button>
-          )}
+          {/* Catalog view button */}
+          <button
+            onClick={onOpenCatalog}
+            id="btn-open-catalog"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition shadow-2xs cursor-pointer"
+            title="คลังครุภัณฑ์และอุปกรณ์ รพ.สัตว์ ม.อ."
+          >
+            <Database className="w-3.5 h-3.5 text-blue-600" />
+            <span>คลังครุภัณฑ์</span>
+          </button>
 
           {/* Google Sheets Sync Button */}
           {onOpenGoogleSheetsSync && (

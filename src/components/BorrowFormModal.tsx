@@ -848,11 +848,17 @@ export const BorrowFormModal: React.FC<BorrowFormModalProps> = ({
                   <option value="เครื่องมือผ่าตัด/ศัลยกรรม">เครื่องมือผ่าตัด/ศัลยกรรม</option>
                   <option value="เครื่องมือตรวจและเฝ้าระวัง">เครื่องมือตรวจและเฝ้าระวัง</option>
                   <option value="อุปกรณ์กายภาพ/เวชศาสตร์ฟื้นฟู">อุปกรณ์กายภาพ/เวชศาสตร์ฟื้นฟู</option>
+                  <option value="อื่นๆ">อื่นๆ</option>
                 </select>
               </div>
 
               <div className="max-h-48 overflow-y-auto divide-y divide-slate-100">
-                {filteredCatalog.map((eq) => {
+                {filteredCatalog.length === 0 ? (
+                  <div className="p-4 text-center text-xs text-slate-500">
+                    ไม่พบรายการครุภัณฑ์ที่ตรงกับการค้นหา ({masterEquipment.length} รายการในระบบ)
+                  </div>
+                ) : (
+                  filteredCatalog.map((eq) => {
                   const isSelected = selectedItems.some(i => i.code === eq.code);
                   const isBorrowed = eq.status === 'ถูกยืมใช้งาน';
 
@@ -899,7 +905,7 @@ export const BorrowFormModal: React.FC<BorrowFormModalProps> = ({
                       </div>
                     </div>
                   );
-                })}
+                }))}
               </div>
             </div>
           </div>
