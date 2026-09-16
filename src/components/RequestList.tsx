@@ -17,7 +17,8 @@ import {
   Tag,
   Award,
   ShieldCheck,
-  UserCheck
+  UserCheck,
+  Edit3
 } from 'lucide-react';
 import { BorrowRequest, BorrowRequestStatus } from '../types';
 
@@ -30,6 +31,8 @@ interface RequestListProps {
   onPrintSlip: (request: BorrowRequest) => void;
   onQuickStatusChange?: (requestId: string, newStatus: BorrowRequestStatus) => void;
   currentPortal?: 'user' | 'admin';
+  isAdmin?: boolean;
+  onEditRequest?: (request: BorrowRequest) => void;
 }
 
 export const RequestList: React.FC<RequestListProps> = ({
@@ -39,7 +42,9 @@ export const RequestList: React.FC<RequestListProps> = ({
   onApproveRequest,
   onReturnCheckIn,
   onPrintSlip,
-  currentPortal = 'user'
+  currentPortal = 'user',
+  isAdmin = false,
+  onEditRequest
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
@@ -469,6 +474,18 @@ export const RequestList: React.FC<RequestListProps> = ({
                         >
                           <Eye className="w-4 h-4" />
                         </button>
+
+                        {/* Edit request (Admin or requester) */}
+                        {onEditRequest && (isAdmin || currentPortal === 'admin' || currentStaffEmail.toLowerCase() === req.requesterEmail.toLowerCase()) && (
+                          <button
+                            onClick={() => onEditRequest(req)}
+                            id={`btn-edit-${req.id}`}
+                            className="p-1.5 text-slate-500 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition cursor-pointer"
+                            title="แก้ไขคำขอยืม (แก้ไขวันที่, สลับ/เปลี่ยนครุภัณฑ์, ข้อมูลผู้ยืม)"
+                          >
+                            <Edit3 className="w-4 h-4" />
+                          </button>
+                        )}
 
                         {/* Approve button (if pending) */}
                         {req.status === 'ยื่นขออนุมัติ' && (

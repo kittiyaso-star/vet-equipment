@@ -115,38 +115,42 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* Portal Switcher (User vs Admin) */}
-        <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 self-start md:self-auto">
-          <button
-            type="button"
-            onClick={() => onChangePortal('user')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
-              currentPortal === 'user'
-                ? 'bg-white text-blue-800 shadow-xs'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
+        {/* Portal Switcher (User vs Admin) - Only Admins can switch; regular users only see their portal badge */}
+        {isAdmin ? (
+          <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 self-start md:self-auto">
+            <button
+              type="button"
+              onClick={() => onChangePortal('user')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                currentPortal === 'user'
+                  ? 'bg-white text-blue-800 shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+              title="ดูมุมมองของผู้ขอยืม / เจ้าของครุภัณฑ์"
+            >
+              <UserCheck className="w-3.5 h-3.5 text-blue-600" />
+              <span>หน้าผู้ขอยืม/เจ้าของ</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => onChangePortal('admin')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                currentPortal === 'admin'
+                  ? 'bg-slate-900 text-amber-300 shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+              title="สลับไปยังหน้าผู้ดูแลระบบ Admin"
+            >
+              <ShieldAlert className="w-3.5 h-3.5 text-amber-400" />
+              <span>หน้าผู้ดูแลระบบ (Admin)</span>
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-xl text-xs font-bold text-blue-800 gap-1.5 self-start md:self-auto shadow-2xs">
             <UserCheck className="w-3.5 h-3.5 text-blue-600" />
-            <span>หน้าผู้ขอยืม/เจ้าของ</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => onChangePortal('admin')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
-              currentPortal === 'admin'
-                ? 'bg-slate-900 text-amber-300 shadow-xs'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <ShieldAlert className="w-3.5 h-3.5 text-amber-400" />
-            <span>หน้าผู้ดูแลระบบ (Admin)</span>
-            {!isAdmin && (
-              <span className="text-[10px] bg-amber-200/60 text-amber-900 px-1.5 py-0.2 rounded font-normal">
-                จำลอง
-              </span>
-            )}
-          </button>
-        </div>
+            <span>หน้าผู้ขอยืม / เจ้าของครุภัณฑ์</span>
+          </div>
+        )}
 
         {/* User Role Switcher & Action buttons */}
         <div className="flex flex-wrap items-center gap-2">
@@ -206,24 +210,26 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           )}
 
-          {/* Catalog view button */}
-          <button
-            onClick={onOpenCatalog}
-            id="btn-open-catalog"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition shadow-2xs cursor-pointer"
-            title="คลังครุภัณฑ์และอุปกรณ์ รพ.สัตว์ ม.อ."
-          >
-            <Database className="w-3.5 h-3.5 text-blue-600" />
-            <span>คลังครุภัณฑ์</span>
-          </button>
+          {/* Catalog view button - ONLY IN ADMIN PORTAL */}
+          {currentPortal === 'admin' && (
+            <button
+              onClick={onOpenCatalog}
+              id="btn-open-catalog"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition shadow-2xs cursor-pointer"
+              title="คลังครุภัณฑ์และอุปกรณ์ รพ.สัตว์ ม.อ. (จัดการและตรวจสอบข้อมูลครุภัณฑ์)"
+            >
+              <Database className="w-3.5 h-3.5 text-blue-600" />
+              <span>คลังครุภัณฑ์</span>
+            </button>
+          )}
 
-          {/* Google Sheets Sync Button */}
-          {onOpenGoogleSheetsSync && (
+          {/* Google Sheets Sync Button - ONLY IN ADMIN PORTAL */}
+          {currentPortal === 'admin' && onOpenGoogleSheetsSync && (
             <button
               onClick={onOpenGoogleSheetsSync}
               id="btn-open-google-sheets"
               className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 rounded-lg transition shadow-2xs cursor-pointer"
-              title="เชื่อมต่อและส่งข้อมูลไปยัง Google Sheets ฐานข้อมูลยืม-คืน รพ.สัตว์ ม.อ."
+              title="เชื่อมต่อและส่งข้อมูลไปยัง Google Sheets ฐานข้อมูลยืม-คืน รพ.สัตว์ ม.อ. (เฉพาะ Admin)"
             >
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
               <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-700" />

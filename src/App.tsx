@@ -36,6 +36,7 @@ import { PsuSsoLoginModal } from './components/PsuSsoLoginModal';
 import { UserManagementModal } from './components/UserManagementModal';
 import { OidcLoginScreen } from './components/OidcLoginScreen';
 import { GoogleSheetsSyncModal } from './components/GoogleSheetsSyncModal';
+import { EditBorrowRequestModal } from './components/EditBorrowRequestModal';
 import { 
   getStoredWebhookUrl, 
   syncRequestsToGoogleSheet, 
@@ -82,6 +83,8 @@ export default function App() {
   const [selectedDetailRequest, setSelectedDetailRequest] = useState<BorrowRequest | null>(null);
   const [selectedReturnRequest, setSelectedReturnRequest] = useState<BorrowRequest | null>(null);
   const [selectedPrintRequest, setSelectedPrintRequest] = useState<BorrowRequest | null>(null);
+  const [selectedEditRequest, setSelectedEditRequest] = useState<BorrowRequest | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   // Initial load
   useEffect(() => {
@@ -388,6 +391,22 @@ export default function App() {
     setSelectedDetailRequest(null);
   };
 
+  // Open edit borrow request modal
+  const handleOpenEditRequest = (req: BorrowRequest) => {
+    setSelectedEditRequest(req);
+    setIsEditModalOpen(true);
+  };
+
+  // Save edited borrow request
+  const handleSaveEditedRequest = (updatedReq: BorrowRequest) => {
+    const updatedList = requests.map(r => r.id === updatedReq.id ? updatedReq : r);
+    updateRequestsState(updatedList, updatedReq);
+    if (selectedDetailRequest && selectedDetailRequest.id === updatedReq.id) {
+      setSelectedDetailRequest(updatedReq);
+    }
+    triggerSyncToast(`บันทึกการแก้ไขคำขอ ${updatedReq.id} สำเร็จ (ข้อมูลอัปเดตลง Google Sheets เรียบร้อยแล้ว)`);
+  };
+
   // Add equipment to catalog - append to end of list so it doesn't prepend to top row of Google Sheets
   const handleAddNewEquipment = (item: EquipmentMaster) => {
     const updatedEq = [...equipment, item];
@@ -516,6 +535,26 @@ export default function App() {
 
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 space-y-6">
+        {/* Admin Preview Mode Banner */}
+        {currentUser.role === 'admin' && currentPortal === 'user' && (
+          <div className="p-3 px-4 rounded-xl bg-sky-50/80 border border-sky-200 text-sky-950 text-xs flex flex-wrap items-center justify-between gap-2 shadow-2xs">
+            <div className="flex items-center gap-2">
+              <span className="px-2 py-0.5 rounded-md bg-sky-200/80 text-sky-900 font-bold text-[11px]">
+                มุมมองจำลอง
+              </span>
+              <span>
+                กำลังแสดงหน้าจอในมุมมองของ <strong>บุคลากรทั่วไป (ผู้ขอยืม / เจ้าของครุภัณฑ์)</strong> — ปุ่ม Google Sheets, จัดการสิทธิ์ และคลังครุภัณฑ์จะถูกซ่อนไว้เพื่อความเรียบง่าย
+              </span>
+            </div>
+            <button
+              onClick={() => setCurrentPortal('admin')}
+              className="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 text-amber-300 rounded-lg text-xs font-semibold shrink-0 transition cursor-pointer shadow-2xs"
+            >
+              สลับกลับหน้า Admin
+            </button>
+          </div>
+        )}
+
         {/* Urgent Overdue Alert Banner if overdue loans exist */}
         {overdueCount > 0 && (
           <div className="p-3.5 rounded-2xl bg-gradient-to-r from-red-600 to-rose-700 text-white shadow-md shadow-red-500/10 flex items-center justify-between gap-3">
@@ -552,10 +591,12 @@ export default function App() {
           requests={requests}
           currentStaffEmail={currentUser.email}
           currentPortal={currentPortal}
+          isAdmin={currentUser.role === 'admin'}
           onViewDetails={(req) => setSelectedDetailRequest(req)}
           onApproveRequest={handleApproveRequest}
           onReturnCheckIn={(req) => setSelectedReturnRequest(req)}
           onPrintSlip={(req) => setSelectedPrintRequest(req)}
+          onEditRequest={handleOpenEditRequest}
         />
       </main>
 
@@ -595,6 +636,20 @@ export default function App() {
         currentUser={currentUser}
         onApproveItem={handleApproveItem}
         onExecutiveApprove={handleExecutiveApprove}
+        onOpenEdit={handleOpenEditRequest}
+      />
+
+      <EditBorrowRequestModal
+        isOpen={isEditModalOpen}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setSelectedEditRequest(null);
+        }}
+        request={selectedEditRequest}
+        onSave={handleSaveEditedRequest}
+        masterEquipment={equipment}
+        currentUser={currentUser}
+        staffDatabase={staffDatabase}
       />
 
       <ReturnCheckInModal
