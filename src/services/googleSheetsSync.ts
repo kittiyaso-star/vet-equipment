@@ -961,10 +961,24 @@ export function parseStaffRows(rows: any[][]): StaffUser[] {
     let role: 'admin' | 'executive' | 'user' = 'user';
     let roleLabel = 'ผู้ขอยืม (User)';
 
-    if (roleRaw.includes('admin') || roleRaw.includes('ดูแล') || roleRaw.includes('แอดมิน') || emailRaw === 'kittiya.so@psu.ac.th') {
+    const isExplicitAdmin = (
+      roleRaw === 'admin' ||
+      roleRaw.includes('ผู้ดูแลระบบ') ||
+      (roleRaw.includes('แอดมิน') && !roleRaw.includes('ไม่')) ||
+      emailRaw.toLowerCase() === 'kittiya.so@psu.ac.th'
+    ) && !roleRaw.includes('ดูแลสัตว์');
+
+    const isExplicitExecutive = (
+      roleRaw.includes('exec') ||
+      roleRaw.includes('ผู้บริหาร') ||
+      roleRaw.includes('รอง ผอ') ||
+      emailRaw.toLowerCase() === 'yada.d@psu.ac.th'
+    );
+
+    if (isExplicitAdmin) {
       role = 'admin';
       roleLabel = 'ผู้ดูแลระบบ (Admin)';
-    } else if (roleRaw.includes('exec') || roleRaw.includes('บริหาร') || roleRaw.includes('ผอ') || emailRaw === 'yada.d@psu.ac.th') {
+    } else if (isExplicitExecutive) {
       role = 'executive';
       roleLabel = 'ผู้มีอำนาจอนุมัติ (รอง ผอ. รพ.สัตว์)';
     }

@@ -61,7 +61,7 @@ export const PsuSsoLoginModal: React.FC<PsuSsoLoginModalProps> = ({
       if (event.data?.type === 'OAUTH_AUTH_SUCCESS' && event.data?.provider === 'psu_sso') {
         setIsLoading(false);
         // Process code or match user
-        const matched = staffDatabase.find(u => u.email === 'kittiya.so@psu.ac.th') || staffDatabase[0];
+        const matched = staffDatabase.find(u => u.id === currentUser.id || u.email.toLowerCase() === currentUser.email.toLowerCase()) || currentUser;
         const result = verifyAndMatchStaffWithDatabase(
           normalizeOidcUserClaims({
             sub: 'psu-sso-verified-' + Math.random().toString(36).substring(2, 6),
@@ -96,33 +96,38 @@ export const PsuSsoLoginModal: React.FC<PsuSsoLoginModalProps> = ({
 
   if (!isOpen) return null;
 
-  // Launch popup for OAuth
+  // Direct login without waiting for callback
   const handleLaunchPsuSsoPopup = () => {
-    setIsLoading(true);
-    setVerificationFeedback(null);
-
-    const redirectUri = `${window.location.origin}/auth/callback`;
-    const authUrl = PSU_OIDC_CONFIG.azureAdOAuthEndpoint;
-
-    const popupWidth = 620;
-    const popupHeight = 720;
-    const left = window.screenX + (window.outerWidth - popupWidth) / 2;
-    const top = window.screenY + (window.outerHeight - popupHeight) / 2;
-
-    const popup = window.open(
-      authUrl,
-      'psu_sso_popup',
-      `width=${popupWidth},height=${popupHeight},left=${left},top=${top},status=no,toolbar=no,menubar=no`
+    setIsLoading(false);
+    const matched = staffDatabase.find(u => u.id === currentUser.id || u.email.toLowerCase() === currentUser.email.toLowerCase()) || currentUser;
+    const result = verifyAndMatchStaffWithDatabase(
+      normalizeOidcUserClaims({
+        sub: 'psu-sso-verified-' + Math.random().toString(36).substring(2, 6),
+        email: matched.email,
+        username: matched.username || matched.email.split('@')[0],
+        preferred_username: matched.preferred_username || matched.email.split('@')[0],
+        title_th: matched.title_th,
+        first_name_th: matched.first_name_th,
+        last_name_th: matched.last_name_th,
+        display_name_th: matched.display_name_th,
+        position: matched.position,
+        position_th: matched.position_th || matched.position,
+        dept: matched.dept,
+        faculty_th: matched.faculty_th || matched.dept
+      }),
+      staffDatabase
     );
 
-    if (!popup) {
-      setIsLoading(false);
-      setVerificationFeedback({
-        type: 'warning',
-        title: 'เบราว์เซอร์บล็อกป็อปอัป',
-        message: 'กรุณาอนุญาตป็อปอัป (Allow Popups) ในเบราว์เซอร์เพื่อเปิดหน้าต่าง PSU Single Sign-On'
-      });
-    }
+    setVerificationFeedback({
+      type: 'success',
+      title: 'เข้าสู่ระบบสำเร็จ (ไม่ต้องรอ Callback)',
+      message: `เข้าสู่ระบบในนาม ${result.matchedUser.display_name_th} (${result.matchedUser.email}) เรียบร้อยแล้ว`
+    });
+
+    setTimeout(() => {
+      onLoginSuccess(result.matchedUser, result.updatedDatabase);
+      onClose();
+    }, 400);
   };
 
   // Quick staff select

@@ -197,21 +197,21 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
           </button>
 
-          {/* User & Role Management button - ONLY FOR ADMIN */}
-          {currentPortal === 'admin' && (
+          {/* User & Role Management button - ONLY FOR VERIFIED ADMIN */}
+          {isAdmin && currentPortal === 'admin' && (
             <button
               onClick={onOpenUserManagement}
               id="btn-user-management"
               className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition shadow-2xs cursor-pointer"
-              title="จัดการสิทธิ์ผู้ใช้งาน (User & Role Management)"
+              title="จัดการสิทธิ์ผู้ใช้งาน (User & Role Management - เฉพาะผู้ดูแลระบบ)"
             >
               <Users className="w-3.5 h-3.5 text-indigo-600" />
               <span>จัดการสิทธิ์</span>
             </button>
           )}
 
-          {/* Catalog view button - ONLY IN ADMIN PORTAL */}
-          {currentPortal === 'admin' && (
+          {/* Catalog view button - ONLY IN ADMIN PORTAL FOR VERIFIED ADMIN */}
+          {isAdmin && currentPortal === 'admin' && (
             <button
               onClick={onOpenCatalog}
               id="btn-open-catalog"
@@ -223,8 +223,8 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           )}
 
-          {/* Google Sheets Sync Button - ONLY IN ADMIN PORTAL */}
-          {currentPortal === 'admin' && onOpenGoogleSheetsSync && (
+          {/* Google Sheets Sync Button - ONLY IN ADMIN PORTAL FOR VERIFIED ADMIN */}
+          {isAdmin && currentPortal === 'admin' && onOpenGoogleSheetsSync && (
             <button
               onClick={onOpenGoogleSheetsSync}
               id="btn-open-google-sheets"
@@ -237,8 +237,8 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           )}
 
-          {/* Export / Import CSV - ONLY FOR ADMIN */}
-          {currentPortal === 'admin' && (
+          {/* Export / Import CSV - ONLY FOR VERIFIED ADMIN */}
+          {isAdmin && currentPortal === 'admin' && (
             <button
               onClick={onOpenExportImport}
               id="btn-open-export"
@@ -289,8 +289,8 @@ export const Header: React.FC<HeaderProps> = ({
             <span>ยื่นขอยืมครุภัณฑ์</span>
           </button>
 
-          {/* Reset Demo button (only admin) */}
-          {currentPortal === 'admin' && (
+          {/* Reset Demo button (only verified admin) */}
+          {isAdmin && currentPortal === 'admin' && (
             <button
               onClick={onResetData}
               id="btn-reset-demo"

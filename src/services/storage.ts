@@ -28,6 +28,7 @@ export function saveStoredIsAuthenticated(status: boolean): void {
 export function clearUserSession(): void {
   try {
     localStorage.removeItem(STORAGE_KEY_AUTH_STATUS);
+    localStorage.removeItem(STORAGE_KEY_ACTIVE_USER);
   } catch (err) {
     console.error('Error clearing auth session', err);
   }
@@ -49,6 +50,17 @@ export function getStoredStaffUsers(): StaffUser[] {
     // Ensure all items have title_th, first_name_th, last_name_th, display_name_th
     const merged = combined.map(user => {
       const initial = STAFF_USERS.find(s => s.email.toLowerCase() === (user.email || '').toLowerCase());
+      const emailLower = (user.email || '').toLowerCase().trim();
+      
+      // Strict role validation: Only designated admin accounts can have role 'admin'
+      let sanitizedRole = user.role || initial?.role || 'user';
+      let sanitizedRoleLabel = user.roleLabel || initial?.roleLabel || 'ผู้ขอยืม (User)';
+      
+      if (sanitizedRole === 'admin' && emailLower !== 'kittiya.so@psu.ac.th' && initial?.role !== 'admin') {
+        sanitizedRole = 'user';
+        sanitizedRoleLabel = 'ผู้ขอยืม (User)';
+      }
+
       return {
         ...initial,
         ...user,
@@ -56,8 +68,8 @@ export function getStoredStaffUsers(): StaffUser[] {
         first_name_th: user.first_name_th || initial?.first_name_th || user.name.split(' ')[0] || '',
         last_name_th: user.last_name_th || initial?.last_name_th || user.name.split(' ').slice(1).join(' ') || '',
         display_name_th: user.display_name_th || initial?.display_name_th || `${user.title_th || ''}${user.name}`.trim(),
-        role: user.role || initial?.role || 'user',
-        roleLabel: user.roleLabel || initial?.roleLabel || 'ผู้ใช้งาน',
+        role: sanitizedRole,
+        roleLabel: sanitizedRoleLabel,
       };
     });
 
@@ -82,9 +94,9 @@ export function saveStoredStaffUsers(staff: StaffUser[]): void {
 
 export function getStoredActiveUserEmail(): string {
   try {
-    return localStorage.getItem(STORAGE_KEY_ACTIVE_USER) || 'kittiya.so@psu.ac.th';
+    return localStorage.getItem(STORAGE_KEY_ACTIVE_USER) || '';
   } catch {
-    return 'kittiya.so@psu.ac.th';
+    return '';
   }
 }
 

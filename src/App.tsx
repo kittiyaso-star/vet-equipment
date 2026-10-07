@@ -105,6 +105,8 @@ export default function App() {
       setCurrentUser(matched);
       if (matched.role === 'admin') {
         setCurrentPortal('admin');
+      } else {
+        setCurrentPortal('user');
       }
     }
 
@@ -125,6 +127,9 @@ export default function App() {
           const matchedLive = liveStaff.find(u => u.email.toLowerCase() === currentActive.toLowerCase());
           if (matchedLive) {
             setCurrentUser(matchedLive);
+            if (matchedLive.role !== 'admin') {
+              setCurrentPortal('user');
+            }
           }
         }
 
@@ -152,12 +157,29 @@ export default function App() {
     syncFromLiveSheets();
   }, []);
 
+  // Safeguard: strictly force 'user' portal whenever currentUser is not admin
+  useEffect(() => {
+    if (currentUser.role !== 'admin' && currentPortal === 'admin') {
+      setCurrentPortal('user');
+    }
+  }, [currentUser.role, currentPortal]);
+
   const handleSelectUser = (u: StaffUser) => {
     setCurrentUser(u);
     saveStoredActiveUserEmail(u.email);
     if (u.role === 'admin') {
       setCurrentPortal('admin');
+    } else {
+      setCurrentPortal('user');
     }
+  };
+
+  const handleChangePortal = (portal: 'user' | 'admin') => {
+    if (portal === 'admin' && currentUser.role !== 'admin') {
+      triggerSyncToast('ไม่อนุญาต: บัญชีของคุณไม่มีสิทธิ์เข้าถึงหน้า Admin (สงวนสิทธิ์เฉพาะผู้ดูแลระบบ)');
+      return;
+    }
+    setCurrentPortal(portal);
   };
 
   const handleUpdateStaffList = (updated: StaffUser[]) => {
@@ -526,7 +548,7 @@ export default function App() {
         onOpenExportImport={() => setIsExportImportModalOpen(true)}
         onResetData={handleResetData}
         currentPortal={currentPortal}
-        onChangePortal={setCurrentPortal}
+        onChangePortal={handleChangePortal}
         onOpenOidcLogin={() => setIsOidcModalOpen(true)}
         onOpenUserManagement={() => setIsUserManagementOpen(true)}
         onOpenGoogleSheetsSync={() => setIsGoogleSheetsSyncModalOpen(true)}
