@@ -117,24 +117,24 @@ export const RequestList: React.FC<RequestListProps> = ({
       case 'เจ้าของให้ยืมแล้ว':
       case 'กำลังยืมใช้งาน':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
-            <Check className="w-3 h-3" />
-            3. เจ้าของให้ยืมแล้ว
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-300">
+            <Check className="w-3 h-3 text-emerald-600" />
+            2. เจ้าของให้ยืมแล้ว (ส่งเมลแจ้งผู้บริหารแล้ว)
           </span>
         );
       case 'คืนครุภัณฑ์แล้ว':
         return (
           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-sky-50 text-sky-700 border border-sky-200">
             <RotateCcw className="w-3 h-3" />
-            4. ส่งคืนแล้ว
+            3. ส่งคืนแล้ว
           </span>
         );
       case 'รับคืนเรียบร้อย':
       case 'เสร็จสิ้น':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-teal-50 text-teal-800 border border-teal-200">
             <CheckCircle className="w-3 h-3" />
-            5. {status}
+            4. {status}
           </span>
         );
       case 'ยกเลิกคำขอ':

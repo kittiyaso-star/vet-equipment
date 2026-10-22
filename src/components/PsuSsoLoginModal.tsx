@@ -39,7 +39,7 @@ export const PsuSsoLoginModal: React.FC<PsuSsoLoginModalProps> = ({
   staffDatabase,
   onLoginSuccess
 }) => {
-  const [activeTab, setActiveTab] = useState<'quick' | 'oauth' | 'custom'>('quick');
+  const [activeTab, setActiveTab] = useState<'quick' | 'oauth' | 'custom'>('oauth');
   const [isLoading, setIsLoading] = useState(false);
   const [verificationFeedback, setVerificationFeedback] = useState<{
     type: 'success' | 'info' | 'warning';
@@ -280,18 +280,20 @@ export const PsuSsoLoginModal: React.FC<PsuSsoLoginModalProps> = ({
 
         {/* Tabs */}
         <div className="px-6 pt-4 border-b border-slate-200 flex gap-2">
-          <button
-            type="button"
-            onClick={() => setActiveTab('quick')}
-            className={`pb-3 px-3 text-xs sm:text-sm font-semibold border-b-2 transition cursor-pointer flex items-center gap-1.5 ${
-              activeTab === 'quick'
-                ? 'border-blue-600 text-blue-700'
-                : 'border-transparent text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            <UserCheck className="w-4 h-4" />
-            <span>เลือกบัญชีบุคลากร ({staffDatabase.length})</span>
-          </button>
+          {currentUser.role === 'admin' && (
+            <button
+              type="button"
+              onClick={() => setActiveTab('quick')}
+              className={`pb-3 px-3 text-xs sm:text-sm font-semibold border-b-2 transition cursor-pointer flex items-center gap-1.5 ${
+                activeTab === 'quick'
+                  ? 'border-blue-600 text-blue-700'
+                  : 'border-transparent text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              <UserCheck className="w-4 h-4" />
+              <span>เลือกบัญชีบุคลากร ({staffDatabase.length})</span>
+            </button>
+          )}
           <button
             type="button"
             onClick={() => setActiveTab('oauth')}

@@ -55,6 +55,10 @@ export interface BorrowRequest {
   executiveApprovedAt?: string;
   executiveApprovedBy?: string;
   executiveNotes?: string;
+  // Executive email notification fields (ดร.สพ.ญ.ญาดา ดวงนำสว่าง)
+  executiveNotifiedAt?: string;
+  executiveNotifiedEmail?: string;
+  executiveEmailConfirmed?: boolean;
   // Admin delegation fields (ยื่นขอยืมแทนโดยแอดมิน)
   submittedByAdmin?: boolean;
   submittedByAdminName?: string;
@@ -122,4 +126,23 @@ export interface SystemNotification {
   requesterName: string;
   equipmentSummary: string;
   dueDate: string;
+}
+
+export interface LoginLog {
+  id: string;
+  sessionId: string;
+  userId: string;
+  userName: string;
+  userEmail: string;
+  role: 'admin' | 'user' | 'owner' | 'executive';
+  loginAt: string;
+  lastActiveAt: string;
+  expiresAt: string;
+  ipAddress: string;
+  userAgent: string;
+  deviceType: 'Desktop' | 'Mobile' | 'Tablet';
+  status: 'active' | 'logged_out' | 'expired' | 'revoked_by_admin';
+  revokedAt?: string;
+  revokedBy?: string;
+  logoutReason?: string;
 }

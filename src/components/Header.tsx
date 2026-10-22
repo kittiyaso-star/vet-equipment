@@ -15,7 +15,9 @@ import {
   Users,
   ShieldCheck,
   LogOut,
-  BookOpen
+  BookOpen,
+  Clock,
+  Activity
 } from 'lucide-react';
 import { StaffUser } from '../types';
 
@@ -34,6 +36,8 @@ interface HeaderProps {
   onOpenOidcLogin: () => void;
   onOpenUserManagement: () => void;
   onOpenGoogleSheetsSync?: () => void;
+  onOpenLoginAudit?: () => void;
+  sessionRemainingMs?: number;
   onLogout: () => void;
 }
 
@@ -52,14 +56,26 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenOidcLogin,
   onOpenUserManagement,
   onOpenGoogleSheetsSync,
+  onOpenLoginAudit,
+  sessionRemainingMs = 15 * 60 * 1000,
   onLogout
 }) => {
   const isAdmin = currentUser.role === 'admin';
 
+  // Format remaining time into mm:ss
+  const formatTimer = (ms: number) => {
+    const totalSecs = Math.max(0, Math.floor(ms / 1000));
+    const mins = Math.floor(totalSecs / 60);
+    const secs = totalSecs % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const isLowTime = sessionRemainingMs <= 3 * 60 * 1000;
+
   return (
-    <header className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs">
+    <header className="bg-white border-b border-purple-100 sticky top-0 z-30 shadow-xs">
       {/* Top institution banner */}
-      <div className="bg-gradient-to-r from-blue-900 via-sky-900 to-indigo-950 text-white px-4 py-1.5 text-xs">
+      <div className="bg-gradient-to-r from-purple-900 via-indigo-900 to-slate-900 text-white px-4 py-1.5 text-xs">
         <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
@@ -67,19 +83,27 @@ export const Header: React.FC<HeaderProps> = ({
               โรงพยาบาลสัตว์ มหาวิทยาลัยสงขลานครินทร์ • คณะสัตวแพทยศาสตร์ ม.อ. (PSU Vet Hospital)
             </span>
           </div>
-          <div className="flex items-center gap-4 text-slate-300">
+          <div className="flex items-center gap-4 text-purple-200">
+            {/* Live 15-Minute Session Timer */}
+            <div className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold transition ${
+              isLowTime
+                ? 'bg-rose-500/30 text-rose-300 border border-rose-400/50 animate-pulse'
+                : 'bg-white/10 text-purple-200 border border-white/20'
+            }`} title="เซสชันจะหมดอายุอัตโนมัติภายใน 15 นาทีตามนโยบายความปลอดภัย">
+              <Clock className="w-3 h-3 text-amber-300" />
+              <span>เซสชันเหลือ: {formatTimer(sessionRemainingMs)} นาที</span>
+            </div>
+            <span className="text-purple-400/60 hidden sm:inline">|</span>
             <a 
               href="https://kittiyaso-star.github.io/vet-equipment/" 
               target="_blank" 
               rel="noreferrer"
-              className="inline-flex items-center gap-1 hover:text-white transition-colors underline-offset-2 hover:underline"
+              className="hidden sm:inline-flex items-center gap-1 hover:text-white transition-colors underline-offset-2 hover:underline"
               title="ลิงก์ระบบเดิม"
             >
               <span>ระบบเดิม (GitHub Pages)</span>
               <ExternalLink className="w-3 h-3" />
             </a>
-            <span className="text-slate-500">|</span>
-            <span>ระบบยืม-คืนออนไลน์แบบเรียลไทม์ 24 ชม.</span>
           </div>
         </div>
       </div>
@@ -88,7 +112,7 @@ export const Header: React.FC<HeaderProps> = ({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex flex-col md:flex-row md:items-center justify-between gap-3">
         {/* Brand identity */}
         <div className="flex items-center gap-3">
-          <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-white p-1 border border-slate-200 shadow-sm flex items-center justify-center overflow-hidden shrink-0 ring-2 ring-slate-100">
+          <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-purple-50 p-1 border border-purple-200 shadow-sm flex items-center justify-center overflow-hidden shrink-0 ring-2 ring-purple-100">
             <img 
               src={`${import.meta.env.BASE_URL}site-icon.jpg`} 
               alt="ตราสัญลักษณ์โรงพยาบาลสัตว์ ม.อ." 
@@ -104,18 +128,18 @@ export const Header: React.FC<HeaderProps> = ({
               <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold border ${
                 currentPortal === 'admin'
                   ? 'bg-amber-100 text-amber-900 border-amber-300'
-                  : 'bg-blue-50 text-blue-700 border-blue-200'
+                  : 'bg-purple-50 text-purple-700 border-purple-200'
               }`}>
                 {currentPortal === 'admin' ? '🛡️ หน้า Admin ผู้ดูแลระบบ' : '👤 หน้าบุคลากร / เจ้าของ'}
               </span>
             </div>
             <p className="text-xs text-slate-500">
-              โรงพยาบาลสัตว์ มหาวิทยาลัยสงขลานครินทร์ (PSU Animal Hospital)
+              โรงพยาบาลสัตว์ คณะสัตวแพทยศาสตร์ มหาวิทยาลัยสงขลานครินทร์ (PSU Animal Hospital)
             </p>
           </div>
         </div>
 
-        {/* Portal Switcher (User vs Admin) - Only Admins can switch; regular users only see their portal badge */}
+        {/* Portal Switcher (User vs Admin) */}
         {isAdmin ? (
           <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 self-start md:self-auto">
             <button
@@ -123,12 +147,12 @@ export const Header: React.FC<HeaderProps> = ({
               onClick={() => onChangePortal('user')}
               className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
                 currentPortal === 'user'
-                  ? 'bg-white text-blue-800 shadow-xs'
+                  ? 'bg-white text-purple-800 shadow-xs'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
               title="ดูมุมมองของผู้ขอยืม / เจ้าของครุภัณฑ์"
             >
-              <UserCheck className="w-3.5 h-3.5 text-blue-600" />
+              <UserCheck className="w-3.5 h-3.5 text-purple-600" />
               <span>หน้าผู้ขอยืม/เจ้าของ</span>
             </button>
             <button
@@ -146,56 +170,42 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           </div>
         ) : (
-          <div className="flex items-center px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-xl text-xs font-bold text-blue-800 gap-1.5 self-start md:self-auto shadow-2xs">
-            <UserCheck className="w-3.5 h-3.5 text-blue-600" />
+          <div className="flex items-center px-3 py-1.5 bg-purple-50 border border-purple-200 rounded-xl text-xs font-bold text-purple-800 gap-1.5 self-start md:self-auto shadow-2xs">
+            <UserCheck className="w-3.5 h-3.5 text-purple-600" />
             <span>หน้าผู้ขอยืม / เจ้าของครุภัณฑ์</span>
           </div>
         )}
 
-        {/* User Role Switcher & Action buttons */}
+        {/* Action buttons toolbar */}
         <div className="flex flex-wrap items-center gap-2">
-          {/* PSU SSO (OIDC) Status / Login button */}
-          <button
-            type="button"
-            onClick={onOpenOidcLogin}
-            id="btn-psu-sso"
-            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold rounded-lg border transition cursor-pointer bg-gradient-to-r from-sky-50 to-blue-50 border-sky-200 text-sky-900 hover:border-sky-300 hover:shadow-2xs"
-            title="ลงชื่อเข้าใช้งานผ่านระบบ PSU Single Sign-On (OIDC)"
-          >
-            <KeyRound className="w-3.5 h-3.5 text-sky-600" />
-            <span className="hidden md:inline">PSU SSO</span>
-            {currentUser.authProvider === 'psu_sso' ? (
-              <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.2 rounded-full flex items-center gap-0.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                <span>เชื่อมต่อแล้ว</span>
-              </span>
-            ) : (
-              <span className="text-[10px] bg-sky-200/70 text-sky-800 font-bold px-1.5 py-0.2 rounded">
-                OIDC
-              </span>
-            )}
-          </button>
-
-          {/* Authenticated OIDC User Profile Display */}
-          <button
-            type="button"
-            onClick={onOpenOidcLogin}
-            className="flex items-center bg-slate-50 hover:bg-blue-50/50 rounded-lg p-1.5 border border-slate-200 hover:border-blue-200 transition cursor-pointer text-left shadow-2xs group"
-            title="บัญชีผู้ใช้งานที่เข้าสู่ระบบผ่าน PSU SSO (คลิกเพื่อดูข้อมูล Claim OIDC หรือจัดการเซสชัน)"
-          >
-            <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 font-bold text-xs flex items-center justify-center shrink-0 border border-blue-200">
-              {currentUser.name.charAt(0)}
+          {/* Authenticated User Profile Display */}
+          <div className="flex items-center bg-purple-50/70 rounded-lg p-1.5 border border-purple-200 text-left shadow-2xs">
+            <div className="w-6 h-6 rounded-full bg-purple-600 text-white font-bold text-xs flex items-center justify-center shrink-0 border border-purple-300">
+              {currentUser.name ? currentUser.name.charAt(0) : 'U'}
             </div>
             <div className="ml-2 mr-1">
-              <div className="text-xs font-bold text-slate-800 leading-tight group-hover:text-blue-700 truncate max-w-[150px] sm:max-w-[200px]">
+              <div className="text-xs font-bold text-slate-800 leading-tight truncate max-w-[130px] sm:max-w-[180px]">
                 {currentUser.display_name_th || currentUser.name}
               </div>
               <div className="text-[10px] text-slate-500 leading-none flex items-center gap-1 mt-0.5">
-                <span>{currentUser.roleLabel || currentUser.role}</span>
-                <span className="text-emerald-600 font-medium">• OIDC ยืนยันแล้ว</span>
+                <span>{currentUser.roleLabel || (currentUser.role === 'admin' ? 'ผู้ดูแลระบบ' : 'ผู้ใช้งาน')}</span>
+                <span className="text-emerald-600 font-semibold">• ออนไลน์</span>
               </div>
             </div>
-          </button>
+          </div>
+
+          {/* Login Audit Logs button - ONLY FOR VERIFIED ADMIN */}
+          {isAdmin && currentPortal === 'admin' && onOpenLoginAudit && (
+            <button
+              onClick={onOpenLoginAudit}
+              id="btn-login-audit"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-purple-900 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-lg transition shadow-2xs cursor-pointer"
+              title="ตรวจสอบประวัติการ Login และจัดการเซสชัน (Login Audit Logs & Kick Users)"
+            >
+              <Activity className="w-3.5 h-3.5 text-purple-700" />
+              <span>Log การเข้าใช้</span>
+            </button>
+          )}
 
           {/* User & Role Management button - ONLY FOR VERIFIED ADMIN */}
           {isAdmin && currentPortal === 'admin' && (
@@ -250,20 +260,6 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           )}
 
-          {/* User Manual button */}
-          <a
-            href={`${import.meta.env.BASE_URL}user-manual.html`}
-            target="_blank"
-            rel="noopener noreferrer"
-            id="btn-user-manual"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-blue-800 bg-blue-50/80 hover:bg-blue-100/80 border border-blue-200 rounded-lg transition shadow-2xs cursor-pointer"
-            title="เปิดดูคู่มือการใช้งานและผังการทำงาน (PDF / Word)"
-          >
-            <BookOpen className="w-3.5 h-3.5 text-blue-700" />
-            <span className="hidden sm:inline">คู่มือ</span>
-            <span>การใช้งาน</span>
-          </a>
-
           {/* Notifications button */}
           <button
             onClick={onOpenNotifications}
@@ -271,7 +267,7 @@ export const Header: React.FC<HeaderProps> = ({
             className="relative p-2 text-slate-600 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition shadow-2xs cursor-pointer"
             title="ระบบแจ้งเตือนกำหนดส่งคืน"
           >
-            <Bell className="w-4 h-4" />
+            <Bell className="w-4 h-4 text-slate-700" />
             {unreadNotifsCount > 0 && (
               <span className="absolute -top-1 -right-1 flex h-4 min-w-4 px-1 items-center justify-center rounded-full bg-red-600 text-[10px] font-bold text-white shadow-xs animate-bounce">
                 {unreadNotifsCount}
@@ -279,35 +275,23 @@ export const Header: React.FC<HeaderProps> = ({
             )}
           </button>
 
-          {/* Primary Create Request button (Always visible in user portal, or admin) */}
+          {/* Primary Create Request button */}
           <button
             onClick={onOpenNewBorrow}
             id="btn-create-request"
-            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs sm:text-sm font-semibold text-white bg-blue-700 hover:bg-blue-800 active:scale-98 rounded-lg shadow-sm shadow-blue-700/30 transition cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs sm:text-sm font-semibold text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 active:scale-98 rounded-lg shadow-sm shadow-purple-600/30 transition cursor-pointer"
           >
             <PlusCircle className="w-4 h-4" />
             <span>ยื่นขอยืมครุภัณฑ์</span>
           </button>
 
-          {/* Reset Demo button (only verified admin) */}
-          {isAdmin && currentPortal === 'admin' && (
-            <button
-              onClick={onResetData}
-              id="btn-reset-demo"
-              className="p-2 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition cursor-pointer"
-              title="รีเซ็ตเป็นข้อมูลตัวอย่างเริ่มต้น"
-            >
-              <RefreshCw className="w-3.5 h-3.5" />
-            </button>
-          )}
-
-          {/* Logout / Exit Session button */}
+          {/* Logout button */}
           <button
             type="button"
             onClick={onLogout}
             id="btn-logout"
             className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-lg transition cursor-pointer"
-            title="ออกจากระบบ และกลับสู่หน้าลงชื่อเข้าใช้ PSU OIDC"
+            title="ออกจากระบบ"
           >
             <LogOut className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">ออกจากระบบ</span>
@@ -317,3 +301,4 @@ export const Header: React.FC<HeaderProps> = ({
     </header>
   );
 };
+

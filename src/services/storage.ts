@@ -1,4 +1,4 @@
-import { BorrowRequest, EquipmentMaster, SystemNotification, BorrowedEquipmentItem, StaffUser } from '../types';
+import { BorrowRequest, EquipmentMaster, SystemNotification, BorrowedEquipmentItem, StaffUser, LoginLog } from '../types';
 import { INITIAL_BORROW_REQUESTS, INITIAL_EQUIPMENT_MASTER, STAFF_USERS } from '../data/initialData';
 
 const STORAGE_KEY_REQUESTS = 'psu_vet_borrow_requests_v3';
@@ -7,6 +7,360 @@ const STORAGE_KEY_NOTIFS = 'psu_vet_notifications_v1';
 const STORAGE_KEY_STAFF = 'psu_vet_staff_users_v3';
 const STORAGE_KEY_ACTIVE_USER = 'psu_vet_active_user_email_v2';
 const STORAGE_KEY_AUTH_STATUS = 'psu_vet_auth_is_authenticated_v1';
+const STORAGE_KEY_ADMIN_PASSWORD = 'psu_vet_admin_password_key_v1';
+const STORAGE_KEY_LOGIN_LOGS = 'psu_vet_login_logs_v2';
+const STORAGE_KEY_CURRENT_SESSION_ID = 'psu_vet_current_session_id_v2';
+const STORAGE_KEY_SESSION_START_TIME = 'psu_vet_session_start_time_v2';
+const STORAGE_KEY_LOGOUT_REASON = 'psu_vet_logout_reason_v2';
+
+export const DEFAULT_ADMIN_PASSWORD = 'psuvet2026';
+export const SESSION_MAX_DURATION_MS = 15 * 60 * 1000; // 15 minutes limit
+
+/**
+ * Initial sample login logs to provide realistic audit records
+ */
+function createInitialSampleLogs(): LoginLog[] {
+  const now = Date.now();
+  return [
+    {
+      id: 'LOG-001',
+      sessionId: 'SESS-ADMIN-PREV',
+      userId: 'STAFF-002',
+      userName: 'นางสาว กิตติยา สุนทรเจริญนนท์',
+      userEmail: 'kittiya.so@psu.ac.th',
+      role: 'admin',
+      loginAt: new Date(now - 45 * 60 * 1000).toISOString(),
+      lastActiveAt: new Date(now - 30 * 60 * 1000).toISOString(),
+      expiresAt: new Date(now - 30 * 60 * 1000).toISOString(),
+      ipAddress: '172.24.89.14',
+      userAgent: 'Chrome 128 (Windows 11)',
+      deviceType: 'Desktop',
+      status: 'expired',
+      logoutReason: 'หมดเวลาการใช้งาน (เกิน 15 นาที)'
+    },
+    {
+      id: 'LOG-002',
+      sessionId: 'SESS-USER-002',
+      userId: 'STAFF-001',
+      userName: 'ดร.สพ.ญ. ญาดา ดวงนำสว่าง',
+      userEmail: 'yada.d@psu.ac.th',
+      role: 'user',
+      loginAt: new Date(now - 90 * 60 * 1000).toISOString(),
+      lastActiveAt: new Date(now - 75 * 60 * 1000).toISOString(),
+      expiresAt: new Date(now - 75 * 60 * 1000).toISOString(),
+      ipAddress: '172.24.89.52',
+      userAgent: 'Safari 17.5 (macOS)',
+      deviceType: 'Desktop',
+      status: 'logged_out',
+      logoutReason: 'ผู้ใช้งานกดออกจากระบบ'
+    },
+    {
+      id: 'LOG-003',
+      sessionId: 'SESS-USER-003',
+      userId: 'STAFF-003',
+      userName: 'นางสาว นลิน ต่อวิวรรธน์',
+      userEmail: 'nalin.t@psu.ac.th',
+      role: 'user',
+      loginAt: new Date(now - 140 * 60 * 1000).toISOString(),
+      lastActiveAt: new Date(now - 125 * 60 * 1000).toISOString(),
+      expiresAt: new Date(now - 125 * 60 * 1000).toISOString(),
+      ipAddress: '192.168.1.108',
+      userAgent: 'Mobile Chrome (Android 14)',
+      deviceType: 'Mobile',
+      status: 'expired',
+      logoutReason: 'หมดเวลาการใช้งาน (เกิน 15 นาที)'
+    }
+  ];
+}
+
+export function getStoredLoginLogs(): LoginLog[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_LOGIN_LOGS);
+    if (!raw) {
+      const initial = createInitialSampleLogs();
+      localStorage.setItem(STORAGE_KEY_LOGIN_LOGS, JSON.stringify(initial));
+      return initial;
+    }
+    return JSON.parse(raw);
+  } catch {
+    return createInitialSampleLogs();
+  }
+}
+
+export function saveStoredLoginLogs(logs: LoginLog[]): void {
+  try {
+    localStorage.setItem(STORAGE_KEY_LOGIN_LOGS, JSON.stringify(logs.slice(0, 100))); // Keep last 100 logs
+  } catch (err) {
+    console.error('Error saving login logs', err);
+  }
+}
+
+export function getCurrentSessionId(): string | null {
+  try {
+    return localStorage.getItem(STORAGE_KEY_CURRENT_SESSION_ID);
+  } catch {
+    return null;
+  }
+}
+
+export function getSessionStartTime(): number | null {
+  try {
+    const val = localStorage.getItem(STORAGE_KEY_SESSION_START_TIME);
+    return val ? parseInt(val, 10) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function getStoredLogoutReason(): string | null {
+  try {
+    return localStorage.getItem(STORAGE_KEY_LOGOUT_REASON);
+  } catch {
+    return null;
+  }
+}
+
+export function setStoredLogoutReason(reason: string | null): void {
+  try {
+    if (reason) {
+      localStorage.setItem(STORAGE_KEY_LOGOUT_REASON, reason);
+    } else {
+      localStorage.removeItem(STORAGE_KEY_LOGOUT_REASON);
+    }
+  } catch (err) {
+    console.error('Error setting logout reason', err);
+  }
+}
+
+function detectClientEnvironment(): { ip: string; agent: string; device: 'Desktop' | 'Mobile' | 'Tablet' } {
+  // Generate realistic internal network IP for PSU Campus / local
+  const lastOctet = Math.floor(Math.random() * 200) + 10;
+  const ip = `172.24.89.${lastOctet}`;
+
+  let agent = 'Chrome Browser';
+  let device: 'Desktop' | 'Mobile' | 'Tablet' = 'Desktop';
+
+  if (typeof navigator !== 'undefined') {
+    const ua = navigator.userAgent;
+    if (/mobile/i.test(ua)) device = 'Mobile';
+    else if (/tablet|ipad/i.test(ua)) device = 'Tablet';
+
+    if (ua.includes('Chrome')) agent = 'Google Chrome';
+    else if (ua.includes('Safari') && !ua.includes('Chrome')) agent = 'Apple Safari';
+    else if (ua.includes('Firefox')) agent = 'Mozilla Firefox';
+    else if (ua.includes('Edge')) agent = 'Microsoft Edge';
+
+    if (navigator.platform) {
+      if (navigator.platform.includes('Win')) agent += ' (Windows)';
+      else if (navigator.platform.includes('Mac')) agent += ' (macOS)';
+      else if (navigator.platform.includes('Linux')) agent += ' (Linux)';
+    }
+  }
+
+  return { ip, agent, device };
+}
+
+/**
+ * Record a new login event into the audit log & initialize 15-minute session
+ */
+export function recordLoginEvent(user: StaffUser): { log: LoginLog; updatedLogs: LoginLog[] } {
+  const now = Date.now();
+  const sessionId = `SESS-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+  const env = detectClientEnvironment();
+
+  const newLog: LoginLog = {
+    id: `LOG-${Date.now().toString(36).toUpperCase()}`,
+    sessionId,
+    userId: user.id || `USER-${user.email}`,
+    userName: user.display_name_th || user.name,
+    userEmail: user.email,
+    role: user.role || 'user',
+    loginAt: new Date(now).toISOString(),
+    lastActiveAt: new Date(now).toISOString(),
+    expiresAt: new Date(now + SESSION_MAX_DURATION_MS).toISOString(),
+    ipAddress: env.ip,
+    userAgent: env.agent,
+    deviceType: env.device,
+    status: 'active'
+  };
+
+  try {
+    localStorage.setItem(STORAGE_KEY_CURRENT_SESSION_ID, sessionId);
+    localStorage.setItem(STORAGE_KEY_SESSION_START_TIME, now.toString());
+    localStorage.removeItem(STORAGE_KEY_LOGOUT_REASON);
+  } catch (e) {
+    console.error('Error storing session id', e);
+  }
+
+  const currentLogs = getStoredLoginLogs();
+  const updatedLogs = [newLog, ...currentLogs];
+  saveStoredLoginLogs(updatedLogs);
+
+  return { log: newLog, updatedLogs };
+}
+
+/**
+ * Record a logout event
+ */
+export function recordLogoutEvent(sessionId?: string, reason: string = 'ผู้ใช้งานกดออกจากระบบ'): LoginLog[] {
+  const currentId = sessionId || getCurrentSessionId();
+  const currentLogs = getStoredLoginLogs();
+  const now = new Date().toISOString();
+
+  const updated = currentLogs.map(log => {
+    if (log.sessionId === currentId && log.status === 'active') {
+      return {
+        ...log,
+        status: reason.includes('15 นาที') ? ('expired' as const) : ('logged_out' as const),
+        lastActiveAt: now,
+        logoutReason: reason
+      };
+    }
+    return log;
+  });
+
+  saveStoredLoginLogs(updated);
+
+  try {
+    localStorage.removeItem(STORAGE_KEY_CURRENT_SESSION_ID);
+    localStorage.removeItem(STORAGE_KEY_SESSION_START_TIME);
+  } catch (err) {
+    console.error('Error clearing session storage', err);
+  }
+
+  return updated;
+}
+
+/**
+ * Admin action: Force logout a specific session (Kick user)
+ */
+export function revokeSessionByAdmin(sessionId: string, adminName: string): LoginLog[] {
+  const currentLogs = getStoredLoginLogs();
+  const now = new Date().toISOString();
+
+  const updated = currentLogs.map(log => {
+    if (log.sessionId === sessionId && log.status === 'active') {
+      return {
+        ...log,
+        status: 'revoked_by_admin' as const,
+        revokedAt: now,
+        revokedBy: adminName,
+        logoutReason: `ผู้ดูแลระบบ (${adminName}) สั่งบังคับออกจากระบบ (Force Logout)`
+      };
+    }
+    return log;
+  });
+
+  saveStoredLoginLogs(updated);
+
+  // If this browser was holding that session, set notice
+  if (getCurrentSessionId() === sessionId) {
+    setStoredLogoutReason(`เซสชันของคุณถูกบังคับให้ออกจากระบบโดยผู้ดูแลระบบ (${adminName})`);
+  }
+
+  return updated;
+}
+
+/**
+ * Admin action: Force logout all active sessions for a specific user email
+ */
+export function revokeUserAllSessions(userEmail: string, adminName: string): LoginLog[] {
+  const currentLogs = getStoredLoginLogs();
+  const now = new Date().toISOString();
+  const emailNorm = userEmail.toLowerCase().trim();
+
+  const updated = currentLogs.map(log => {
+    if (log.userEmail.toLowerCase().trim() === emailNorm && log.status === 'active') {
+      return {
+        ...log,
+        status: 'revoked_by_admin' as const,
+        revokedAt: now,
+        revokedBy: adminName,
+        logoutReason: `ผู้ดูแลระบบ (${adminName}) สั่งบังคับออกจากระบบทุกล็อกอิน`
+      };
+    }
+    return log;
+  });
+
+  saveStoredLoginLogs(updated);
+  return updated;
+}
+
+/**
+ * Admin action: Force logout all active non-admin users
+ */
+export function revokeAllActiveSessionsExceptAdmin(adminName: string): LoginLog[] {
+  const currentLogs = getStoredLoginLogs();
+  const now = new Date().toISOString();
+
+  const updated = currentLogs.map(log => {
+    if (log.role !== 'admin' && log.status === 'active') {
+      return {
+        ...log,
+        status: 'revoked_by_admin' as const,
+        revokedAt: now,
+        revokedBy: adminName,
+        logoutReason: `ผู้ดูแลระบบ (${adminName}) สั่งบังคับให้ออกจากระบบทั้งหมด`
+      };
+    }
+    return log;
+  });
+
+  saveStoredLoginLogs(updated);
+  return updated;
+}
+
+/**
+ * Check if current active session is valid (not expired past 15 mins, and not revoked by admin)
+ */
+export function checkCurrentSessionValid(): { 
+  isValid: boolean; 
+  reason?: 'expired' | 'revoked_by_admin' | 'none'; 
+  remainingMs: number 
+} {
+  const startTime = getSessionStartTime();
+  const currentSessionId = getCurrentSessionId();
+
+  if (!startTime || !currentSessionId) {
+    return { isValid: false, reason: 'none', remainingMs: 0 };
+  }
+
+  const elapsed = Date.now() - startTime;
+  const remainingMs = Math.max(0, SESSION_MAX_DURATION_MS - elapsed);
+
+  // 1. Check if 15 minutes have passed
+  if (elapsed >= SESSION_MAX_DURATION_MS) {
+    recordLogoutEvent(currentSessionId, 'หมดเวลาการใช้งาน (เกิน 15 นาที)');
+    setStoredLogoutReason('หมดเวลาการใช้งาน (เกิน 15 นาที) กรุณาเข้าสู่ระบบอีกครั้ง');
+    return { isValid: false, reason: 'expired', remainingMs: 0 };
+  }
+
+  // 2. Check if admin revoked this session
+  const logs = getStoredLoginLogs();
+  const currentLog = logs.find(l => l.sessionId === currentSessionId);
+  if (currentLog && currentLog.status === 'revoked_by_admin') {
+    setStoredLogoutReason(currentLog.logoutReason || 'เซสชันของคุณถูกบังคับให้ออกจากระบบโดยผู้ดูแลระบบ');
+    return { isValid: false, reason: 'revoked_by_admin', remainingMs: 0 };
+  }
+
+  return { isValid: true, remainingMs };
+}
+
+export function getStoredAdminPassword(): string {
+  try {
+    return localStorage.getItem(STORAGE_KEY_ADMIN_PASSWORD) || DEFAULT_ADMIN_PASSWORD;
+  } catch {
+    return DEFAULT_ADMIN_PASSWORD;
+  }
+}
+
+export function saveStoredAdminPassword(password: string): void {
+  try {
+    localStorage.setItem(STORAGE_KEY_ADMIN_PASSWORD, password.trim());
+  } catch (err) {
+    console.error('Error saving admin password', err);
+  }
+}
 
 export function getStoredIsAuthenticated(): boolean {
   try {

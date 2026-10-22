@@ -9,7 +9,11 @@ import {
   CheckCircle, 
   ExternalLink,
   RotateCcw,
-  Sparkles
+  Sparkles,
+  Award,
+  ShieldCheck,
+  Mail,
+  FileText
 } from 'lucide-react';
 import { SystemNotification, BorrowRequest } from '../types';
 
@@ -43,7 +47,16 @@ export const NotificationDrawer: React.FC<NotificationDrawerProps> = ({
   const overdueNotifs = notifications.filter(n => n.type === 'overdue');
   const todayNotifs = notifications.filter(n => n.type === 'due_today');
   const soonNotifs = notifications.filter(n => n.type === 'due_soon');
-  const otherNotifs = notifications.filter(n => n.type !== 'overdue' && n.type !== 'due_today' && n.type !== 'due_soon');
+  const executiveNotifs = notifications.filter(n => n.title.includes('รอผู้บริหาร') || (n.type === 'approved' && n.title.includes('ดร.สพ.ญ.ญาดา')));
+  const ownerPendingNotifs = notifications.filter(n => n.title.includes('รอเจ้าของครุภัณฑ์') || n.type === 'new_request');
+  const otherNotifs = notifications.filter(n => 
+    n.type !== 'overdue' && 
+    n.type !== 'due_today' && 
+    n.type !== 'due_soon' &&
+    !n.title.includes('รอผู้บริหาร') &&
+    !n.title.includes('รอเจ้าของครุภัณฑ์') &&
+    n.type !== 'new_request'
+  );
 
   return (
     <div className="fixed inset-0 z-50 overflow-hidden bg-slate-900/50 backdrop-blur-xs flex justify-end">
@@ -173,6 +186,92 @@ export const NotificationDrawer: React.FC<NotificationDrawerProps> = ({
                           className="text-blue-700 hover:underline font-medium flex items-center gap-1"
                         >
                           <span>ตรวจสอบคำขอยืม</span>
+                          <ExternalLink className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Executive Confirmation (ดร.สพ.ญ.ญาดา ดวงนำสว่าง) */}
+              {executiveNotifs.length > 0 && (
+                <div className="space-y-2">
+                  <span className="text-xs font-bold text-emerald-800 uppercase tracking-wider flex items-center gap-1">
+                    <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
+                    ยืนยันการอนุมัติถึงผู้บริหารทางอีเมล ({executiveNotifs.length})
+                  </span>
+                  {executiveNotifs.map((n) => (
+                    <div
+                      key={n.id}
+                      className="p-3.5 rounded-xl border border-emerald-300 bg-emerald-50 text-xs space-y-2 shadow-2xs"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="font-bold text-emerald-950 flex items-center gap-1.5">
+                          <span>{n.title}</span>
+                          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                        </div>
+                        <span className="font-mono text-[11px] text-emerald-900 bg-emerald-200/80 px-1.5 py-0.5 rounded font-bold">
+                          {n.requestId}
+                        </span>
+                      </div>
+                      <p className="text-emerald-900 leading-relaxed text-[11px]">{n.message}</p>
+                      
+                      <div className="pt-2 border-t border-emerald-200 flex items-center justify-between gap-2">
+                        <button
+                          onClick={() => {
+                            onSelectRequest(n.requestId);
+                            onClose();
+                          }}
+                          className="px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg font-bold flex items-center gap-1.5 transition cursor-pointer shadow-2xs text-[11px]"
+                        >
+                          <FileText className="w-3 h-3" />
+                          <span>ดูรายละเอียดคำขอ</span>
+                        </button>
+
+                        <a
+                          href={`mailto:yada.d@psu.ac.th?subject=${encodeURIComponent(`[รพ.สัตว์ ม.อ. - ยืนยันการอนุมัติ] คำขอยืม ${n.requestId} เจ้าของครุภัณฑ์กดอนุมัติแล้ว`)}&body=${encodeURIComponent(`เรียน ดร.สพ.ญ.ญาดา ดวงนำสว่าง\nรองผู้อำนวยการโรงพยาบาลสัตว์ ฝ่ายบริหารผลิตภัณฑ์ และเวชภัณฑ์\n\nระบบขอเรียนยืนยันว่าคำขอยืมครุภัณฑ์เลขที่ ${n.requestId} (${n.equipmentSummary}) โดย ${n.requesterName} ได้รับความยินยอมจากเจ้าของครุภัณฑ์ครบถ้วนแล้ว และเริ่มดำเนินการยืมใช้งานตามระบบ\n\nขอแสดงความนับถือ\nโรงพยาบาลสัตว์ คณะสัตวแพทยศาสตร์ ม.อ.`)}`}
+                          className="text-[11px] text-emerald-800 hover:text-emerald-950 flex items-center gap-1 font-semibold underline underline-offset-2"
+                          title="ส่งอีเมลยืนยันถึง ดร.สพ.ญ.ญาดา"
+                        >
+                          <Mail className="w-3 h-3 text-emerald-700" />
+                          <span>ส่งอีเมลยืนยัน</span>
+                        </a>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Owner Approval Needed */}
+              {ownerPendingNotifs.length > 0 && (
+                <div className="space-y-2">
+                  <span className="text-xs font-bold text-sky-800 uppercase tracking-wider flex items-center gap-1">
+                    <ShieldCheck className="w-3.5 h-3.5 text-sky-600" />
+                    รอเจ้าของครุภัณฑ์กดยินยอม ({ownerPendingNotifs.length})
+                  </span>
+                  {ownerPendingNotifs.map((n) => (
+                    <div
+                      key={n.id}
+                      className="p-3.5 rounded-xl border border-sky-200 bg-sky-50 text-xs space-y-2"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="font-bold text-sky-950">{n.title}</div>
+                        <span className="font-mono text-[11px] text-sky-800 bg-sky-100 px-1.5 py-0.5 rounded font-semibold">
+                          {n.requestId}
+                        </span>
+                      </div>
+                      <p className="text-sky-900 leading-relaxed text-[11px]">{n.message}</p>
+                      
+                      <div className="pt-2 border-t border-sky-200 flex items-center justify-between">
+                        <button
+                          onClick={() => {
+                            onSelectRequest(n.requestId);
+                            onClose();
+                          }}
+                          className="px-2.5 py-1 bg-sky-700 hover:bg-sky-800 text-white rounded-lg font-bold flex items-center gap-1 transition cursor-pointer"
+                        >
+                          <span>เปิดดูรายการและกดให้ยืม</span>
                           <ExternalLink className="w-3 h-3" />
                         </button>
                       </div>

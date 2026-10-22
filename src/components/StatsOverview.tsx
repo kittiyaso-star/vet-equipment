@@ -5,7 +5,9 @@ import {
   CheckCircle2, 
   AlertTriangle, 
   PackageCheck, 
-  ShieldAlert
+  ShieldAlert,
+  Layers,
+  Sparkles
 } from 'lucide-react';
 import { BorrowRequest, EquipmentMaster } from '../types';
 
@@ -26,14 +28,9 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({
   today.setHours(0, 0, 0, 0);
 
   const totalRequests = requests.length;
-  
-  // Pending approval
   const pendingRequests = requests.filter(r => r.status === 'ยื่นขออนุมัติ').length;
-  
-  // Currently borrowed / approved
   const activeLoans = requests.filter(r => r.status === 'เจ้าของให้ยืมแล้ว' || r.status === 'กำลังยืมใช้งาน').length;
   
-  // Overdue check
   const overdueRequests = requests.filter(r => {
     if (r.status === 'เสร็จสิ้น' || r.status === 'รับคืนเรียบร้อย' || r.status === 'คืนครุภัณฑ์แล้ว' || r.status === 'ยกเลิกคำขอ') {
       return false;
@@ -43,102 +40,123 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({
     return due.getTime() < today.getTime();
   }).length;
 
-  // Completed
-  const completedRequests = requests.filter(r => r.status === 'เสร็จสิ้น' || r.status === 'รับคืนเรียบร้อย' || r.status === 'คืนครุภัณฑ์แล้ว').length;
-
-  // Equipment availability
-  const availableEquipment = equipment.filter(e => e.status === 'พร้อมใช้งาน').length;
-  const totalEquipment = equipment.length;
+  const completedRequests = requests.filter(r => 
+    r.status === 'เสร็จสิ้น' || r.status === 'รับคืนเรียบร้อย' || r.status === 'คืนครุภัณฑ์แล้ว'
+  ).length;
 
   const stats = [
     {
       id: 'stat-all',
       filterValue: 'ALL',
-      label: 'รายการคำขอทั้งหมด',
-      value: totalRequests,
-      sublabel: 'ทุกสถานะในระบบ',
-      icon: FileText,
-      color: 'text-blue-600',
-      bg: 'bg-blue-50/70',
-      border: 'border-blue-200'
+      title: 'คำขอยืมทั้งหมด',
+      count: totalRequests,
+      desc: 'ทุกสถานะในระบบ',
+      badge: `${totalRequests} รายการ`,
+      gradient: 'from-purple-600 to-indigo-600',
+      lightBg: 'bg-purple-50/60',
+      borderColor: 'border-purple-200',
+      activeRing: 'ring-purple-600',
+      textColor: 'text-purple-700',
+      icon: FileText
     },
     {
       id: 'stat-pending',
       filterValue: 'ยื่นขออนุมัติ',
-      label: 'รอเจ้าของอนุมัติ',
-      value: pendingRequests,
-      sublabel: 'คำขอใหม่รอพิจารณา',
-      icon: Clock,
-      color: 'text-amber-600',
-      bg: 'bg-amber-50/70',
-      border: 'border-amber-200'
+      title: 'รอเจ้าของอนุมัติ',
+      count: pendingRequests,
+      desc: 'คำขอใหม่รอพิจารณา',
+      badge: `${pendingRequests} รายการ`,
+      gradient: 'from-sky-500 to-blue-600',
+      lightBg: 'bg-sky-50/60',
+      borderColor: 'border-sky-200',
+      activeRing: 'ring-sky-600',
+      textColor: 'text-sky-700',
+      icon: Clock
     },
     {
       id: 'stat-active',
       filterValue: 'ACTIVE_LOAN',
-      label: 'กำลังยืมใช้งาน',
-      value: activeLoans,
-      sublabel: 'อยู่ระหว่างการใช้งาน',
-      icon: PackageCheck,
-      color: 'text-indigo-600',
-      bg: 'bg-indigo-50/70',
-      border: 'border-indigo-200'
+      title: 'กำลังยืมใช้งาน',
+      count: activeLoans,
+      desc: 'อยู่ระหว่างการใช้งาน',
+      badge: `${activeLoans} รายการ`,
+      gradient: 'from-amber-500 to-orange-500',
+      lightBg: 'bg-amber-50/60',
+      borderColor: 'border-amber-200',
+      activeRing: 'ring-amber-600',
+      textColor: 'text-amber-700',
+      icon: PackageCheck
     },
     {
       id: 'stat-overdue',
       filterValue: 'OVERDUE',
-      label: 'เกินกำหนดส่งคืน',
-      value: overdueRequests,
-      sublabel: 'ต้องติดตามเร่งด่วน',
-      icon: ShieldAlert,
-      color: 'text-red-600',
-      bg: overdueRequests > 0 ? 'bg-red-50' : 'bg-slate-50',
-      border: overdueRequests > 0 ? 'border-red-300 ring-2 ring-red-100' : 'border-slate-200',
-      isAlert: overdueRequests > 0
+      title: 'เกินกำหนดส่งคืน',
+      count: overdueRequests,
+      desc: overdueRequests > 0 ? 'เกินกำหนดเร่งติดตาม' : 'ไม่มีรายการค้างคืน',
+      badge: `${overdueRequests} รายการ`,
+      gradient: 'from-rose-500 to-pink-600',
+      lightBg: overdueRequests > 0 ? 'bg-rose-50/80 animate-pulse' : 'bg-rose-50/50',
+      borderColor: overdueRequests > 0 ? 'border-rose-400' : 'border-rose-200',
+      activeRing: 'ring-rose-600',
+      textColor: 'text-rose-700',
+      icon: ShieldAlert
     },
     {
       id: 'stat-completed',
       filterValue: 'COMPLETED',
-      label: 'คืนเรียบร้อย/เสร็จสิ้น',
-      value: completedRequests,
-      sublabel: 'ตรวจรับคืนแล้ว',
-      icon: CheckCircle2,
-      color: 'text-emerald-600',
-      bg: 'bg-emerald-50/70',
-      border: 'border-emerald-200'
+      title: 'ส่งคืนเรียบร้อย',
+      count: completedRequests,
+      desc: 'ตรวจรับคืนสมบูรณ์',
+      badge: `${completedRequests} รายการ`,
+      gradient: 'from-emerald-500 to-teal-600',
+      lightBg: 'bg-emerald-50/60',
+      borderColor: 'border-emerald-200',
+      activeRing: 'ring-emerald-600',
+      textColor: 'text-emerald-700',
+      icon: CheckCircle2
     }
   ];
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3.5 mb-6">
-      {stats.map((stat) => {
-        const Icon = stat.icon;
-        const isActive = activeFilter === stat.filterValue;
+      {stats.map((item) => {
+        const Icon = item.icon;
+        const isActive = activeFilter === item.filterValue;
 
         return (
           <button
-            key={stat.id}
-            id={stat.id}
-            onClick={() => onFilterChange(stat.filterValue)}
-            className={`p-3.5 rounded-xl border text-left transition-all duration-200 cursor-pointer ${stat.bg} ${stat.border} ${
-              isActive ? 'ring-2 ring-blue-600 shadow-sm scale-[1.02]' : 'hover:shadow-xs hover:border-slate-300'
+            key={item.id}
+            id={item.id}
+            type="button"
+            onClick={() => onFilterChange(item.filterValue)}
+            className={`rounded-2xl border text-left transition-all duration-200 cursor-pointer overflow-hidden shadow-2xs hover:shadow-md ${item.borderColor} ${
+              isActive 
+                ? `ring-3 ${item.activeRing} shadow-md scale-[1.02] bg-white` 
+                : 'bg-white hover:border-slate-300'
             }`}
           >
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-slate-600">{stat.label}</span>
-              <div className={`p-1.5 rounded-lg bg-white shadow-2xs ${stat.color}`}>
+            {/* Vibrant colorful header strip matching Image 3 */}
+            <div className={`p-3 bg-gradient-to-r ${item.gradient} text-white flex items-center justify-between`}>
+              <span className="text-xs font-bold truncate tracking-wide">{item.title}</span>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-white/20 backdrop-blur-xs border border-white/25">
+                {item.badge}
+              </span>
+            </div>
+
+            {/* Card Content */}
+            <div className={`p-3.5 ${item.lightBg} flex items-center justify-between gap-2`}>
+              <div>
+                <div className="text-2xl font-black text-slate-900 tracking-tight leading-none">
+                  {item.count}
+                </div>
+                <div className="text-[11px] text-slate-500 mt-1 font-medium truncate">
+                  {item.desc}
+                </div>
+              </div>
+              <div className={`w-8 h-8 rounded-xl bg-white shadow-xs border border-slate-100 flex items-center justify-center shrink-0 ${item.textColor}`}>
                 <Icon className="w-4 h-4" />
               </div>
             </div>
-            <div className="mt-2 flex items-baseline gap-2">
-              <span className={`text-2xl font-bold tracking-tight ${stat.color}`}>
-                {stat.value}
-              </span>
-              <span className="text-xs text-slate-500">รายการ</span>
-            </div>
-            <p className="mt-1 text-[11px] text-slate-500 truncate">
-              {stat.sublabel}
-            </p>
           </button>
         );
       })}

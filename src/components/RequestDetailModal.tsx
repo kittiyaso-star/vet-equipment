@@ -143,120 +143,68 @@ export const RequestDetailModal: React.FC<RequestDetailModalProps> = ({
           {/* Workflow Progress Steps */}
           <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
             <div className="text-xs font-bold text-slate-700 mb-3">ลำดับขั้นตอนการอนุมัติ (Approval Workflow):</div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-xs">
-              <div className={`p-2 rounded-lg border ${
-                ['ยื่นขออนุมัติ', 'รอผู้บริหารอนุมัติ', 'เจ้าของให้ยืมแล้ว', 'กำลังยืมใช้งาน', 'คืนครุภัณฑ์แล้ว', 'รับคืนเรียบร้อย', 'เสร็จสิ้น'].includes(request.status)
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-center text-xs">
+              <div className={`p-2.5 rounded-xl border ${
+                ['ยื่นขออนุมัติ', 'เจ้าของให้ยืมแล้ว', 'กำลังยืมใช้งาน', 'คืนครุภัณฑ์แล้ว', 'รับคืนเรียบร้อย', 'เสร็จสิ้น'].includes(request.status)
                   ? 'bg-blue-50 border-blue-300 text-blue-800 font-semibold'
                   : 'bg-white border-slate-200 text-slate-400'
               }`}>
-                1. ยื่นขออนุมัติ
+                <div className="font-bold">1. ยื่นขออนุมัติ</div>
+                <div className="text-[10px] text-slate-500 mt-0.5">ระบุรายการและช่วงเวลาใช้งาน</div>
               </div>
-              <div className={`p-2 rounded-lg border ${
-                allOwnersApproved || ['รอผู้บริหารอนุมัติ', 'เจ้าของให้ยืมแล้ว', 'กำลังยืมใช้งาน', 'คืนครุภัณฑ์แล้ว', 'รับคืนเรียบร้อย', 'เสร็จสิ้น'].includes(request.status)
-                  ? 'bg-blue-50 border-blue-300 text-blue-800 font-semibold'
+              <div className={`p-2.5 rounded-xl border ${
+                allOwnersApproved || ['เจ้าของให้ยืมแล้ว', 'กำลังยืมใช้งาน', 'คืนครุภัณฑ์แล้ว', 'รับคืนเรียบร้อย', 'เสร็จสิ้น'].includes(request.status)
+                  ? 'bg-emerald-50 border-emerald-300 text-emerald-800 font-semibold'
                   : someOwnersApproved
                   ? 'bg-amber-50 border-amber-300 text-amber-800 font-medium'
                   : 'bg-white border-slate-200 text-slate-400'
               }`}>
-                2. เจ้าของให้ยืม
+                <div className="font-bold">2. เจ้าของครุภัณฑ์กดให้ยืม</div>
+                <div className="text-[10px] text-slate-500 mt-0.5">
+                  เมื่อยินยอมครบ ระบบจะส่งอีเมลยืนยันถึง ดร.สพ.ญ.ญาดา ทันที
+                </div>
               </div>
-              <div className={`p-2 rounded-lg border ${
-                ['เจ้าของให้ยืมแล้ว', 'กำลังยืมใช้งาน', 'คืนครุภัณฑ์แล้ว', 'รับคืนเรียบร้อย', 'เสร็จสิ้น'].includes(request.status)
-                  ? 'bg-blue-50 border-blue-300 text-blue-800 font-semibold'
-                  : request.status === 'รอผู้บริหารอนุมัติ'
-                  ? 'bg-amber-50 border-amber-300 text-amber-800 font-bold animate-pulse'
-                  : 'bg-white border-slate-200 text-slate-400'
-              }`}>
-                3. ผู้บริหารอนุมัติ
-              </div>
-              <div className={`p-2 rounded-lg border ${
+              <div className={`p-2.5 rounded-xl border ${
                 ['รับคืนเรียบร้อย', 'เสร็จสิ้น'].includes(request.status)
                   ? 'bg-emerald-50 border-emerald-300 text-emerald-800 font-semibold'
                   : 'bg-white border-slate-200 text-slate-400'
               }`}>
-                4. ตรวจรับคืน
+                <div className="font-bold">3. ตรวจรับคืนครุภัณฑ์</div>
+                <div className="text-[10px] text-slate-500 mt-0.5">ตรวจสภาพและบันทึกปิดคำขอ</div>
               </div>
             </div>
           </div>
 
-          {/* Section: Executive Approval Box (ดร.สพ.ญ.ญาดา ดวงนำสว่าง) */}
-          {request.status === 'รอผู้บริหารอนุมัติ' && (
-            <div className="p-4 rounded-xl bg-amber-50/80 border border-amber-300 space-y-3 shadow-xs">
-              <div className="flex items-start gap-3">
-                <div className="p-2 rounded-lg bg-amber-200 text-amber-900 mt-0.5">
-                  <Award className="w-5 h-5" />
-                </div>
-                <div className="flex-1">
-                  <div className="text-xs font-bold text-amber-950 flex items-center gap-2">
-                    <span>ขั้นตอนสำคัญ: รอผู้มีอำนาจอนุมัติให้ยืมครุภัณฑ์</span>
-                    <span className="bg-amber-200/80 text-amber-900 text-[10px] px-2 py-0.5 rounded-full font-bold">
-                      ขั้นที่ 3
-                    </span>
+          {/* Section: Executive Email Confirmation Box (ดร.สพ.ญ.ญาดา ดวงนำสว่าง) */}
+          {(request.status === 'เจ้าของให้ยืมแล้ว' || request.status === 'กำลังยืมใช้งาน' || request.executiveApprovedAt) && (
+            <div className="p-4 rounded-xl bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 space-y-2 shadow-2xs">
+              <div className="flex items-start justify-between gap-3 flex-wrap">
+                <div className="flex items-center gap-2.5 text-emerald-900">
+                  <div className="p-2 rounded-lg bg-emerald-600 text-white shrink-0">
+                    <CheckCircle2 className="w-5 h-5" />
                   </div>
-                  <p className="text-xs text-amber-900 mt-1">
-                    <strong>ผู้มีอำนาจอนุมัติ:</strong> รองผู้อำนวยการโรงพยาบาลสัตว์ ฝ่ายบริหารผลิตภัณฑ์ และเวชภัณฑ์{' '}
-                    <span className="text-indigo-900 font-semibold">(ดร.สพ.ญ.ญาดา ดวงนำสว่าง, email: yada.d@psu.ac.th)</span>
-                  </p>
-                  <p className="text-[11px] text-amber-800 mt-0.5">
-                    * เจ้าของครุภัณฑ์ทุกรายการได้กดยินยอมให้ยืมแล้ว รอการอนุมัติขั้นสุดท้ายจากผู้บริหารก่อนเริ่มยืมใช้งาน
-                  </p>
-                </div>
-              </div>
-
-              {isExecutiveUser ? (
-                <div className="pt-2 border-t border-amber-200 space-y-2.5">
                   <div>
-                    <label className="block text-[11px] font-semibold text-amber-900 mb-1">
-                      ข้อคิดเห็น / คำสั่งการของผู้บริหาร (ดร.สพ.ญ.ญาดา ดวงนำสว่าง):
-                    </label>
-                    <input
-                      type="text"
-                      value={executiveNote}
-                      onChange={(e) => setExecutiveNote(e.target.value)}
-                      placeholder="เช่น อนุมัติให้ยืมตามระเบียบโรงพยาบาลสัตว์ ม.อ., ขอให้ดูแลความสะอาด..."
-                      className="w-full px-3 py-2 text-xs rounded-lg border border-amber-300 bg-white focus:ring-2 focus:ring-amber-500 outline-none"
-                    />
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => onExecutiveApprove ? onExecutiveApprove(request.id, executiveNote) : onApprove(request)}
-                      className="px-4 py-2 text-xs font-bold text-white bg-amber-700 hover:bg-amber-800 rounded-lg shadow-sm transition flex items-center gap-1.5 cursor-pointer"
-                    >
-                      <Check className="w-4 h-4" />
-                      <span>อนุมัติการยืมครุภัณฑ์ (ดร.สพ.ญ.ญาดา ดวงนำสว่าง)</span>
-                    </button>
-                    <span className="text-[11px] text-amber-800">
-                      คุณกำลังปฏิบัติหน้าที่ในฐานะ {currentUser.name} ({currentUser.roleLabel || currentUser.role})
-                    </span>
+                    <div className="text-xs font-bold text-emerald-950 flex items-center gap-2">
+                      <span>อนุมัติให้ยืมเรียบร้อยแล้ว — ส่งอีเมลยืนยันถึง ดร.สพ.ญ.ญาดา ดวงนำสว่าง แล้ว</span>
+                      <span className="bg-emerald-200/80 text-emerald-900 text-[10px] px-2 py-0.5 rounded-full font-bold">
+                        ยืนยันทางอีเมล
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-emerald-800 mt-0.5 leading-relaxed">
+                      เจ้าของครุภัณฑ์ได้กดยินยอมให้ยืมเรียบร้อยแล้ว ระบบได้ส่งอีเมลสรุปยืนยันคำขอถึง{' '}
+                      <strong>ดร.สพ.ญ.ญาดา ดวงนำสว่าง</strong> (yada.d@psu.ac.th) เพื่อรับทราบการอนุมัติ โดยผู้บริหารไม่ต้องเข้ามากดในระบบ
+                    </p>
                   </div>
                 </div>
-              ) : (
-                <div className="p-2.5 rounded-lg bg-white/80 border border-amber-200 text-xs text-amber-900 flex items-center gap-2">
-                  <Info className="w-4 h-4 text-amber-700 shrink-0" />
-                  <span>
-                    ระบบกำลังรอการลงนาม/กดอนุมัติจาก <strong>ดร.สพ.ญ.ญาดา ดวงนำสว่าง</strong> (yada.d@psu.ac.th) หรือ ผู้ดูแลระบบ (Admin)
-                  </span>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Executive Approved Badge if already approved */}
-          {request.executiveApprovedAt && (
-            <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-between text-xs">
-              <div className="flex items-center gap-2 text-emerald-900">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                <span>
-                  <strong>ผ่านการอนุมัติจากผู้บริหารแล้ว:</strong> {request.executiveApprovedBy || 'ดร.สพ.ญ.ญาดา ดวงนำสว่าง'}
-                </span>
-                {request.executiveNotes && (
-                  <span className="text-slate-600 italic">"{request.executiveNotes}"</span>
-                )}
+                <a
+                  href={`mailto:yada.d@psu.ac.th?subject=${encodeURIComponent(`[รพ.สัตว์ ม.อ. - ยืนยันการอนุมัติ] คำขอยืม ${request.id} เจ้าของครุภัณฑ์กดอนุมัติแล้ว`)}&body=${encodeURIComponent(`เรียน ดร.สพ.ญ.ญาดา ดวงนำสว่าง\nรองผู้อำนวยการโรงพยาบาลสัตว์ ฝ่ายบริหารผลิตภัณฑ์ และเวชภัณฑ์\n\nระบบขอเรียนแจ้งยืนยันว่า คำขอยืมครุภัณฑ์เลขที่ ${request.id} โดย ${request.requesterName} ได้รับการกดยินยอมจากเจ้าของครุภัณฑ์ครบถ้วนแล้ว\n\nรายละเอียดการยืม:\n- เลขที่คำขอ: ${request.id}\n- ผู้ขอยืม: ${request.requesterName} (${request.requesterDept || request.requesterFacultyTh || ''})\n- ช่วงเวลา: ${request.borrowFrom} ถึง ${request.borrowTo}\n- วัตถุประสงค์: ${request.purpose}\n\nรายการครุภัณฑ์ที่อนุมัติให้ยืม:\n${request.equipmentList.map((eq, i) => `${i + 1}. [${eq.code}] ${eq.name} (เจ้าของ: ${eq.responsible})`).join('\n')}\n\nทั้งนี้ ระบบได้อนุมัติให้เริ่มดำเนินการยืมใช้งานตามขั้นตอนเรียบร้อยแล้ว\n\nขอแสดงความนับถือ\nโรงพยาบาลสัตว์ คณะสัตวแพทยศาสตร์ มหาวิทยาลัยสงขลานครินทร์`)}`}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-emerald-900 bg-white hover:bg-emerald-100 border border-emerald-300 rounded-lg transition shadow-2xs"
+                  title="เปิดดูหรือส่งซ้ำอีเมลยืนยันถึง ดร.สพ.ญ.ญาดา"
+                >
+                  <Mail className="w-3.5 h-3.5 text-emerald-700" />
+                  <span>ส่งซ้ำอีเมลยืนยัน (ดร.สพ.ญ.ญาดา)</span>
+                </a>
               </div>
-              <span className="text-[11px] text-emerald-700 font-mono">
-                {new Date(request.executiveApprovedAt).toLocaleString('th-TH')}
-              </span>
             </div>
           )}
 
@@ -424,9 +372,21 @@ export const RequestDetailModal: React.FC<RequestDetailModalProps> = ({
                                     </button>
                                   </div>
                                 ) : (
-                                  <span className="text-[11px] text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full border border-slate-200">
-                                    รอคุณ {item.responsible} อนุมัติ
-                                  </span>
+                                  <div className="flex items-center justify-center gap-1.5 flex-wrap">
+                                    <span className="text-[11px] text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full border border-slate-200">
+                                      รอคุณ {item.responsible} อนุมัติ
+                                    </span>
+                                    {item.responsibleEmail && item.responsibleEmail.includes('@') && (
+                                      <a
+                                        href={`mailto:${item.responsibleEmail}?subject=${encodeURIComponent(`[รพ.สัตว์ ม.อ.] ขออนุมัติยืมครุภัณฑ์ ${item.code} (${item.name})`)}&body=${encodeURIComponent(`เรียน คุณ${item.responsible}\n\nคำขอยืมเลขที่ ${request.id} โดย ${request.requesterName} ได้ระบุขอยืมครุภัณฑ์ "${item.name}" (รหัส ${item.code})\n\nกรุณาเข้าสู่ระบบ PSU Passport เพื่อกด 'ยินยอมให้ยืม' ในระบบ\n\nขอแสดงความนับถือ\nโรงพยาบาลสัตว์ คณะสัตวแพทยศาสตร์ ม.อ.`)}`}
+                                        className="inline-flex items-center gap-1 text-[10px] text-blue-700 bg-blue-50 hover:bg-blue-100 px-2 py-0.5 rounded border border-blue-200 font-semibold transition"
+                                        title={`ส่งอีเมลแจ้งเตือนคุณ ${item.responsible}`}
+                                      >
+                                        <Mail className="w-3 h-3 text-blue-600" />
+                                        <span>ส่งเมลเตือน</span>
+                                      </a>
+                                    )}
+                                  </div>
                                 )
                               ) : (
                                 <span className="text-slate-400 text-xs">-</span>
