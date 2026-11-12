@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>แบบประเมินผลการปฏิบัติงาน | โรงพยาบาลสัตว์ มอ.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600&family=Sarabun:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink: #1E2747;        /* หัวข้อ */
+  --text: #3A4366;       /* เนื้อหา */
+  --muted: #6B7499;      /* ข้อความรอง */
+  --primary: #3D5AF1;    /* ปุ่มหลัก, เมนูที่เลือก */
+  --primary-dark: #3148D2;
+  --primary-wash: #EAEEFF;
+
+  --side-1: #1C2760;
+  --side-2: #141C49;
+  --side-text: #B3BCE8;
+
+  --bg: #F3F5FC;
+  --surface: #FFFFFF;
+  --line: #E7EAF6;
+  --field: #D3D9EE;
+  --lane: #E9EDFA;
+
+  --ok: #2FB985;     --ok-bg: #DDF5EA;    --ok-fg: #16724F;
+  --warn: #FFB02E;   --warn-bg: #FFF1CC;  --warn-fg: #7A5200;
+  --bad: #E8554E;    --bad-bg: #FDE4E1;   --bad-fg: #B03A33;
+  --violet: #6D4FE6; --violet-bg: #ECE6FF; --violet-fg: #553BBD;
+  --info-bg: #E4EAFF; --info-fg: #2B47C9;
+  --idle-bg: #EEF0F8; --idle-fg: #566082;
+
+  --g-violet: linear-gradient(135deg, #7658EE, #5F40DB);
+  --g-blue:   linear-gradient(135deg, #4B6BF4, #3553E6);
+  --g-amber:  linear-gradient(135deg, #FFCF66, #FFB02E);
+  --g-pink:   linear-gradient(135deg, #D44792, #BC3380);
+
+  --r-card: 20px;
+  --r-tile: 14px;
+  --r-field: 12px;
+  --shadow: 0 1px 2px rgba(30, 39, 71, .05), 0 12px 30px rgba(52, 72, 160, .08);
+
+  --font-body: "Sarabun", "Tahoma", "Segoe UI", sans-serif;
+  --font-head: "Prompt", "Sarabun", "Tahoma", sans-serif;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  color: var(--text);
+  background: radial-gradient(1100px 460px at 88% -8%, #DDE5FF 0%, rgba(221, 229, 255, 0) 62%), var(--bg);
+  background-attachment: fixed;
+  font: 400 15px/1.65 var(--font-body);
+}
+h1, h2, h3, h4 { font-family: var(--font-head); color: var(--ink); }
+:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+/* ---------- โครงหน้า: เมนูด้านซ้ายสีเข้ม + เนื้อหา ---------- */
+.app { display: grid; grid-template-columns: 248px minmax(0, 1fr); min-height: 100vh; }
+.sidebar {
+  position: sticky; top: 0; height: 100vh;
+  display: flex; flex-direction: column;
+  padding: 24px 16px 20px;
+  background: linear-gradient(180deg, var(--side-1), var(--side-2));
+  color: var(--side-text);
+}
+.brand { display: flex; align-items: center; gap: 12px; padding: 0 8px 26px; }
+.brand .logo {
+  flex: none; width: 44px; height: 44px; display: grid; place-items: center;
+  border-radius: 14px; color: #fff;
+  background: linear-gradient(135deg, #5B7BFF, #8C6CF6);
+  box-shadow: 0 8px 20px rgba(91, 123, 255, .35);
+}
+.brand .logo svg { width: 25px; height: 25px; }
+.brand b { display: block; color: #fff; font: 600 16px/1.3 var(--font-head); }
+.brand span { display: block; color: var(--side-text); font-size: 12.5px; line-height: 1.3; }
+.nav-label { padding: 0 12px 8px; color: #8590C8; font-size: 12px; letter-spacing: .02em; }
+.nav { display: grid; gap: 4px; }
+.nav a {
+  display: flex; align-items: center; gap: 12px;
+  padding: 11px 12px; border-radius: 13px;
+  color: var(--side-text); text-decoration: none; font-size: 15px;
+}
+.nav a svg { flex: none; width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.nav a:hover { background: rgba(255, 255, 255, .08); color: #fff; }
+.nav a.active { background: var(--primary); color: #fff; box-shadow: 0 8px 18px rgba(61, 90, 241, .4); }
+.side-foot { margin-top: auto; padding: 14px 12px 0; border-top: 1px solid rgba(255, 255, 255, .1); font-size: 12.5px; line-height: 1.5; color: #8590C8; }
+
+.main { width: 100%; max-width: 1320px; padding: 28px 36px 64px; }
+.topbar { display: flex; align-items: flex-end; gap: 18px; margin-bottom: 24px; flex-wrap: wrap; }
+.topbar .crumb { color: var(--muted); font-size: 13px; }
+.topbar h1 { margin: 0; font: 600 26px/1.3 var(--font-head); }
+.topbar .spacer { flex: 1; }
+
+/* ปุ่มสลับมุมมองแบบแคปซูล */
+.tabs { display: inline-flex; gap: 4px; padding: 5px; border-radius: 999px; background: #fff; box-shadow: var(--shadow); }
+.tabs button {
+  min-height: 38px; padding: 6px 18px; border: 0; border-radius: 999px;
+  background: transparent; color: var(--muted);
+  font: 500 14px/1.3 var(--font-head);
+}
+.tabs button:hover { background: var(--primary-wash); color: var(--primary); }
+.tabs button[aria-selected="true"] { background: var(--primary); color: #fff; box-shadow: 0 6px 14px rgba(61, 90, 241, .35); }
+
+/* ---------- การ์ด ---------- */
+.card { background: var(--surface); border-radius: var(--r-card); padding: 22px 24px; box-shadow: var(--shadow); }
+.card h2 { margin: 0 0 4px; font: 600 17px/1.4 var(--font-head); }
+.card .card-sub { margin: 0 0 16px; color: var(--muted); font-size: 13.5px; }
+.card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+.card-head h2 { margin: 0; }
+
+.grid-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; margin-bottom: 22px; }
+.grid-stats.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.grid-main { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); gap: 22px; align-items: start; }
+.grid-charts { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.2fr); gap: 22px; align-items: stretch; }
+.stack { margin-top: 22px; }
+
+/* การ์ดตัวเลขสีไล่เฉด + แถบสัดส่วนด้านล่าง */
+.stat {
+  position: relative; overflow: hidden;
+  padding: 18px 20px 24px; border-radius: var(--r-card);
+  color: #fff; box-shadow: var(--shadow);
+}
+.stat.violet { background: var(--g-violet); }
+.stat.blue { background: var(--g-blue); }
+.stat.pink { background: var(--g-pink); }
+.stat.amber { background: var(--g-amber); color: var(--ink); }
+.stat-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.stat .label { font-size: 14px; font-weight: 500; line-height: 1.4; }
+.stat .ico { flex: none; width: 38px; height: 38px; display: grid; place-items: center; border-radius: 12px; background: rgba(255, 255, 255, .22); }
+.stat.amber .ico { background: rgba(30, 39, 71, .1); }
+.stat .ico svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+.stat .num { margin-top: 8px; font: 600 34px/1.15 var(--font-head); }
+.stat .num small { margin-left: 4px; font: 400 14px var(--font-body); opacity: .85; }
+.stat .foot { margin-top: 2px; font-size: 13px; opacity: .92; }
+.stat .strip { position: absolute; left: 0; right: 0; bottom: 0; height: 7px; background: rgba(255, 255, 255, .3); }
+.stat .strip i { display: block; height: 100%; background: rgba(255, 255, 255, .95); border-radius: 0 999px 999px 0; }
+.stat.amber .strip { background: rgba(30, 39, 71, .12); }
+.stat.amber .strip i { background: var(--ink); }
+
+/* ---------- ฟอร์ม ---------- */
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.full { grid-column: 1 / -1; }
+label { display: block; margin-bottom: 5px; color: var(--muted); font-size: 13.5px; }
+input, select, textarea {
+  width: 100%; min-height: 44px; padding: 9px 13px;
+  border: 1px solid var(--field); border-radius: var(--r-field);
+  background: #fff; color: var(--text); font: inherit;
+}
+input:focus, select:focus, textarea:focus { outline: 2px solid rgba(61, 90, 241, .35); outline-offset: 0; border-color: var(--primary); }
+input[readonly] { background: #F6F8FE; color: var(--muted); }
+input[type=radio], input[type=checkbox] { width: auto; min-height: 0; accent-color: var(--primary); }
+textarea { min-height: 76px; resize: vertical; }
+::placeholder { color: #8F98B8; }
+
+.formtype-row { display: flex; gap: 12px; flex-wrap: wrap; }
+.formtype-row label.pick {
+  flex: 1 1 220px; display: flex; align-items: center; gap: 10px; margin: 0;
+  padding: 12px 14px; cursor: pointer;
+  border: 1px solid var(--field); border-radius: var(--r-tile);
+  color: var(--text); font-size: 14.5px;
+}
+.formtype-row label.pick:has(input:checked) { border-color: var(--primary); background: var(--primary-wash); box-shadow: inset 0 0 0 1px var(--primary); color: var(--ink); }
+.checkbox-row { display: flex; align-items: center; gap: 10px; }
+.checkbox-row label { margin: 0; color: var(--text); font-size: 14px; }
+
+button {
+  min-height: 44px; padding: 10px 22px; cursor: pointer;
+  border: 1px solid var(--primary); border-radius: var(--r-field);
+  background: var(--primary); color: #fff;
+  font: 500 14.5px/1.3 var(--font-head);
+}
+button:hover { background: var(--primary-dark); border-color: var(--primary-dark); }
+button:disabled { opacity: .55; cursor: default; }
+button.secondary { background: #fff; color: var(--primary); border-color: #CBD3F5; }
+button.secondary:hover { background: var(--primary-wash); border-color: var(--primary); }
+button.tiny { min-height: 34px; padding: 6px 13px; border-radius: 10px; font-size: 13px; }
+
+.autocomplete { position: relative; }
+.ac-list {
+  display: none; position: absolute; z-index: 30; top: calc(100% - 2px); left: 0; right: 0;
+  max-height: 250px; overflow-y: auto;
+  background: #fff; border: 1px solid var(--line); border-radius: var(--r-tile);
+  box-shadow: 0 16px 36px rgba(30, 39, 71, .16);
+}
+.ac-list.show { display: block; }
+.ac-item { padding: 9px 14px; cursor: pointer; font-size: 14.5px; }
+.ac-item:hover { background: var(--primary-wash); }
+.ac-item .ac-sub { color: var(--muted); font-size: 12.5px; }
+
+.evaluator-list { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+.evaluator-row { display: flex; align-items: center; gap: 10px; padding: 8px 10px 8px 14px; background: #F5F7FE; border-radius: var(--r-tile); }
+.evaluator-row .name { flex: 0 1 230px; min-width: 120px; color: var(--ink); font-size: 14px; font-weight: 500; }
+.evaluator-row input[type=email] { flex: 1; min-height: 38px; font-size: 14px; }
+
+.result { display: none; margin-top: 20px; padding: 16px 18px; border-radius: var(--r-tile); background: var(--primary-wash); color: var(--ink); }
+.result.show { display: block; }
+.result .note { margin-top: 8px; color: var(--muted); font-size: 12.5px; }
+.link-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+.link-row input { flex: 1 1 280px; min-height: 38px; font-size: 13px; background: #fff; }
+.link-meta { margin: 4px 0 10px 2px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
+
+/* ---------- ตาราง ---------- */
+.table-wrap { overflow-x: auto; margin: 0 -8px; padding: 0 8px; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th, td { padding: 13px 12px; text-align: left; vertical-align: middle; border-bottom: 1px solid var(--line); }
+th { color: var(--muted); font-weight: 500; font-size: 13px; white-space: nowrap; }
+tr.row { cursor: pointer; }
+tr.row:hover td { background: #F7F9FE; }
+tbody tr:last-child td { border-bottom: 0; }
+.score-cell { font-family: var(--font-head); font-weight: 500; color: var(--ink); white-space: nowrap; }
+.detail-row td { background: #F7F9FE; }
+.cell-name { display: flex; align-items: center; gap: 11px; font-weight: 500; color: var(--ink); }
+
+.badge { display: inline-block; padding: 2px 11px; border-radius: 999px; font-size: 12.5px; line-height: 1.6; white-space: nowrap; }
+.badge.pending, .badge.warn, .badge.improve { background: var(--warn-bg); color: var(--warn-fg); }
+.badge.partial { background: var(--info-bg); color: var(--info-fg); }
+.badge.done, .badge.pass, .badge.ok { background: var(--ok-bg); color: var(--ok-fg); }
+.badge.fail, .badge.bad { background: var(--bad-bg); color: var(--bad-fg); }
+.badge.mixed { background: var(--violet-bg); color: var(--violet-fg); }
+.badge.waiting, .badge.muted { background: var(--idle-bg); color: var(--idle-fg); }
+
+.empty { padding: 26px 8px; text-align: center; color: var(--muted); font-size: 14px; }
+
+.due-list { max-height: 640px; overflow-y: auto; margin: 0 -8px; padding: 0 8px; }
+.due-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 13px 0; border-top: 1px solid var(--line); }
+.due-row:first-child { border-top: 0; }
+.due-row button { flex: none; white-space: nowrap; }
+.due-name { font-weight: 600; color: var(--ink); line-height: 1.4; }
+.due-meta { color: var(--muted); font-size: 13px; line-height: 1.45; }
+.due-who { display: flex; align-items: center; gap: 12px; min-width: 0; }
+
+/* ป้ายชื่อย่อ (อักษรแรกของชื่อ) */
+.avatar { flex: none; width: 36px; height: 36px; display: grid; place-items: center; border-radius: 50%; color: #fff; font: 600 15px/1 var(--font-head); }
+.avatar.c0 { background: #6D4FE6; }
+.avatar.c1 { background: #3D5AF1; }
+.avatar.c2 { background: #D44792; }
+.avatar.c3 { background: #1F9E74; }
+.avatar.c4 { background: #D98A12; }
+
+/* แถบความคืบหน้าแบบแบ่งช่อง ช่องละ 1 ผู้ประเมิน */
+.seg { display: flex; gap: 4px; min-width: 56px; }
+.seg i { flex: 1; height: 8px; min-width: 10px; border-radius: 999px; background: #DCE1F2; }
+.seg i.on { background: var(--ok); }
+.seg-wrap { display: flex; align-items: center; gap: 10px; }
+.seg-wrap .seg { flex: 1; }
+.seg-wrap span { flex: none; color: var(--muted); font-size: 12.5px; white-space: nowrap; }
+
+.bar { height: 9px; border-radius: 999px; background: #E3E8F8; overflow: hidden; }
+.bar > i { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, #4B6BF4, #7658EE); }
+
+.toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); padding: 10px 20px; border-radius: 999px; background: var(--ink); color: #fff; font-size: 14px; opacity: 0; pointer-events: none; transition: opacity .2s; }
+.toast.show { opacity: 1; }
+
+/* ---------- จอแคบ ---------- */
+@media (max-width: 1200px) {
+  .grid-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .grid-charts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .grid-charts > :last-child { grid-column: 1 / -1; }
+}
+@media (max-width: 1000px) {
+  .grid-main { grid-template-columns: 1fr; }
+}
+@media (max-width: 900px) {
+  .app { grid-template-columns: 1fr; }
+  .sidebar { position: static; height: auto; flex-direction: row; align-items: center; flex-wrap: wrap; gap: 8px 14px; padding: 12px 14px; }
+  .brand { padding: 0; }
+  .brand .logo { width: 38px; height: 38px; }
+  .brand span, .nav-label, .side-foot { display: none; }
+  .nav { display: flex; gap: 4px; margin-left: auto; }
+  .nav a { padding: 8px 14px; font-size: 14px; }
+  .main { padding: 20px 14px 48px; }
+}
+@media (max-width: 760px) {
+  .grid { grid-template-columns: 1fr; }
+  .grid-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .grid-stats.three, .grid-charts { grid-template-columns: 1fr; }
+  .grid-charts > :last-child { grid-column: auto; }
+  .stat { padding: 14px 14px 20px; }
+  .stat .num { font-size: 28px; }
+  .card { padding: 18px 16px; }
+  .evaluator-row { flex-wrap: wrap; }
+  .table-wrap table { min-width: 820px; }
+  .tabs { width: 100%; }
+  .tabs button { flex: 1; padding: 6px 8px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  * { scroll-behavior: auto !important; transition: none !important; }
+}
+
+
+.hero { color: #fff; padding: 30px 16px 90px; background: linear-gradient(120deg, #2F49D6, #5F40DB 70%, #7658EE); }
+.hero .inner { max-width: 780px; margin: 0 auto; display: flex; align-items: center; gap: 16px; }
+.hero .logo { flex: none; width: 52px; height: 52px; display: grid; place-items: center; border-radius: 16px; background: rgba(255, 255, 255, .18); color: #fff; }
+.hero .logo svg { width: 30px; height: 30px; }
+.hero h1 { margin: 0; color: #fff; font: 600 22px/1.35 var(--font-head); }
+.hero .sub { color: #DCE2FF; font-size: 14px; }
+
+.wrap { max-width: 780px; margin: -56px auto 0; padding: 0 16px 64px; }
+.wrap .card { margin-bottom: 18px; }
+.msg { padding: 44px 20px; text-align: center; background: #fff; border-radius: var(--r-card); box-shadow: var(--shadow); color: var(--muted); }
+.msg.error { color: var(--bad-fg); }
+#formArea { display: none; }
+
+.info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 24px; font-size: 15px; color: var(--ink); font-weight: 500; }
+.info-grid div span { display: block; color: var(--muted); font-size: 12.5px; font-weight: 400; }
+.info-grid div:first-child { grid-column: 1 / -1; font: 600 20px/1.4 var(--font-head); }
+
+.card .points { margin-bottom: 8px; color: var(--primary); font-size: 14px; font-weight: 500; }
+.item { padding: 16px 0; border-top: 1px solid var(--line); }
+.item:first-of-type { padding-top: 8px; border-top: 0; }
+.item-title { margin-bottom: 10px; color: var(--ink); font-weight: 600; font-size: 15px; line-height: 1.5; }
+.item-desc { margin: -4px 0 12px; color: var(--muted); font-size: 13px; white-space: pre-line; }
+.bands { display: grid; grid-template-columns: repeat(var(--cols, 4), 1fr); gap: 8px; margin-bottom: 10px; }
+.band-btn { padding: 9px 4px; text-align: center; cursor: pointer; border: 1px solid var(--field); border-radius: var(--r-field); background: #fff; font-size: 13.5px; line-height: 1.35; }
+.band-btn small { display: block; margin-top: 2px; color: var(--muted); font-size: 12px; }
+.band-btn:hover { border-color: var(--primary); }
+.band-btn.active { border-color: var(--primary); background: var(--primary-wash); box-shadow: inset 0 0 0 1px var(--primary); color: var(--primary-dark); font-weight: 600; }
+.score-row { display: flex; align-items: center; gap: 10px; }
+.score-row input[type=number] { width: 84px; text-align: center; font-family: var(--font-head); font-weight: 500; }
+.score-row .maxlabel { color: var(--muted); font-size: 14px; }
+
+.subtotal-row { display: flex; justify-content: space-between; align-items: center; margin-top: 6px; padding: 12px 16px; border-radius: var(--r-tile); background: #F5F7FE; color: var(--ink); font-weight: 500; }
+.subtotal-row span:last-child { font: 600 18px var(--font-head); }
+
+.card.total-card { color: #fff; background: linear-gradient(120deg, #3553E6, #6445E0); }
+.total-row { display: flex; justify-content: space-between; align-items: center; font-size: 16px; }
+.total-row .num { font: 600 38px/1 var(--font-head); color: #fff; }
+
+.decision-opt { margin-bottom: 10px; padding: 14px 16px; cursor: pointer; border: 1px solid var(--field); border-radius: var(--r-tile); }
+.decision-opt.active { border-color: var(--primary); background: var(--primary-wash); box-shadow: inset 0 0 0 1px var(--primary); }
+.decision-opt label { display: flex; align-items: center; gap: 10px; margin: 0; color: var(--text); font-size: 15px; cursor: pointer; }
+.decision-detail { display: none; margin-top: 12px; }
+.decision-detail.show { display: block; }
+.field { margin-bottom: 12px; }
+.field-label { display: block; margin-bottom: 5px; color: var(--muted); font-size: 13.5px; }
+button[type=submit] { width: 100%; min-height: 52px; font-size: 16px; }
+
+@media (max-width: 600px) {
+  .hero { padding: 24px 14px 80px; }
+  .hero h1 { font-size: 19px; }
+  .info-grid { grid-template-columns: 1fr; }
+  .bands { grid-template-columns: repeat(2, 1fr); }
+}
+</style>
+</head>
+<body>
+<header class="hero">
+  <div class="inner">
+    <div class="logo"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><ellipse cx="5.2" cy="10.4" rx="2" ry="2.6"/><ellipse cx="9.5" cy="5.9" rx="2" ry="2.7"/><ellipse cx="14.5" cy="5.9" rx="2" ry="2.7"/><ellipse cx="18.8" cy="10.4" rx="2" ry="2.6"/><path d="M12 11c-3 0-6 3.6-6 6.3 0 2 1.6 3 3.2 3 1.2 0 1.9-.5 2.8-.5s1.6.5 2.8.5c1.6 0 3.2-1 3.2-3C18 14.6 15 11 12 11z"/></svg></div>
+    <div>
+      <h1>แบบประเมินผลการปฏิบัติงานของพนักงาน</h1>
+      <div class="sub">โรงพยาบาลสัตว์ มหาวิทยาลัยสงขลานครินทร์</div>
+    </div>
+  </div>
+</header>
+<div class="wrap">
+  <div id="loadingMsg" class="msg">กำลังโหลดข้อมูล...</div>
+
+  <div id="formArea">
+    <div class="card">
+      <div class="info-grid" id="infoGrid"></div>
+    </div>
+
+    <form id="evalForm">
+      <div class="card">
+        <h2 id="personalTitle"></h2>
+        <div class="points" id="personalPoints"></div>
+        <div id="personalItems"></div>
+        <div class="subtotal-row"><span>คะแนนรวมส่วนที่ 1</span><span id="personalSubtotal">0</span></div>
+      </div>
+
+      <div class="card">
+        <h2 id="secondTitle"></h2>
+        <div class="points" id="secondPoints"></div>
+        <div id="secondItems"></div>
+        <div class="subtotal-row"><span>คะแนนรวมส่วนที่ 2</span><span id="secondSubtotal">0</span></div>
+      </div>
+
+      <div class="card total-card">
+        <div class="total-row">
+          <span>คะแนนรวมทั้งหมด</span>
+          <span><span class="num" id="grandTotal">0</span> / 100</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>สรุปความเห็นของคณะกรรมการประเมินผล</h2>
+        <div id="decisionArea"></div>
+        <div class="field" style="margin-top:14px;">
+          <label class="field-label">ข้อเสนอเกี่ยวกับความถนัด ความสามารถของผู้รับการประเมิน</label>
+          <textarea id="suggestion" placeholder="(ไม่บังคับ)"></textarea>
+        </div>
+      </div>
+
+      <button type="submit" id="submitBtn">ส่งแบบประเมิน</button>
+    </form>
+  </div>
+</div>
+
+<script>
+// TODO: แก้เป็น URL ของ Web App ที่ deploy จาก Code.gs
+const API_URL = 'https://script.google.com/macros/s/AKfycbz8HWROtIx9FoR01h0XH_NvYnQr4R7OyHrSaTXplChtX896YAOC6wBRxZ6rWupLPaNj/exec';
+
+const VET_PERSONAL = [
+  'ปฏิภาณไหวพริบ', 'ทัศนคติในการทำงาน', 'บุคลิกภาพ อัธยาศัย', 'ใฝ่รู้ใฝ่พัฒนา', 'ทักษะการสื่อสาร'
+].map(name => ({ name, max: 6, bands: [
+  { label: 'ดีมาก', range: '6', from: 6, to: 6 },
+  { label: 'ดี', range: '4-5', from: 4, to: 5 },
+  { label: 'ปานกลาง', range: '2-3', from: 2, to: 3 },
+  { label: 'ต้องปรับปรุง', range: '0-1', from: 0, to: 1 }
+]}));
+
+const STAFF_PERSONAL = [
+  'ปฏิภาณไหวพริบ', 'ทัศนคติในการทำงาน', 'บุคลิกภาพ อัธยาศัย', 'ใฝ่รู้ใฝ่พัฒนา', 'ทักษะการสื่อสาร'
+].map(name => ({ name, max: 8, bands: [
+  { label: 'ดีมาก', range: '7-8', from: 7, to: 8 },
+  { label: 'ดี', range: '5-6', from: 5, to: 6 },
+  { label: 'พอใช้', range: '3-4', from: 3, to: 4 },
+  { label: 'ต้องปรับปรุง', range: '0-2', from: 0, to: 2 }
+]}));
+
+const VET_SECOND = [
+  { name: '2.1 ทักษะการแก้ปัญหาเฉพาะหน้า', max: 20, desc: '20: ตอบข้อซักถามได้ตรงประเด็นและชัดเจนทุกครั้ง | 15-19: ถูกต้องเป็นส่วนมาก | 10-14: ตั้งใจและพยายามตอบ | 0-10: เลี่ยงการตอบหรือตอบผิวเผิน' },
+  { name: '2.2 การวางแผนการรักษา', max: 20, desc: '20: ตอบข้อซักถามได้ตรงประเด็นและชัดเจนทุกครั้ง | 15-19: ถูกต้องเป็นส่วนมาก | 10-14: ตั้งใจและพยายามตอบ | 0-10: เลี่ยงการตอบหรือตอบผิวเผิน' },
+  { name: '2.3 การติดตามการรักษา', max: 20, desc: '20: ตอบข้อซักถามได้ตรงประเด็นและชัดเจนทุกครั้ง | 15-19: ถูกต้องเป็นส่วนมาก | 10-14: ตั้งใจและพยายามตอบ | 0-10: เลี่ยงการตอบหรือตอบผิวเผิน' },
+  { name: '2.4 จิตสาธารณะในวิชาชีพ', max: 5, desc: '4-5: มีส่วนร่วมด้วยความเต็มใจ กระตือรือร้น | 2-3: มีส่วนร่วมอยู่บ้าง | 0-1: มีน้อยหรือไม่มีเลย' },
+  { name: '2.5 ประสบการณ์ทางด้านสัตว์เลี้ยง', max: 5, desc: '4-5: มีส่วนร่วมด้วยความเต็มใจ กระตือรือร้น | 2-3: มีส่วนร่วมอยู่บ้าง | 0-1: มีน้อยหรือไม่มีเลย' }
+];
+
+VET_SECOND.forEach(it => {
+  it.bands = it.max === 20
+    ? [{ label: 'ดีมาก', range: '20', from: 20, to: 20 }, { label: 'ดี', range: '15-19', from: 15, to: 19 },
+       { label: 'พอใช้', range: '10-14', from: 10, to: 14 }, { label: 'ต้องปรับปรุง', range: '0-10', from: 0, to: 10 }]
+    : [{ label: 'ดี', range: '4-5', from: 4, to: 5 }, { label: 'พอใช้', range: '2-3', from: 2, to: 3 },
+       { label: 'ต้องปรับปรุง', range: '0-1', from: 0, to: 1 }];
+});
+
+const STAFF_SECOND = [
+  'ผลงาน คุณภาพ ความถูกต้องครบถ้วน ความประณีตเรียบร้อย ความละเอียดรอบคอบ',
+  'ปริมาณงานทำได้ตามมาตรฐานข้อตกลง',
+  'ความสามารถที่จะปฏิบัติงานให้เสร็จทันกำหนด',
+  'ความรอบรู้ ความสามารถในการปฏิบัติงานให้สำเร็จ',
+  'การรักษาวินัย ปฏิบัติตามระเบียบและข้อบังคับของทางราชการ',
+  'ความอุตสาหะ ความพยายาม ความขยัน และอดทน',
+  'ความรับผิดชอบต่อภาระหน้าที่ของตน ทำงานอย่างมีเหตุผลไม่ย่อท้อ',
+  'ความสามารถปฏิบัติงานร่วมกับผู้อื่นอย่างมีประสิทธิภาพ',
+  'การตัดสินใจแก้ปัญหาได้ถูกต้องตามสถานการณ์',
+  'ความคิดริเริ่ม การมองการณ์ไกล การให้ข้อเสนอแนะ เพื่อให้งานสำเร็จ'
+].map((name, i) => ({ name: `${i + 1}. ${name}`, max: 6, bands: [
+  { label: 'ดีมาก', range: '6', from: 6, to: 6 },
+  { label: 'ดี', range: '4', from: 4, to: 4 },
+  { label: 'พอใช้', range: '2', from: 2, to: 2 },
+  { label: 'ปรับปรุง', range: '0', from: 0, to: 0 }
+]}));
+
+let requestInfo = null;
+
+function qs(name) {
+  return new URLSearchParams(location.search).get(name);
+}
+
+async function api(action, payload) {
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(Object.assign({ action }, payload))
+  });
+  const json = await res.json();
+  if (!json.ok) throw new Error(json.error || 'เกิดข้อผิดพลาด');
+  return json.data;
+}
+
+function escapeHtmlLocal(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function renderBandItem(container, item, idx, prefix) {
+  const wrap = document.createElement('div');
+  wrap.className = 'item';
+  const inputId = `${prefix}_${idx}`;
+  wrap.innerHTML = `
+    <div class="item-title">${item.name}</div>
+    ${item.desc ? `<div class="item-desc">${item.desc}</div>` : ''}
+    <div class="bands" style="--cols:${item.bands.length}">
+      ${item.bands.map((b, bi) => `<div class="band-btn" data-band="${bi}">${b.label}<small>${b.range} คะแนน</small></div>`).join('')}
+    </div>
+    <div class="score-row">
+      <input type="number" min="0" max="${item.max}" id="${inputId}" value="0">
+      <span class="maxlabel">/ ${item.max} คะแนน</span>
+    </div>
+  `;
+  container.appendChild(wrap);
+
+  const input = wrap.querySelector('input');
+  const bandBtns = wrap.querySelectorAll('.band-btn');
+  bandBtns.forEach((btn, bi) => {
+    btn.addEventListener('click', () => {
+      const band = item.bands[bi];
+      input.value = band.to;
+      highlightBand();
+      recalc();
+    });
+  });
+  function highlightBand() {
+    const v = Number(input.value);
+    const hit = item.bands.findIndex(band => v >= band.from && v <= band.to);
+    bandBtns.forEach((btn, bi) => btn.classList.toggle('active', bi === hit));
+  }
+  input.addEventListener('input', () => {
+    if (Number(input.value) > item.max) input.value = item.max;
+    if (Number(input.value) < 0) input.value = 0;
+    highlightBand();
+    recalc();
+  });
+}
+
+function recalc() {
+  const personalSum = sumInputs('personal');
+  const secondSum = sumInputs('second');
+  document.getElementById('personalSubtotal').textContent = personalSum;
+  document.getElementById('secondSubtotal').textContent = secondSum;
+  document.getElementById('grandTotal').textContent = personalSum + secondSum;
+}
+
+function sumInputs(prefix) {
+  let sum = 0;
+  document.querySelectorAll(`input[id^="${prefix}_"]`).forEach(inp => sum += Number(inp.value || 0));
+  return sum;
+}
+
+function renderDecisionArea() {
+  const area = document.getElementById('decisionArea');
+  area.innerHTML = `
+    <div class="decision-opt" data-val="pass">
+      <label><input type="radio" name="decision" value="pass"> สมควรให้ปฏิบัติงานต่อไป</label>
+    </div>
+    <div class="decision-opt" data-val="improve">
+      <label><input type="radio" name="decision" value="improve"> ควรแก้ไขปรับปรุงเกี่ยวกับคุณลักษณะ และการปฏิบัติงานของผู้รับการประเมิน</label>
+      <div class="decision-detail" data-for="improve">
+        <textarea id="improveDetail" placeholder="ระบุสิ่งที่ควรแก้ไขปรับปรุง"></textarea>
+      </div>
+    </div>
+    <div class="decision-opt" data-val="fail">
+      <label><input type="radio" name="decision" value="fail"> ไม่สมควรให้ปฏิบัติงานต่อไป</label>
+      <div class="decision-detail" data-for="fail">
+        <label class="field-label">มีผลตั้งแต่วันที่</label>
+        <input type="date" id="failDate" style="margin-bottom:8px;">
+        <label class="field-label">เหตุผล</label>
+        <textarea id="failReason" placeholder="ระบุเหตุผล"></textarea>
+      </div>
+    </div>
+  `;
+  area.querySelectorAll('input[name=decision]').forEach(radio => {
+    radio.addEventListener('change', () => {
+      area.querySelectorAll('.decision-opt').forEach(el => el.classList.toggle('active', el.dataset.val === radio.value));
+      area.querySelectorAll('.decision-detail').forEach(el => el.classList.toggle('show', el.dataset.for === radio.value));
+    });
+  });
+}
+
+function collectItems(prefix, items) {
+  return items.map((item, idx) => ({
+    name: item.name,
+    max: item.max,
+    score: Number(document.getElementById(`${prefix}_${idx}`).value || 0)
+  }));
+}
+
+async function init() {
+  const token = qs('token');
+  const loading = document.getElementById('loadingMsg');
+  if (!token) {
+    loading.textContent = 'ลิงก์ไม่ถูกต้อง (ไม่พบรหัสผู้ประเมิน)';
+    loading.classList.add('error');
+    return;
+  }
+  try {
+    requestInfo = await api('getAssignment', { token });
+  } catch (err) {
+    loading.textContent = err.message;
+    loading.classList.add('error');
+    return;
+  }
+  if (requestInfo.evaluatorStatus === 'done') {
+    loading.style.display = 'none';
+    document.getElementById('formArea').style.display = 'block';
+    document.getElementById('formArea').innerHTML = `
+      <div class="card" style="text-align:center; padding: 40px 20px;">
+        <h2 style="margin-bottom:8px;">คุณส่งแบบประเมินนี้ไปแล้ว</h2>
+        <p style="color:var(--text-muted);">ขอบคุณที่ร่วมประเมิน ${escapeHtmlLocal(requestInfo.evaluateeName)}</p>
+      </div>
+    `;
+    return;
+  }
+
+  loading.style.display = 'none';
+  document.getElementById('formArea').style.display = 'block';
+
+  const info = requestInfo;
+  document.getElementById('infoGrid').innerHTML = `
+    <div><span>ชื่อผู้รับการประเมิน</span>${info.evaluateeName}</div>
+    <div><span>ตำแหน่ง</span>${info.position}</div>
+    <div><span>หน่วยงาน</span>${info.department}</div>
+    <div><span>วันที่จ้าง</span>${info.hireDate ? new Date(info.hireDate).toLocaleDateString('th-TH') : '-'}</div>
+    <div><span>ประเมินผลช่วงเวลา</span>${info.periodMonths} เดือน</div>
+    <div><span>รอบการประเมิน</span>ครั้งที่ ${info.round}</div>
+    <div><span>ผู้ประเมิน</span>${escapeHtmlLocal(info.evaluatorName)}</div>
+  `;
+
+  const isVet = info.formType === 'vet';
+  const personalItems = isVet ? VET_PERSONAL : STAFF_PERSONAL;
+  const secondItems = isVet ? VET_SECOND : STAFF_SECOND;
+  const personalMax = isVet ? 30 : 40;
+  const secondMax = isVet ? 70 : 60;
+
+  document.getElementById('personalTitle').textContent = '1. พฤติกรรมส่วนบุคคล';
+  document.getElementById('personalPoints').textContent = `เต็ม ${personalMax} คะแนน`;
+  document.getElementById('secondTitle').textContent = isVet ? '2. ทักษะและความถนัดทางวิชาชีพ' : '2. ภาระงานประจำ';
+  document.getElementById('secondPoints').textContent = `เต็ม ${secondMax} คะแนน`;
+
+  const personalContainer = document.getElementById('personalItems');
+  personalItems.forEach((item, idx) => renderBandItem(personalContainer, item, idx, 'personal'));
+
+  const secondContainer = document.getElementById('secondItems');
+  secondItems.forEach((item, idx) => renderBandItem(secondContainer, item, idx, 'second'));
+
+  renderDecisionArea();
+  recalc();
+
+  document.getElementById('evalForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const decisionRadio = document.querySelector('input[name=decision]:checked');
+    if (!decisionRadio) { alert('กรุณาเลือกสรุปความเห็นของคณะกรรมการ'); return; }
+
+    const decision = decisionRadio.value;
+    const decisionLabels = { pass: 'สมควรให้ปฏิบัติงานต่อไป', improve: 'ควรแก้ไขปรับปรุง', fail: 'ไม่สมควรให้ปฏิบัติงานต่อไป' };
+
+    const payload = {
+      token: info.token,
+      requestId: info.id,
+      evaluateeName: info.evaluateeName,
+      position: info.position,
+      department: info.department,
+      formType: info.formType,
+      periodMonths: info.periodMonths,
+      round: info.round,
+      evaluatorName: info.evaluatorName,
+      personalItems: collectItems('personal', personalItems),
+      personalTotal: sumInputs('personal'),
+      secondItems: collectItems('second', secondItems),
+      secondTotal: sumInputs('second'),
+      decision: decisionLabels[decision],
+      decisionEffectiveDate: decision === 'fail' ? document.getElementById('failDate').value : '',
+      decisionReason: decision === 'fail' ? document.getElementById('failReason').value
+                     : decision === 'improve' ? document.getElementById('improveDetail').value : '',
+      suggestion: document.getElementById('suggestion').value.trim()
+    };
+
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true; btn.textContent = 'กำลังส่ง...';
+    try {
+      const result = await api('submitEvaluation', payload);
+      document.getElementById('formArea').innerHTML = `
+        <div class="card" style="text-align:center; padding: 40px 20px;">
+          <h2 style="margin-bottom:8px;">ส่งแบบประเมินเรียบร้อยแล้ว</h2>
+          <p style="color:var(--text-muted);">คะแนนรวม ${result.totalScore} / 100 (${result.level})</p>
+        </div>
+      `;
+    } catch (err) {
+      alert('ส่งแบบประเมินไม่สำเร็จ: ' + err.message);
+      btn.disabled = false; btn.textContent = 'ส่งแบบประเมิน';
+    }
+  });
+}
+
+init();
+</script>
+</body>
+</html>

@@ -1,23 +1,726 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="th">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Online Equipment Borrowing System ระบบยืม-คืน ครุภัณฑ์ รพ.สัตว์ ม.อ.</title>
-    <meta name="description" content="Online Equipment Borrowing System ระบบยืม-คืน ครุภัณฑ์ รพ.สัตว์ ม.อ. โรงพยาบาลสัตว์ คณะสัตวแพทยศาสตร์ มหาวิทยาลัยสงขลานครินทร์" />
-    <meta property="og:title" content="Online Equipment Borrowing System ระบบยืม-คืน ครุภัณฑ์ รพ.สัตว์ ม.อ." />
-    <meta property="og:description" content="Online Equipment Borrowing System ระบบยืม-คืน ครุภัณฑ์ รพ.สัตว์ ม.อ. โรงพยาบาลสัตว์ คณะสัตวแพทยศาสตร์ มหาวิทยาลัยสงขลานครินทร์" />
-    <meta property="og:type" content="website" />
-    <meta name="twitter:card" content="summary_large_image" />
-    <link rel="icon" type="image/svg+xml" href="./logo-vet-color-transparent.svg" />
-    <link rel="apple-touch-icon" href="./site-icon.jpg" />
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Prompt:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Sarabun:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
-  </head>
-  <body class="font-sans antialiased text-slate-800 bg-slate-50 min-h-screen">
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
-</html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>สร้างรายการประเมิน | ระบบประเมินทดลองงาน</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600&family=Sarabun:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink: #1E2747;        /* หัวข้อ */
+  --text: #3A4366;       /* เนื้อหา */
+  --muted: #6B7499;      /* ข้อความรอง */
+  --primary: #3D5AF1;    /* ปุ่มหลัก, เมนูที่เลือก */
+  --primary-dark: #3148D2;
+  --primary-wash: #EAEEFF;
 
+  --side-1: #1C2760;
+  --side-2: #141C49;
+  --side-text: #B3BCE8;
+
+  --bg: #F3F5FC;
+  --surface: #FFFFFF;
+  --line: #E7EAF6;
+  --field: #D3D9EE;
+  --lane: #E9EDFA;
+
+  --ok: #2FB985;     --ok-bg: #DDF5EA;    --ok-fg: #16724F;
+  --warn: #FFB02E;   --warn-bg: #FFF1CC;  --warn-fg: #7A5200;
+  --bad: #E8554E;    --bad-bg: #FDE4E1;   --bad-fg: #B03A33;
+  --violet: #6D4FE6; --violet-bg: #ECE6FF; --violet-fg: #553BBD;
+  --info-bg: #E4EAFF; --info-fg: #2B47C9;
+  --idle-bg: #EEF0F8; --idle-fg: #566082;
+
+  --g-violet: linear-gradient(135deg, #7658EE, #5F40DB);
+  --g-blue:   linear-gradient(135deg, #4B6BF4, #3553E6);
+  --g-amber:  linear-gradient(135deg, #FFCF66, #FFB02E);
+  --g-pink:   linear-gradient(135deg, #D44792, #BC3380);
+
+  --r-card: 20px;
+  --r-tile: 14px;
+  --r-field: 12px;
+  --shadow: 0 1px 2px rgba(30, 39, 71, .05), 0 12px 30px rgba(52, 72, 160, .08);
+
+  --font-body: "Sarabun", "Tahoma", "Segoe UI", sans-serif;
+  --font-head: "Prompt", "Sarabun", "Tahoma", sans-serif;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  color: var(--text);
+  background: radial-gradient(1100px 460px at 88% -8%, #DDE5FF 0%, rgba(221, 229, 255, 0) 62%), var(--bg);
+  background-attachment: fixed;
+  font: 400 15px/1.65 var(--font-body);
+}
+h1, h2, h3, h4 { font-family: var(--font-head); color: var(--ink); }
+:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+/* ---------- โครงหน้า: เมนูด้านซ้ายสีเข้ม + เนื้อหา ---------- */
+.app { display: grid; grid-template-columns: 248px minmax(0, 1fr); min-height: 100vh; }
+.sidebar {
+  position: sticky; top: 0; height: 100vh;
+  display: flex; flex-direction: column;
+  padding: 24px 16px 20px;
+  background: linear-gradient(180deg, var(--side-1), var(--side-2));
+  color: var(--side-text);
+}
+.brand { display: flex; align-items: center; gap: 12px; padding: 0 8px 26px; }
+.brand .logo {
+  flex: none; width: 44px; height: 44px; display: grid; place-items: center;
+  border-radius: 14px; color: #fff;
+  background: linear-gradient(135deg, #5B7BFF, #8C6CF6);
+  box-shadow: 0 8px 20px rgba(91, 123, 255, .35);
+}
+.brand .logo svg { width: 25px; height: 25px; }
+.brand b { display: block; color: #fff; font: 600 16px/1.3 var(--font-head); }
+.brand span { display: block; color: var(--side-text); font-size: 12.5px; line-height: 1.3; }
+.nav-label { padding: 0 12px 8px; color: #8590C8; font-size: 12px; letter-spacing: .02em; }
+.nav { display: grid; gap: 4px; }
+.nav a {
+  display: flex; align-items: center; gap: 12px;
+  padding: 11px 12px; border-radius: 13px;
+  color: var(--side-text); text-decoration: none; font-size: 15px;
+}
+.nav a svg { flex: none; width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.nav a:hover { background: rgba(255, 255, 255, .08); color: #fff; }
+.nav a.active { background: var(--primary); color: #fff; box-shadow: 0 8px 18px rgba(61, 90, 241, .4); }
+.side-foot { margin-top: auto; padding: 14px 12px 0; border-top: 1px solid rgba(255, 255, 255, .1); font-size: 12.5px; line-height: 1.5; color: #8590C8; }
+
+.main { width: 100%; max-width: 1320px; padding: 28px 36px 64px; }
+.topbar { display: flex; align-items: flex-end; gap: 18px; margin-bottom: 24px; flex-wrap: wrap; }
+.topbar .crumb { color: var(--muted); font-size: 13px; }
+.topbar h1 { margin: 0; font: 600 26px/1.3 var(--font-head); }
+.topbar .spacer { flex: 1; }
+
+/* ปุ่มสลับมุมมองแบบแคปซูล */
+.tabs { display: inline-flex; gap: 4px; padding: 5px; border-radius: 999px; background: #fff; box-shadow: var(--shadow); }
+.tabs button {
+  min-height: 38px; padding: 6px 18px; border: 0; border-radius: 999px;
+  background: transparent; color: var(--muted);
+  font: 500 14px/1.3 var(--font-head);
+}
+.tabs button:hover { background: var(--primary-wash); color: var(--primary); }
+.tabs button[aria-selected="true"] { background: var(--primary); color: #fff; box-shadow: 0 6px 14px rgba(61, 90, 241, .35); }
+
+/* ---------- การ์ด ---------- */
+.card { background: var(--surface); border-radius: var(--r-card); padding: 22px 24px; box-shadow: var(--shadow); }
+.card h2 { margin: 0 0 4px; font: 600 17px/1.4 var(--font-head); }
+.card .card-sub { margin: 0 0 16px; color: var(--muted); font-size: 13.5px; }
+.card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+.card-head h2 { margin: 0; }
+
+.grid-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; margin-bottom: 22px; }
+.grid-stats.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.grid-main { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); gap: 22px; align-items: start; }
+.grid-charts { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.2fr); gap: 22px; align-items: stretch; }
+.stack { margin-top: 22px; }
+
+/* การ์ดตัวเลขสีไล่เฉด + แถบสัดส่วนด้านล่าง */
+.stat {
+  position: relative; overflow: hidden;
+  padding: 18px 20px 24px; border-radius: var(--r-card);
+  color: #fff; box-shadow: var(--shadow);
+}
+.stat.violet { background: var(--g-violet); }
+.stat.blue { background: var(--g-blue); }
+.stat.pink { background: var(--g-pink); }
+.stat.amber { background: var(--g-amber); color: var(--ink); }
+.stat-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.stat .label { font-size: 14px; font-weight: 500; line-height: 1.4; }
+.stat .ico { flex: none; width: 38px; height: 38px; display: grid; place-items: center; border-radius: 12px; background: rgba(255, 255, 255, .22); }
+.stat.amber .ico { background: rgba(30, 39, 71, .1); }
+.stat .ico svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+.stat .num { margin-top: 8px; font: 600 34px/1.15 var(--font-head); }
+.stat .num small { margin-left: 4px; font: 400 14px var(--font-body); opacity: .85; }
+.stat .foot { margin-top: 2px; font-size: 13px; opacity: .92; }
+.stat .strip { position: absolute; left: 0; right: 0; bottom: 0; height: 7px; background: rgba(255, 255, 255, .3); }
+.stat .strip i { display: block; height: 100%; background: rgba(255, 255, 255, .95); border-radius: 0 999px 999px 0; }
+.stat.amber .strip { background: rgba(30, 39, 71, .12); }
+.stat.amber .strip i { background: var(--ink); }
+
+/* ---------- ฟอร์ม ---------- */
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.full { grid-column: 1 / -1; }
+label { display: block; margin-bottom: 5px; color: var(--muted); font-size: 13.5px; }
+input, select, textarea {
+  width: 100%; min-height: 44px; padding: 9px 13px;
+  border: 1px solid var(--field); border-radius: var(--r-field);
+  background: #fff; color: var(--text); font: inherit;
+}
+input:focus, select:focus, textarea:focus { outline: 2px solid rgba(61, 90, 241, .35); outline-offset: 0; border-color: var(--primary); }
+input[readonly] { background: #F6F8FE; color: var(--muted); }
+input[type=radio], input[type=checkbox] { width: auto; min-height: 0; accent-color: var(--primary); }
+textarea { min-height: 76px; resize: vertical; }
+::placeholder { color: #8F98B8; }
+
+.formtype-row { display: flex; gap: 12px; flex-wrap: wrap; }
+.formtype-row label.pick {
+  flex: 1 1 220px; display: flex; align-items: center; gap: 10px; margin: 0;
+  padding: 12px 14px; cursor: pointer;
+  border: 1px solid var(--field); border-radius: var(--r-tile);
+  color: var(--text); font-size: 14.5px;
+}
+.formtype-row label.pick:has(input:checked) { border-color: var(--primary); background: var(--primary-wash); box-shadow: inset 0 0 0 1px var(--primary); color: var(--ink); }
+.checkbox-row { display: flex; align-items: center; gap: 10px; }
+.checkbox-row label { margin: 0; color: var(--text); font-size: 14px; }
+
+button {
+  min-height: 44px; padding: 10px 22px; cursor: pointer;
+  border: 1px solid var(--primary); border-radius: var(--r-field);
+  background: var(--primary); color: #fff;
+  font: 500 14.5px/1.3 var(--font-head);
+}
+button:hover { background: var(--primary-dark); border-color: var(--primary-dark); }
+button:disabled { opacity: .55; cursor: default; }
+button.secondary { background: #fff; color: var(--primary); border-color: #CBD3F5; }
+button.secondary:hover { background: var(--primary-wash); border-color: var(--primary); }
+button.tiny { min-height: 34px; padding: 6px 13px; border-radius: 10px; font-size: 13px; }
+
+.autocomplete { position: relative; }
+.ac-list {
+  display: none; position: absolute; z-index: 30; top: calc(100% - 2px); left: 0; right: 0;
+  max-height: 250px; overflow-y: auto;
+  background: #fff; border: 1px solid var(--line); border-radius: var(--r-tile);
+  box-shadow: 0 16px 36px rgba(30, 39, 71, .16);
+}
+.ac-list.show { display: block; }
+.ac-item { padding: 9px 14px; cursor: pointer; font-size: 14.5px; }
+.ac-item:hover { background: var(--primary-wash); }
+.ac-item .ac-sub { color: var(--muted); font-size: 12.5px; }
+
+.evaluator-list { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+.evaluator-row { display: flex; align-items: center; gap: 10px; padding: 8px 10px 8px 14px; background: #F5F7FE; border-radius: var(--r-tile); }
+.evaluator-row .name { flex: 0 1 230px; min-width: 120px; color: var(--ink); font-size: 14px; font-weight: 500; }
+.evaluator-row input[type=email] { flex: 1; min-height: 38px; font-size: 14px; }
+
+.result { display: none; margin-top: 20px; padding: 16px 18px; border-radius: var(--r-tile); background: var(--primary-wash); color: var(--ink); }
+.result.show { display: block; }
+.result .note { margin-top: 8px; color: var(--muted); font-size: 12.5px; }
+.link-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+.link-row input { flex: 1 1 280px; min-height: 38px; font-size: 13px; background: #fff; }
+.link-meta { margin: 4px 0 10px 2px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
+
+/* ---------- ตาราง ---------- */
+.table-wrap { overflow-x: auto; margin: 0 -8px; padding: 0 8px; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th, td { padding: 13px 12px; text-align: left; vertical-align: middle; border-bottom: 1px solid var(--line); }
+th { color: var(--muted); font-weight: 500; font-size: 13px; white-space: nowrap; }
+tr.row { cursor: pointer; }
+tr.row:hover td { background: #F7F9FE; }
+tbody tr:last-child td { border-bottom: 0; }
+.score-cell { font-family: var(--font-head); font-weight: 500; color: var(--ink); white-space: nowrap; }
+.detail-row td { background: #F7F9FE; }
+.cell-name { display: flex; align-items: center; gap: 11px; font-weight: 500; color: var(--ink); }
+
+.badge { display: inline-block; padding: 2px 11px; border-radius: 999px; font-size: 12.5px; line-height: 1.6; white-space: nowrap; }
+.badge.pending, .badge.warn, .badge.improve { background: var(--warn-bg); color: var(--warn-fg); }
+.badge.partial { background: var(--info-bg); color: var(--info-fg); }
+.badge.done, .badge.pass, .badge.ok { background: var(--ok-bg); color: var(--ok-fg); }
+.badge.fail, .badge.bad { background: var(--bad-bg); color: var(--bad-fg); }
+.badge.mixed { background: var(--violet-bg); color: var(--violet-fg); }
+.badge.waiting, .badge.muted { background: var(--idle-bg); color: var(--idle-fg); }
+
+.empty { padding: 26px 8px; text-align: center; color: var(--muted); font-size: 14px; }
+
+.due-list { max-height: 640px; overflow-y: auto; margin: 0 -8px; padding: 0 8px; }
+.due-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 13px 0; border-top: 1px solid var(--line); }
+.due-row:first-child { border-top: 0; }
+.due-row button { flex: none; white-space: nowrap; }
+.due-name { font-weight: 600; color: var(--ink); line-height: 1.4; }
+.due-meta { color: var(--muted); font-size: 13px; line-height: 1.45; }
+.due-who { display: flex; align-items: center; gap: 12px; min-width: 0; }
+
+/* ป้ายชื่อย่อ (อักษรแรกของชื่อ) */
+.avatar { flex: none; width: 36px; height: 36px; display: grid; place-items: center; border-radius: 50%; color: #fff; font: 600 15px/1 var(--font-head); }
+.avatar.c0 { background: #6D4FE6; }
+.avatar.c1 { background: #3D5AF1; }
+.avatar.c2 { background: #D44792; }
+.avatar.c3 { background: #1F9E74; }
+.avatar.c4 { background: #D98A12; }
+
+/* แถบความคืบหน้าแบบแบ่งช่อง ช่องละ 1 ผู้ประเมิน */
+.seg { display: flex; gap: 4px; min-width: 56px; }
+.seg i { flex: 1; height: 8px; min-width: 10px; border-radius: 999px; background: #DCE1F2; }
+.seg i.on { background: var(--ok); }
+.seg-wrap { display: flex; align-items: center; gap: 10px; }
+.seg-wrap .seg { flex: 1; }
+.seg-wrap span { flex: none; color: var(--muted); font-size: 12.5px; white-space: nowrap; }
+
+.bar { height: 9px; border-radius: 999px; background: #E3E8F8; overflow: hidden; }
+.bar > i { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, #4B6BF4, #7658EE); }
+
+.toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); padding: 10px 20px; border-radius: 999px; background: var(--ink); color: #fff; font-size: 14px; opacity: 0; pointer-events: none; transition: opacity .2s; }
+.toast.show { opacity: 1; }
+
+/* ---------- จอแคบ ---------- */
+@media (max-width: 1200px) {
+  .grid-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .grid-charts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .grid-charts > :last-child { grid-column: 1 / -1; }
+}
+@media (max-width: 1000px) {
+  .grid-main { grid-template-columns: 1fr; }
+}
+@media (max-width: 900px) {
+  .app { grid-template-columns: 1fr; }
+  .sidebar { position: static; height: auto; flex-direction: row; align-items: center; flex-wrap: wrap; gap: 8px 14px; padding: 12px 14px; }
+  .brand { padding: 0; }
+  .brand .logo { width: 38px; height: 38px; }
+  .brand span, .nav-label, .side-foot { display: none; }
+  .nav { display: flex; gap: 4px; margin-left: auto; }
+  .nav a { padding: 8px 14px; font-size: 14px; }
+  .main { padding: 20px 14px 48px; }
+}
+@media (max-width: 760px) {
+  .grid { grid-template-columns: 1fr; }
+  .grid-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .grid-stats.three, .grid-charts { grid-template-columns: 1fr; }
+  .grid-charts > :last-child { grid-column: auto; }
+  .stat { padding: 14px 14px 20px; }
+  .stat .num { font-size: 28px; }
+  .card { padding: 18px 16px; }
+  .evaluator-row { flex-wrap: wrap; }
+  .table-wrap table { min-width: 820px; }
+  .tabs { width: 100%; }
+  .tabs button { flex: 1; padding: 6px 8px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  * { scroll-behavior: auto !important; transition: none !important; }
+}
+
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><ellipse cx="5.2" cy="10.4" rx="2" ry="2.6"/><ellipse cx="9.5" cy="5.9" rx="2" ry="2.7"/><ellipse cx="14.5" cy="5.9" rx="2" ry="2.7"/><ellipse cx="18.8" cy="10.4" rx="2" ry="2.6"/><path d="M12 11c-3 0-6 3.6-6 6.3 0 2 1.6 3 3.2 3 1.2 0 1.9-.5 2.8-.5s1.6.5 2.8.5c1.6 0 3.2-1 3.2-3C18 14.6 15 11 12 11z"/></svg></div>
+      <div><b>ประเมินทดลองงาน</b><span>โรงพยาบาลสัตว์ มอ.</span></div>
+    </div>
+    <div class="nav-label">เมนูหลัก</div>
+    <nav class="nav" aria-label="เมนูหลัก">
+      <a href="index.html" class="active" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M12 11v6M9 14h6"/></svg><span>สร้างรายการประเมิน</span></a>
+      <a href="dashboard.html"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/></svg><span>สรุปผลการประเมิน</span></a>
+    </nav>
+    <div class="side-foot">โรงพยาบาลสัตว์<br>มหาวิทยาลัยสงขลานครินทร์</div>
+  </aside>
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <div class="crumb">ระบบประเมินทดลองงาน</div>
+        <h1>สร้างรายการประเมิน</h1>
+      </div>
+    </div>
+
+    <div class="grid-stats three">
+      <div class="stat violet">
+        <div class="stat-top"><span class="label">รายการที่สร้างไว้</span><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h12M8 12h12M8 18h12"/><circle cx="4" cy="6" r=".6"/><circle cx="4" cy="12" r=".6"/><circle cx="4" cy="18" r=".6"/></svg></span></div>
+        <div class="num" id="statTotal">–</div>
+        <div class="foot" id="footTotal">กำลังโหลด...</div>
+        <div class="strip"><i id="stripTotal" style="width:0"></i></div>
+      </div>
+      <div class="stat amber">
+        <div class="stat-top"><span class="label">รอผู้ประเมินส่งแบบ</span><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span></div>
+        <div class="num" id="statOpen">–</div>
+        <div class="foot" id="footOpen">กำลังโหลด...</div>
+        <div class="strip"><i id="stripOpen" style="width:0"></i></div>
+      </div>
+      <div class="stat blue">
+        <div class="stat-top"><span class="label">ครบกำหนดประเมิน</span><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="3"/><path d="M8 3v4M16 3v4M4 10h16"/></svg></span></div>
+        <div class="num" id="statDue">–</div>
+        <div class="foot" id="footDue">กำลังโหลด...</div>
+        <div class="strip"><i id="stripDue" style="width:0"></i></div>
+      </div>
+    </div>
+
+    <div class="grid-main">
+      <section class="card" id="createCard">
+        <h2>สร้างรายการประเมินใหม่</h2>
+        <p class="card-sub">เลือกผู้รับการประเมินและผู้ประเมิน ระบบจะสร้างลิงก์เฉพาะให้ผู้ประเมินแต่ละคน</p>
+        <form id="createForm">
+          <div class="grid">
+            <div class="full autocomplete">
+              <label for="evaluateeName">ชื่อผู้รับการประเมิน (พิมพ์ค้นหาจาก Data VTH)</label>
+              <input type="text" id="evaluateeName" required autocomplete="off" placeholder="เช่น นรมน แก้วประดิษฐ์">
+              <div class="ac-list" id="staffAcList"></div>
+            </div>
+            <div>
+              <label for="position">ตำแหน่ง</label>
+              <input type="text" id="position" required placeholder="เช่น ผู้ช่วยสัตวแพทย์">
+            </div>
+            <div>
+              <label for="department">หน่วยงาน</label>
+              <input type="text" id="department" value="โรงพยาบาลสัตว์ มหาวิทยาลัยสงขลานครินทร์">
+            </div>
+            <div>
+              <label for="hireDate">วันที่จ้าง</label>
+              <input type="date" id="hireDate" required>
+            </div>
+            <div>
+              <label for="periodMonths">ช่วงเวลาประเมิน</label>
+              <select id="periodMonths">
+                <option value="3">3 เดือน</option>
+                <option value="6">6 เดือน</option>
+                <option value="9">9 เดือน</option>
+              </select>
+            </div>
+            <div class="full">
+              <label for="round">รอบการประเมิน</label>
+              <select id="round">
+                <option value="1">ครั้งที่ 1</option>
+                <option value="2">ครั้งที่ 2</option>
+                <option value="3">ครั้งที่ 3</option>
+              </select>
+            </div>
+            <div class="full">
+              <label>ประเภทแบบฟอร์ม</label>
+              <div class="formtype-row">
+                <label class="pick"><input type="radio" name="formType" value="vet" checked> นายสัตวแพทย์ (30 + 70 คะแนน)</label>
+                <label class="pick"><input type="radio" name="formType" value="staff"> บุคลากรทั่วไป (40 + 60 คะแนน)</label>
+              </div>
+            </div>
+            <div class="full autocomplete">
+              <label for="evaluatorSearch">เพิ่มผู้ประเมิน (ค้นหาจาก Data VTH และ Data อาจารย์ เลือกได้หลายคน)</label>
+              <input type="text" id="evaluatorSearch" autocomplete="off" placeholder="พิมพ์ชื่อผู้ประเมิน...">
+              <div class="ac-list" id="evaluatorAcList"></div>
+              <div class="evaluator-list" id="evaluatorList"></div>
+            </div>
+            <div class="full">
+              <div class="checkbox-row">
+                <input type="checkbox" id="sendEmail" checked>
+                <label for="sendEmail">ส่งอีเมลแจ้งลิงก์ให้ผู้ประเมินอัตโนมัติ (ต้องกรอกอีเมลของแต่ละคนด้านบน)</label>
+              </div>
+            </div>
+          </div>
+          <div style="margin-top:20px;">
+            <button type="submit">สร้างลิงก์ประเมิน</button>
+          </div>
+        </form>
+        <div class="result" id="result">
+          <strong>สร้างรายการเรียบร้อย</strong> ส่งลิงก์แบบย่อด้านล่างให้ผู้ประเมินแต่ละคน
+          <div id="linkList"></div>
+          <div class="note">ตรวจสอบว่าอีเมลถูกส่งจริงได้ที่กล่อง "ส่งแล้ว" (Sent) ของ Gmail บัญชี kittiya.so@psu.ac.th ที่ใช้ deploy ระบบนี้</div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>ครบกำหนดประเมิน</h2>
+        <p class="card-sub">คำนวณจากวันเริ่มงานใน Data VTH เทียบกับรอบที่เคยประเมินแล้ว</p>
+        <div class="due-list" id="dueArea"><div class="empty">กำลังโหลด...</div></div>
+      </section>
+    </div>
+
+    <section class="card stack">
+      <div class="card-head"><h2>รายการที่สร้างไว้</h2></div>
+      <div id="listArea"><div class="empty">กำลังโหลด...</div></div>
+    </section>
+  </main>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+// TODO: แก้เป็น URL ของ Web App ที่ deploy จาก Code.gs
+const API_URL = 'https://script.google.com/macros/s/AKfycbz8HWROtIx9FoR01h0XH_NvYnQr4R7OyHrSaTXplChtX896YAOC6wBRxZ6rWupLPaNj/exec';
+const EVAL_PAGE = 'eval.html';
+
+let staffList = [];
+let evaluatorCandidates = [];
+let selectedEvaluators = [];
+
+async function api(action, payload) {
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(Object.assign({ action }, payload))
+  });
+  const json = await res.json();
+  if (!json.ok) throw new Error(json.error || 'เกิดข้อผิดพลาด');
+  return json.data;
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2400);
+}
+
+function escapeHtml(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+
+// ป้ายชื่อย่อ: ตัดคำนำหน้า แล้วใช้พยัญชนะตัวแรกของชื่อ
+function initialOf(name) {
+  let s = String(name || '').trim();
+  const prefix = /^(นางสาว|นาง|นาย|น\.สพ\.|สพ\.ญ\.|ดร\.\S*|ผศ\.\S*|รศ\.\S*|ศ\.\S*)\s*/;
+  for (let i = 0; i < 4 && prefix.test(s); i++) s = s.replace(prefix, '');
+  const ch = Array.from(s).find(c => /[ก-ฮA-Za-z0-9]/.test(c));
+  return ch || '?';
+}
+function avatarHtml(name) {
+  let h = 0;
+  for (const c of String(name || '')) h = (h * 31 + c.charCodeAt(0)) % 5;
+  return `<span class="avatar c${h}" aria-hidden="true">${escapeHtml(initialOf(name))}</span>`;
+}
+// แถบความคืบหน้าแบบแบ่งช่อง: 1 ช่อง = ผู้ประเมิน 1 คน
+function segBar(done, total) {
+  const n = Math.max(0, Math.min(Number(total) || 0, 12));
+  if (!n) return '<span class="seg-wrap"><span>ยังไม่มีผู้ประเมิน</span></span>';
+  const d = Math.min(Number(done) || 0, n);
+  const cells = Array.from({ length: n }, (_, i) => `<i class="${i < d ? 'on' : ''}"></i>`).join('');
+  return `<span class="seg-wrap" role="img" aria-label="ประเมินแล้ว ${done} จาก ${total} คน"><span class="seg">${cells}</span><span>${done}/${total} คน</span></span>`;
+}
+
+function evalPageUrl() {
+  return `${location.origin}${location.pathname.replace('index.html','')}${EVAL_PAGE}`;
+}
+
+// ---- ผู้รับการประเมิน: autocomplete จาก Data VTH ----
+
+const evaluateeInput = document.getElementById('evaluateeName');
+const staffAcList = document.getElementById('staffAcList');
+
+evaluateeInput.addEventListener('input', () => {
+  const q = evaluateeInput.value.trim().toLowerCase();
+  if (!q) { staffAcList.classList.remove('show'); return; }
+  const matches = staffList.filter(s => s.fullName.toLowerCase().includes(q)).slice(0, 8);
+  if (!matches.length) { staffAcList.classList.remove('show'); return; }
+  staffAcList.innerHTML = matches.map((s, i) => `
+    <div class="ac-item" data-idx="${i}">${escapeHtml(s.fullName)}<div class="ac-sub">${escapeHtml(s.position)}</div></div>
+  `).join('');
+  staffAcList.classList.add('show');
+  staffAcList.querySelectorAll('.ac-item').forEach((el, i) => {
+    el.addEventListener('click', () => {
+      const s = matches[i];
+      evaluateeInput.value = s.fullName;
+      document.getElementById('position').value = s.position;
+      if (s.hireDate) document.getElementById('hireDate').value = new Date(s.hireDate).toISOString().slice(0, 10);
+      document.querySelector(`input[name=formType][value=${s.formType}]`).checked = true;
+      staffAcList.classList.remove('show');
+    });
+  });
+});
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.autocomplete')) { staffAcList.classList.remove('show'); }
+});
+
+// ---- ผู้ประเมิน: multi-select autocomplete จาก Data VTH + Data อาจารย์ ----
+
+const evaluatorSearch = document.getElementById('evaluatorSearch');
+const evaluatorAcList = document.getElementById('evaluatorAcList');
+
+evaluatorSearch.addEventListener('input', () => {
+  const q = evaluatorSearch.value.trim().toLowerCase();
+  if (!q) { evaluatorAcList.classList.remove('show'); return; }
+  const chosenNames = selectedEvaluators.map(e => e.name);
+  const matches = evaluatorCandidates.filter(c => c.fullName.toLowerCase().includes(q) && !chosenNames.includes(c.fullName)).slice(0, 8);
+  if (!matches.length) { evaluatorAcList.classList.remove('show'); return; }
+  evaluatorAcList.innerHTML = matches.map((c, i) => `
+    <div class="ac-item" data-idx="${i}">${escapeHtml(c.fullName)}<div class="ac-sub">${escapeHtml(c.position)} · ${escapeHtml(c.group)}</div></div>
+  `).join('');
+  evaluatorAcList.classList.add('show');
+  evaluatorAcList.querySelectorAll('.ac-item').forEach((el, i) => {
+    el.addEventListener('click', () => {
+      selectedEvaluators.push({ name: matches[i].fullName, email: '' });
+      evaluatorSearch.value = '';
+      evaluatorAcList.classList.remove('show');
+      renderEvaluatorList();
+    });
+  });
+});
+
+function renderEvaluatorList() {
+  const area = document.getElementById('evaluatorList');
+  if (!selectedEvaluators.length) { area.innerHTML = ''; return; }
+  area.innerHTML = selectedEvaluators.map((ev, i) => `
+    <div class="evaluator-row">
+      <span class="name">${escapeHtml(ev.name)}</span>
+      <input type="email" placeholder="อีเมลผู้ประเมิน" data-idx="${i}" value="${escapeHtml(ev.email)}">
+      <button type="button" class="secondary tiny" data-remove="${i}">ลบ</button>
+    </div>
+  `).join('');
+  area.querySelectorAll('input[type=email]').forEach(inp => {
+    inp.addEventListener('input', () => { selectedEvaluators[Number(inp.dataset.idx)].email = inp.value.trim(); });
+  });
+  area.querySelectorAll('[data-remove]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      selectedEvaluators.splice(Number(btn.dataset.remove), 1);
+      renderEvaluatorList();
+    });
+  });
+}
+
+// ---- รายชื่อครบกำหนดประเมิน ----
+
+async function loadDue() {
+  const area = document.getElementById('dueArea');
+  try {
+    const rows = await api('listDueEvaluations', {});
+    setStat('Due', rows.length, rows.length ? 'คำนวณจากวันเริ่มงานใน Data VTH' : 'ยังไม่มีใครถึงกำหนด', null);
+    if (!rows.length) { area.innerHTML = '<div class="empty">ยังไม่มีใครครบกำหนดประเมิน</div>'; return; }
+    area.innerHTML = rows.map(r => `
+      <div class="due-row">
+        <div class="due-who">${avatarHtml(r.evaluateeName)}<div>
+          <div class="due-name">${escapeHtml(r.evaluateeName)}</div>
+          <div class="due-meta">${escapeHtml(r.position)}</div>
+          <div class="due-meta">ครบกำหนดรอบที่ ${r.round}, เริ่มงานมาแล้ว ${r.monthsSinceHire} เดือน${r.reason ? ' (' + escapeHtml(r.reason) + ')' : ''}</div>
+        </div></div>
+        <button type="button" class="secondary tiny" onclick='fillFromDue(${JSON.stringify(r).replace(/'/g, "&apos;")})'>สร้างรายการนี้</button>
+      </div>
+    `).join('');
+  } catch (err) {
+    setStat('Due', '–', 'โหลดข้อมูลไม่สำเร็จ', null);
+    area.innerHTML = `<div class="empty">โหลดรายชื่อไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+function fillFromDue(r) {
+  document.getElementById('evaluateeName').value = r.evaluateeName;
+  document.getElementById('position').value = r.position;
+  if (r.hireDate) document.getElementById('hireDate').value = new Date(r.hireDate).toISOString().slice(0, 10);
+  document.getElementById('periodMonths').value = String(r.periodMonths);
+  document.getElementById('round').value = String(r.round);
+  document.querySelector(`input[name=formType][value=${r.formType}]`).checked = true;
+  const top = window.scrollY + document.getElementById('createCard').getBoundingClientRect().top - 24;
+  window.scrollTo({ top, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+}
+
+// ---- สร้างรายการ ----
+
+document.getElementById('createForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if (!selectedEvaluators.length) { alert('กรุณาเพิ่มผู้ประเมินอย่างน้อย 1 คน'); return; }
+  const sendEmail = document.getElementById('sendEmail').checked;
+  if (sendEmail && selectedEvaluators.some(ev => !ev.email)) {
+    if (!confirm('มีผู้ประเมินบางคนยังไม่ได้กรอกอีเมล จะไม่ได้รับอีเมลแจ้งอัตโนมัติ ต้องการดำเนินการต่อหรือไม่?')) return;
+  }
+  const btn = e.target.querySelector('button[type=submit]');
+  btn.disabled = true; btn.textContent = 'กำลังสร้าง...';
+  try {
+    const payload = {
+      evaluateeName: document.getElementById('evaluateeName').value.trim(),
+      position: document.getElementById('position').value.trim(),
+      department: document.getElementById('department').value.trim(),
+      hireDate: document.getElementById('hireDate').value,
+      periodMonths: document.getElementById('periodMonths').value,
+      round: document.getElementById('round').value,
+      formType: document.querySelector('input[name=formType]:checked').value,
+      evaluators: selectedEvaluators,
+      sendEmail: sendEmail,
+      evalPageUrl: evalPageUrl()
+    };
+    const data = await api('createRequest', payload);
+    const linkListEl = document.getElementById('linkList');
+    linkListEl.innerHTML = data.links.map(l => `
+      <div class="link-row">
+        <input type="text" readonly value="${escapeHtml(l.evaluatorName)}: ${l.url}" aria-label="ลิงก์ของ ${escapeHtml(l.evaluatorName)}">
+        <button type="button" class="secondary tiny" onclick="copyText(this.previousElementSibling.value)">คัดลอก</button>
+      </div>
+      <div class="link-meta">${emailBadge(l.emailStatus)}${l.evaluatorEmail ? '<span>' + escapeHtml(l.evaluatorEmail) + '</span>' : ''}</div>
+    `).join('');
+    document.getElementById('result').classList.add('show');
+    e.target.reset();
+    document.getElementById('department').value = 'โรงพยาบาลสัตว์ มหาวิทยาลัยสงขลานครินทร์';
+    selectedEvaluators = [];
+    renderEvaluatorList();
+    loadList();
+    loadDue();
+  } catch (err) {
+    alert('สร้างรายการไม่สำเร็จ: ' + err.message);
+  } finally {
+    btn.disabled = false; btn.textContent = 'สร้างลิงก์ประเมิน';
+  }
+});
+
+function setStat(id, num, foot, pct) {
+  document.getElementById('stat' + id).textContent = num;
+  document.getElementById('foot' + id).textContent = foot;
+  const strip = document.getElementById('strip' + id);
+  if (strip) strip.style.width = (pct == null ? 0 : Math.max(0, Math.min(100, pct))) + '%';
+}
+
+function emailBadge(status) {
+  const map = {
+    sent: ['ok', 'ส่งอีเมลแล้ว'],
+    failed: ['bad', 'ส่งอีเมลไม่สำเร็จ'],
+    no_email: ['muted', 'ไม่ได้ส่ง (ไม่มีอีเมล)'],
+    not_sent: ['muted', 'ไม่ได้ส่ง (ปิดตัวเลือก)']
+  };
+  const m = map[status] || ['muted', status];
+  return `<span class="badge ${m[0]}">${m[1]}</span>`;
+}
+
+function copyText(text) {
+  navigator.clipboard.writeText(text).then(() => showToast('คัดลอกแล้ว'));
+}
+
+// ---- รายการที่สร้างไว้ ----
+
+async function loadList() {
+  const area = document.getElementById('listArea');
+  try {
+    const rows = await api('listRequests', {});
+    if (!rows.length) { area.innerHTML = '<div class="empty">ยังไม่มีรายการประเมิน</div>'; return; }
+    const formTypeLabel = { vet: 'สัตวแพทย์', staff: 'บุคลากรทั่วไป' };
+    const statusLabel = { pending: 'รอผู้ประเมิน', partial: 'ประเมินบางส่วน', done: 'ประเมินครบแล้ว' };
+    const open = rows.filter(r => r.status !== 'done').length;
+    setStat('Total', rows.length, `ประเมินครบแล้ว ${rows.length - open} รายการ`, rows.length ? (rows.length - open) / rows.length * 100 : 0);
+    setStat('Open', open, open ? 'รอผู้ประเมินกดส่งแบบประเมิน' : 'ไม่มีรายการค้าง', rows.length ? open / rows.length * 100 : 0);
+    area.innerHTML = `<div class="table-wrap"><table>
+      <thead><tr><th>ชื่อ</th><th>ตำแหน่ง</th><th>ประเภท</th><th>รอบ</th><th>ผู้ประเมิน</th><th>อีเมล</th><th>สถานะ</th></tr></thead>
+      <tbody>
+        ${rows.map((r, i) => `
+          <tr class="row" onclick="toggleReqDetail(${i})">
+            <td><div class="cell-name">${avatarHtml(r.evaluateeName)}${escapeHtml(r.evaluateeName)}</div></td>
+            <td>${escapeHtml(r.position)}</td>
+            <td>${formTypeLabel[r.formType] || r.formType}</td>
+            <td>ครั้งที่ ${r.round}</td>
+            <td>${segBar(r.evaluatorDoneCount, r.evaluatorCount)}</td>
+            <td>${r.emailSentCount}/${r.evaluatorCount} ฉบับ</td>
+            <td><span class="badge ${r.status}">${statusLabel[r.status] || r.status}</span></td>
+          </tr>
+          <tr id="reqdetail-${i}" style="display:none;"><td colspan="7">
+            ${(r.evaluators || []).map(ev => `
+              <div class="link-row">
+                <input type="text" readonly value="${escapeHtml(ev.name)}${ev.email ? ' (' + escapeHtml(ev.email) + ')' : ''}: ${ev.url || ''}">
+                <button type="button" class="secondary tiny" onclick="copyText('${(ev.url || '').replace(/'/g, "\\'")}')">คัดลอก</button>
+                <span class="badge ${ev.status === 'done' ? 'done' : 'pending'}">${ev.status === 'done' ? 'ส่งแบบประเมินแล้ว' : 'ยังไม่ส่งแบบประเมิน'}</span>${emailBadge(ev.emailStatus)}
+              </div>
+            `).join('')}
+          </td></tr>
+        `).join('')}
+      </tbody>
+    </table></div>`;
+  } catch (err) {
+    setStat('Total', '–', 'โหลดข้อมูลไม่สำเร็จ', null);
+    setStat('Open', '–', 'โหลดข้อมูลไม่สำเร็จ', null);
+    area.innerHTML = `<div class="empty">โหลดรายการไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+function toggleReqDetail(i) {
+  const el = document.getElementById(`reqdetail-${i}`);
+  el.style.display = el.style.display === 'none' ? 'table-row' : 'none';
+}
+
+async function init() {
+  try {
+    staffList = await api('listStaff', {});
+    evaluatorCandidates = await api('listEvaluatorCandidates', {});
+  } catch (err) {
+    showToast('โหลดรายชื่อจาก Data VTH/Data อาจารย์ไม่สำเร็จ: ' + err.message);
+  }
+  loadDue();
+  loadList();
+}
+
+init();
+</script>
+</body>
+</html>

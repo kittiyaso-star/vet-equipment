@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>สรุปผลการประเมิน | ระบบประเมินทดลองงาน</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600&family=Sarabun:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink: #1E2747;        /* หัวข้อ */
+  --text: #3A4366;       /* เนื้อหา */
+  --muted: #6B7499;      /* ข้อความรอง */
+  --primary: #3D5AF1;    /* ปุ่มหลัก, เมนูที่เลือก */
+  --primary-dark: #3148D2;
+  --primary-wash: #EAEEFF;
+
+  --side-1: #1C2760;
+  --side-2: #141C49;
+  --side-text: #B3BCE8;
+
+  --bg: #F3F5FC;
+  --surface: #FFFFFF;
+  --line: #E7EAF6;
+  --field: #D3D9EE;
+  --lane: #E9EDFA;
+
+  --ok: #2FB985;     --ok-bg: #DDF5EA;    --ok-fg: #16724F;
+  --warn: #FFB02E;   --warn-bg: #FFF1CC;  --warn-fg: #7A5200;
+  --bad: #E8554E;    --bad-bg: #FDE4E1;   --bad-fg: #B03A33;
+  --violet: #6D4FE6; --violet-bg: #ECE6FF; --violet-fg: #553BBD;
+  --info-bg: #E4EAFF; --info-fg: #2B47C9;
+  --idle-bg: #EEF0F8; --idle-fg: #566082;
+
+  --g-violet: linear-gradient(135deg, #7658EE, #5F40DB);
+  --g-blue:   linear-gradient(135deg, #4B6BF4, #3553E6);
+  --g-amber:  linear-gradient(135deg, #FFCF66, #FFB02E);
+  --g-pink:   linear-gradient(135deg, #D44792, #BC3380);
+
+  --r-card: 20px;
+  --r-tile: 14px;
+  --r-field: 12px;
+  --shadow: 0 1px 2px rgba(30, 39, 71, .05), 0 12px 30px rgba(52, 72, 160, .08);
+
+  --font-body: "Sarabun", "Tahoma", "Segoe UI", sans-serif;
+  --font-head: "Prompt", "Sarabun", "Tahoma", sans-serif;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  color: var(--text);
+  background: radial-gradient(1100px 460px at 88% -8%, #DDE5FF 0%, rgba(221, 229, 255, 0) 62%), var(--bg);
+  background-attachment: fixed;
+  font: 400 15px/1.65 var(--font-body);
+}
+h1, h2, h3, h4 { font-family: var(--font-head); color: var(--ink); }
+:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+/* ---------- โครงหน้า: เมนูด้านซ้ายสีเข้ม + เนื้อหา ---------- */
+.app { display: grid; grid-template-columns: 248px minmax(0, 1fr); min-height: 100vh; }
+.sidebar {
+  position: sticky; top: 0; height: 100vh;
+  display: flex; flex-direction: column;
+  padding: 24px 16px 20px;
+  background: linear-gradient(180deg, var(--side-1), var(--side-2));
+  color: var(--side-text);
+}
+.brand { display: flex; align-items: center; gap: 12px; padding: 0 8px 26px; }
+.brand .logo {
+  flex: none; width: 44px; height: 44px; display: grid; place-items: center;
+  border-radius: 14px; color: #fff;
+  background: linear-gradient(135deg, #5B7BFF, #8C6CF6);
+  box-shadow: 0 8px 20px rgba(91, 123, 255, .35);
+}
+.brand .logo svg { width: 25px; height: 25px; }
+.brand b { display: block; color: #fff; font: 600 16px/1.3 var(--font-head); }
+.brand span { display: block; color: var(--side-text); font-size: 12.5px; line-height: 1.3; }
+.nav-label { padding: 0 12px 8px; color: #8590C8; font-size: 12px; letter-spacing: .02em; }
+.nav { display: grid; gap: 4px; }
+.nav a {
+  display: flex; align-items: center; gap: 12px;
+  padding: 11px 12px; border-radius: 13px;
+  color: var(--side-text); text-decoration: none; font-size: 15px;
+}
+.nav a svg { flex: none; width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.nav a:hover { background: rgba(255, 255, 255, .08); color: #fff; }
+.nav a.active { background: var(--primary); color: #fff; box-shadow: 0 8px 18px rgba(61, 90, 241, .4); }
+.side-foot { margin-top: auto; padding: 14px 12px 0; border-top: 1px solid rgba(255, 255, 255, .1); font-size: 12.5px; line-height: 1.5; color: #8590C8; }
+
+.main { width: 100%; max-width: 1320px; padding: 28px 36px 64px; }
+.topbar { display: flex; align-items: flex-end; gap: 18px; margin-bottom: 24px; flex-wrap: wrap; }
+.topbar .crumb { color: var(--muted); font-size: 13px; }
+.topbar h1 { margin: 0; font: 600 26px/1.3 var(--font-head); }
+.topbar .spacer { flex: 1; }
+
+/* ปุ่มสลับมุมมองแบบแคปซูล */
+.tabs { display: inline-flex; gap: 4px; padding: 5px; border-radius: 999px; background: #fff; box-shadow: var(--shadow); }
+.tabs button {
+  min-height: 38px; padding: 6px 18px; border: 0; border-radius: 999px;
+  background: transparent; color: var(--muted);
+  font: 500 14px/1.3 var(--font-head);
+}
+.tabs button:hover { background: var(--primary-wash); color: var(--primary); }
+.tabs button[aria-selected="true"] { background: var(--primary); color: #fff; box-shadow: 0 6px 14px rgba(61, 90, 241, .35); }
+
+/* ---------- การ์ด ---------- */
+.card { background: var(--surface); border-radius: var(--r-card); padding: 22px 24px; box-shadow: var(--shadow); }
+.card h2 { margin: 0 0 4px; font: 600 17px/1.4 var(--font-head); }
+.card .card-sub { margin: 0 0 16px; color: var(--muted); font-size: 13.5px; }
+.card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+.card-head h2 { margin: 0; }
+
+.grid-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; margin-bottom: 22px; }
+.grid-stats.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.grid-main { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); gap: 22px; align-items: start; }
+.grid-charts { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.2fr); gap: 22px; align-items: stretch; }
+.stack { margin-top: 22px; }
+
+/* การ์ดตัวเลขสีไล่เฉด + แถบสัดส่วนด้านล่าง */
+.stat {
+  position: relative; overflow: hidden;
+  padding: 18px 20px 24px; border-radius: var(--r-card);
+  color: #fff; box-shadow: var(--shadow);
+}
+.stat.violet { background: var(--g-violet); }
+.stat.blue { background: var(--g-blue); }
+.stat.pink { background: var(--g-pink); }
+.stat.amber { background: var(--g-amber); color: var(--ink); }
+.stat-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.stat .label { font-size: 14px; font-weight: 500; line-height: 1.4; }
+.stat .ico { flex: none; width: 38px; height: 38px; display: grid; place-items: center; border-radius: 12px; background: rgba(255, 255, 255, .22); }
+.stat.amber .ico { background: rgba(30, 39, 71, .1); }
+.stat .ico svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+.stat .num { margin-top: 8px; font: 600 34px/1.15 var(--font-head); }
+.stat .num small { margin-left: 4px; font: 400 14px var(--font-body); opacity: .85; }
+.stat .foot { margin-top: 2px; font-size: 13px; opacity: .92; }
+.stat .strip { position: absolute; left: 0; right: 0; bottom: 0; height: 7px; background: rgba(255, 255, 255, .3); }
+.stat .strip i { display: block; height: 100%; background: rgba(255, 255, 255, .95); border-radius: 0 999px 999px 0; }
+.stat.amber .strip { background: rgba(30, 39, 71, .12); }
+.stat.amber .strip i { background: var(--ink); }
+
+/* ---------- ฟอร์ม ---------- */
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.full { grid-column: 1 / -1; }
+label { display: block; margin-bottom: 5px; color: var(--muted); font-size: 13.5px; }
+input, select, textarea {
+  width: 100%; min-height: 44px; padding: 9px 13px;
+  border: 1px solid var(--field); border-radius: var(--r-field);
+  background: #fff; color: var(--text); font: inherit;
+}
+input:focus, select:focus, textarea:focus { outline: 2px solid rgba(61, 90, 241, .35); outline-offset: 0; border-color: var(--primary); }
+input[readonly] { background: #F6F8FE; color: var(--muted); }
+input[type=radio], input[type=checkbox] { width: auto; min-height: 0; accent-color: var(--primary); }
+textarea { min-height: 76px; resize: vertical; }
+::placeholder { color: #8F98B8; }
+
+.formtype-row { display: flex; gap: 12px; flex-wrap: wrap; }
+.formtype-row label.pick {
+  flex: 1 1 220px; display: flex; align-items: center; gap: 10px; margin: 0;
+  padding: 12px 14px; cursor: pointer;
+  border: 1px solid var(--field); border-radius: var(--r-tile);
+  color: var(--text); font-size: 14.5px;
+}
+.formtype-row label.pick:has(input:checked) { border-color: var(--primary); background: var(--primary-wash); box-shadow: inset 0 0 0 1px var(--primary); color: var(--ink); }
+.checkbox-row { display: flex; align-items: center; gap: 10px; }
+.checkbox-row label { margin: 0; color: var(--text); font-size: 14px; }
+
+button {
+  min-height: 44px; padding: 10px 22px; cursor: pointer;
+  border: 1px solid var(--primary); border-radius: var(--r-field);
+  background: var(--primary); color: #fff;
+  font: 500 14.5px/1.3 var(--font-head);
+}
+button:hover { background: var(--primary-dark); border-color: var(--primary-dark); }
+button:disabled { opacity: .55; cursor: default; }
+button.secondary { background: #fff; color: var(--primary); border-color: #CBD3F5; }
+button.secondary:hover { background: var(--primary-wash); border-color: var(--primary); }
+button.tiny { min-height: 34px; padding: 6px 13px; border-radius: 10px; font-size: 13px; }
+
+.autocomplete { position: relative; }
+.ac-list {
+  display: none; position: absolute; z-index: 30; top: calc(100% - 2px); left: 0; right: 0;
+  max-height: 250px; overflow-y: auto;
+  background: #fff; border: 1px solid var(--line); border-radius: var(--r-tile);
+  box-shadow: 0 16px 36px rgba(30, 39, 71, .16);
+}
+.ac-list.show { display: block; }
+.ac-item { padding: 9px 14px; cursor: pointer; font-size: 14.5px; }
+.ac-item:hover { background: var(--primary-wash); }
+.ac-item .ac-sub { color: var(--muted); font-size: 12.5px; }
+
+.evaluator-list { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+.evaluator-row { display: flex; align-items: center; gap: 10px; padding: 8px 10px 8px 14px; background: #F5F7FE; border-radius: var(--r-tile); }
+.evaluator-row .name { flex: 0 1 230px; min-width: 120px; color: var(--ink); font-size: 14px; font-weight: 500; }
+.evaluator-row input[type=email] { flex: 1; min-height: 38px; font-size: 14px; }
+
+.result { display: none; margin-top: 20px; padding: 16px 18px; border-radius: var(--r-tile); background: var(--primary-wash); color: var(--ink); }
+.result.show { display: block; }
+.result .note { margin-top: 8px; color: var(--muted); font-size: 12.5px; }
+.link-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+.link-row input { flex: 1 1 280px; min-height: 38px; font-size: 13px; background: #fff; }
+.link-meta { margin: 4px 0 10px 2px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
+
+/* ---------- ตาราง ---------- */
+.table-wrap { overflow-x: auto; margin: 0 -8px; padding: 0 8px; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th, td { padding: 13px 12px; text-align: left; vertical-align: middle; border-bottom: 1px solid var(--line); }
+th { color: var(--muted); font-weight: 500; font-size: 13px; white-space: nowrap; }
+tr.row { cursor: pointer; }
+tr.row:hover td { background: #F7F9FE; }
+tbody tr:last-child td { border-bottom: 0; }
+.score-cell { font-family: var(--font-head); font-weight: 500; color: var(--ink); white-space: nowrap; }
+.detail-row td { background: #F7F9FE; }
+.cell-name { display: flex; align-items: center; gap: 11px; font-weight: 500; color: var(--ink); }
+
+.badge { display: inline-block; padding: 2px 11px; border-radius: 999px; font-size: 12.5px; line-height: 1.6; white-space: nowrap; }
+.badge.pending, .badge.warn, .badge.improve { background: var(--warn-bg); color: var(--warn-fg); }
+.badge.partial { background: var(--info-bg); color: var(--info-fg); }
+.badge.done, .badge.pass, .badge.ok { background: var(--ok-bg); color: var(--ok-fg); }
+.badge.fail, .badge.bad { background: var(--bad-bg); color: var(--bad-fg); }
+.badge.mixed { background: var(--violet-bg); color: var(--violet-fg); }
+.badge.waiting, .badge.muted { background: var(--idle-bg); color: var(--idle-fg); }
+
+.empty { padding: 26px 8px; text-align: center; color: var(--muted); font-size: 14px; }
+
+.due-list { max-height: 640px; overflow-y: auto; margin: 0 -8px; padding: 0 8px; }
+.due-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 13px 0; border-top: 1px solid var(--line); }
+.due-row:first-child { border-top: 0; }
+.due-row button { flex: none; white-space: nowrap; }
+.due-name { font-weight: 600; color: var(--ink); line-height: 1.4; }
+.due-meta { color: var(--muted); font-size: 13px; line-height: 1.45; }
+.due-who { display: flex; align-items: center; gap: 12px; min-width: 0; }
+
+/* ป้ายชื่อย่อ (อักษรแรกของชื่อ) */
+.avatar { flex: none; width: 36px; height: 36px; display: grid; place-items: center; border-radius: 50%; color: #fff; font: 600 15px/1 var(--font-head); }
+.avatar.c0 { background: #6D4FE6; }
+.avatar.c1 { background: #3D5AF1; }
+.avatar.c2 { background: #D44792; }
+.avatar.c3 { background: #1F9E74; }
+.avatar.c4 { background: #D98A12; }
+
+/* แถบความคืบหน้าแบบแบ่งช่อง ช่องละ 1 ผู้ประเมิน */
+.seg { display: flex; gap: 4px; min-width: 56px; }
+.seg i { flex: 1; height: 8px; min-width: 10px; border-radius: 999px; background: #DCE1F2; }
+.seg i.on { background: var(--ok); }
+.seg-wrap { display: flex; align-items: center; gap: 10px; }
+.seg-wrap .seg { flex: 1; }
+.seg-wrap span { flex: none; color: var(--muted); font-size: 12.5px; white-space: nowrap; }
+
+.bar { height: 9px; border-radius: 999px; background: #E3E8F8; overflow: hidden; }
+.bar > i { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, #4B6BF4, #7658EE); }
+
+.toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); padding: 10px 20px; border-radius: 999px; background: var(--ink); color: #fff; font-size: 14px; opacity: 0; pointer-events: none; transition: opacity .2s; }
+.toast.show { opacity: 1; }
+
+/* ---------- จอแคบ ---------- */
+@media (max-width: 1200px) {
+  .grid-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .grid-charts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .grid-charts > :last-child { grid-column: 1 / -1; }
+}
+@media (max-width: 1000px) {
+  .grid-main { grid-template-columns: 1fr; }
+}
+@media (max-width: 900px) {
+  .app { grid-template-columns: 1fr; }
+  .sidebar { position: static; height: auto; flex-direction: row; align-items: center; flex-wrap: wrap; gap: 8px 14px; padding: 12px 14px; }
+  .brand { padding: 0; }
+  .brand .logo { width: 38px; height: 38px; }
+  .brand span, .nav-label, .side-foot { display: none; }
+  .nav { display: flex; gap: 4px; margin-left: auto; }
+  .nav a { padding: 8px 14px; font-size: 14px; }
+  .main { padding: 20px 14px 48px; }
+}
+@media (max-width: 760px) {
+  .grid { grid-template-columns: 1fr; }
+  .grid-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .grid-stats.three, .grid-charts { grid-template-columns: 1fr; }
+  .grid-charts > :last-child { grid-column: auto; }
+  .stat { padding: 14px 14px 20px; }
+  .stat .num { font-size: 28px; }
+  .card { padding: 18px 16px; }
+  .evaluator-row { flex-wrap: wrap; }
+  .table-wrap table { min-width: 820px; }
+  .tabs { width: 100%; }
+  .tabs button { flex: 1; padding: 6px 8px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  * { scroll-behavior: auto !important; transition: none !important; }
+}
+
+
+.toolbar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 18px; }
+.toolbar .searchpill { position: relative; flex: 1 1 280px; max-width: 380px; }
+.toolbar .searchpill svg { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); width: 19px; height: 19px; fill: none; stroke: var(--muted); stroke-width: 1.9; stroke-linecap: round; }
+.toolbar .searchpill input { padding-left: 42px; border-radius: 999px; }
+.toolbar select { width: auto; min-width: 160px; border-radius: 999px; }
+.view[hidden] { display: none; }
+
+.chart-card { display: flex; flex-direction: column; }
+.donut-wrap { display: flex; align-items: center; gap: 22px; flex-wrap: wrap; margin-top: 6px; }
+.donut { position: relative; width: 168px; height: 168px; flex: none; }
+.donut svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.donut .center { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; }
+.donut .center b { font: 600 30px/1.1 var(--font-head); color: var(--ink); }
+.donut .center span { color: var(--muted); font-size: 13px; }
+.legend { list-style: none; margin: 0; padding: 0; display: grid; gap: 9px; font-size: 14px; flex: 1 1 150px; }
+.legend li { display: flex; align-items: center; gap: 9px; }
+.legend i { width: 11px; height: 11px; border-radius: 4px; flex: none; }
+.legend b { margin-left: auto; padding-left: 14px; font-family: var(--font-head); font-weight: 500; color: var(--ink); }
+
+.round-row { margin-top: 16px; }
+.round-row:first-of-type { margin-top: 8px; }
+.round-top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; font-size: 14px; }
+.round-top b { font-family: var(--font-head); font-weight: 500; color: var(--ink); }
+.round-top span { color: var(--muted); font-size: 12.5px; }
+
+.pending-row { padding: 13px 0; border-top: 1px solid var(--line); }
+.pending-row:first-child { border-top: 0; padding-top: 4px; }
+.pending-top { display: flex; align-items: center; gap: 12px; margin-bottom: 9px; }
+.pending-top strong { display: block; color: var(--ink); font-weight: 600; line-height: 1.4; }
+.pending-top small { display: block; color: var(--muted); font-size: 12.5px; line-height: 1.4; }
+
+/* บอร์ดสถานะ */
+.board { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; align-items: start; }
+.lane { padding: 14px; border-radius: var(--r-card); background: var(--lane); }
+.lane-head { display: flex; align-items: center; gap: 10px; padding: 4px 6px 12px; font: 600 15px/1.3 var(--font-head); color: var(--ink); }
+.lane-head i { width: 10px; height: 10px; border-radius: 50%; }
+.lane-head .count { margin-left: auto; min-width: 28px; padding: 1px 9px; border-radius: 999px; background: #fff; text-align: center; font-size: 13px; }
+.lane .empty { padding: 22px 8px; font-size: 13.5px; }
+.kcard { margin-bottom: 12px; padding: 16px; border-radius: 16px; background: #fff; box-shadow: 0 1px 2px rgba(30, 39, 71, .05), 0 6px 16px rgba(52, 72, 160, .07); }
+.kcard:last-child { margin-bottom: 0; }
+.kcard-top { display: flex; align-items: center; gap: 12px; }
+.kcard-top strong { display: block; color: var(--ink); font-weight: 600; line-height: 1.4; }
+.kcard-top small { display: block; color: var(--muted); font-size: 12.5px; line-height: 1.4; }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; margin: 12px 0; }
+.chip { padding: 1px 10px; border-radius: 999px; background: var(--info-bg); color: var(--info-fg); font-size: 12px; line-height: 1.7; }
+.chip.alt { background: var(--violet-bg); color: var(--violet-fg); }
+.kscore { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-top: 12px; }
+.kscore b { font: 600 22px/1.2 var(--font-head); color: var(--ink); }
+.kscore b small { font: 400 13px var(--font-body); color: var(--muted); margin-left: 3px; }
+.klink { margin-top: 12px; padding: 0; min-height: 0; border: 0; background: none; color: var(--primary); font: 500 13.5px var(--font-body); }
+.klink:hover { background: none; text-decoration: underline; }
+.kdetail { margin-top: 10px; }
+.kdetail[hidden] { display: none; }
+
+.filters { display: flex; gap: 10px; flex-wrap: wrap; }
+.evaluator-block { padding: 14px 16px; margin: 4px 0 10px; border-radius: var(--r-tile); background: #fff; box-shadow: 0 1px 2px rgba(30, 39, 71, .05); }
+.evaluator-block h4 { margin: 0 0 4px; font: 600 14.5px/1.4 var(--font-head); }
+.evaluator-block ul { margin: 6px 0; padding-left: 20px; font-size: 13px; }
+.evaluator-block .meta { color: var(--muted); font-size: 13px; }
+.print-btn { margin-top: 6px; }
+
+@media (max-width: 1100px) { .board { grid-template-columns: 1fr; } }
+@media print {
+  .sidebar, .tabs, .toolbar, .print-btn, .grid-stats, .grid-charts { display: none !important; }
+  .app { display: block; }
+  body { background: #fff; }
+  .card { box-shadow: none; padding: 0; }
+  .main { padding: 0; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><ellipse cx="5.2" cy="10.4" rx="2" ry="2.6"/><ellipse cx="9.5" cy="5.9" rx="2" ry="2.7"/><ellipse cx="14.5" cy="5.9" rx="2" ry="2.7"/><ellipse cx="18.8" cy="10.4" rx="2" ry="2.6"/><path d="M12 11c-3 0-6 3.6-6 6.3 0 2 1.6 3 3.2 3 1.2 0 1.9-.5 2.8-.5s1.6.5 2.8.5c1.6 0 3.2-1 3.2-3C18 14.6 15 11 12 11z"/></svg></div>
+      <div><b>ประเมินทดลองงาน</b><span>โรงพยาบาลสัตว์ มอ.</span></div>
+    </div>
+    <div class="nav-label">เมนูหลัก</div>
+    <nav class="nav" aria-label="เมนูหลัก">
+      <a href="index.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M12 11v6M9 14h6"/></svg><span>สร้างรายการประเมิน</span></a>
+      <a href="dashboard.html" class="active" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/></svg><span>สรุปผลการประเมิน</span></a>
+    </nav>
+    <div class="side-foot">โรงพยาบาลสัตว์<br>มหาวิทยาลัยสงขลานครินทร์</div>
+  </aside>
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <div class="crumb">ระบบประเมินทดลองงาน</div>
+        <h1>สรุปผลการประเมิน</h1>
+      </div>
+      <div class="spacer"></div>
+      <div class="tabs" role="tablist" aria-label="เลือกมุมมอง">
+        <button type="button" role="tab" data-view="overview" aria-selected="true">ภาพรวม</button>
+        <button type="button" role="tab" data-view="board" aria-selected="false">บอร์ดสถานะ</button>
+        <button type="button" role="tab" data-view="table" aria-selected="false">ตารางรายการ</button>
+      </div>
+    </div>
+
+    <div class="grid-stats" id="stats"></div>
+
+    <div class="view" id="viewOverview">
+      <div class="grid-charts">
+        <section class="card chart-card">
+          <h2>ผลสรุปการประเมิน</h2>
+          <p class="card-sub">รายการที่ผู้ประเมินส่งครบทุกคนแล้ว</p>
+          <div id="donutArea"><div class="empty">กำลังโหลด...</div></div>
+        </section>
+        <section class="card chart-card">
+          <h2>คะแนนเฉลี่ยแต่ละรอบ</h2>
+          <p class="card-sub">เต็ม 100 คะแนน</p>
+          <div id="roundsArea"><div class="empty">กำลังโหลด...</div></div>
+        </section>
+        <section class="card chart-card">
+          <h2>ค้างประเมิน</h2>
+          <p class="card-sub">รายการล่าสุดที่ยังรอผู้ประเมินส่งแบบ</p>
+          <div id="pendingArea"><div class="empty">กำลังโหลด...</div></div>
+        </section>
+      </div>
+    </div>
+
+    <div class="view" id="viewList" hidden>
+      <div class="toolbar">
+        <div class="searchpill">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/></svg>
+          <input type="text" id="searchName" placeholder="ค้นหาชื่อผู้รับการประเมิน" aria-label="ค้นหาชื่อผู้รับการประเมิน">
+        </div>
+        <select id="filterType" aria-label="กรองตามประเภทฟอร์ม">
+          <option value="">ทุกประเภทฟอร์ม</option>
+          <option value="vet">สัตวแพทย์</option>
+          <option value="staff">บุคลากรทั่วไป</option>
+        </select>
+        <select id="filterStatus" aria-label="กรองตามสถานะ">
+          <option value="">ทุกสถานะ</option>
+          <option value="pending">รอผู้ประเมิน</option>
+          <option value="partial">ประเมินบางส่วน</option>
+          <option value="done">ประเมินครบแล้ว</option>
+        </select>
+      </div>
+      <div class="board" id="boardArea" hidden><div class="empty">กำลังโหลด...</div></div>
+      <section class="card" id="tableCard" hidden>
+        <div id="tableArea"><div class="empty">กำลังโหลด...</div></div>
+      </section>
+    </div>
+  </main>
+</div>
+
+<script>
+// TODO: แก้เป็น URL ของ Web App ที่ deploy จาก Code.gs
+const API_URL = 'https://script.google.com/macros/s/AKfycbz8HWROtIx9FoR01h0XH_NvYnQr4R7OyHrSaTXplChtX896YAOC6wBRxZ6rWupLPaNj/exec';
+
+let allRows = [];
+let currentView = 'overview';
+
+
+const ICON = {
+  list: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h12M8 12h12M8 18h12"/><circle cx="4" cy="6" r=".6"/><circle cx="4" cy="12" r=".6"/><circle cx="4" cy="18" r=".6"/></svg>',
+  check: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.7 2.7L16 9.5"/></svg>',
+  clock: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+  star: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/></svg>'
+};
+
+async function api(action, payload) {
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(Object.assign({ action }, payload))
+  });
+  const json = await res.json();
+  if (!json.ok) throw new Error(json.error || 'เกิดข้อผิดพลาด');
+  return json.data;
+}
+
+function escapeHtml(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+
+// ป้ายชื่อย่อ: ตัดคำนำหน้า แล้วใช้พยัญชนะตัวแรกของชื่อ
+function initialOf(name) {
+  let s = String(name || '').trim();
+  const prefix = /^(นางสาว|นาง|นาย|น\.สพ\.|สพ\.ญ\.|ดร\.\S*|ผศ\.\S*|รศ\.\S*|ศ\.\S*)\s*/;
+  for (let i = 0; i < 4 && prefix.test(s); i++) s = s.replace(prefix, '');
+  const ch = Array.from(s).find(c => /[ก-ฮA-Za-z0-9]/.test(c));
+  return ch || '?';
+}
+function avatarHtml(name) {
+  let h = 0;
+  for (const c of String(name || '')) h = (h * 31 + c.charCodeAt(0)) % 5;
+  return `<span class="avatar c${h}" aria-hidden="true">${escapeHtml(initialOf(name))}</span>`;
+}
+// แถบความคืบหน้าแบบแบ่งช่อง: 1 ช่อง = ผู้ประเมิน 1 คน
+function segBar(done, total) {
+  const n = Math.max(0, Math.min(Number(total) || 0, 12));
+  if (!n) return '<span class="seg-wrap"><span>ยังไม่มีผู้ประเมิน</span></span>';
+  const d = Math.min(Number(done) || 0, n);
+  const cells = Array.from({ length: n }, (_, i) => `<i class="${i < d ? 'on' : ''}"></i>`).join('');
+  return `<span class="seg-wrap" role="img" aria-label="ประเมินแล้ว ${done} จาก ${total} คน"><span class="seg">${cells}</span><span>${done}/${total} คน</span></span>`;
+}
+
+// สรุปผลของแต่ละ requestId เป็น badge เดียว จากมติ/คำตอบของกรรมการทุกคน
+function overallDecisionBadge(r) {
+  if (!r.submittedCount) return { cls: 'waiting', label: `รอผู้ประเมิน (0/${r.evaluatorCount})` };
+  if (r.submittedCount < r.evaluatorCount) return { cls: 'waiting', label: `ประเมินบางส่วน (${r.submittedCount}/${r.evaluatorCount})` };
+  const uniq = [...new Set(r.decisions)];
+  if (uniq.length === 1) {
+    if (uniq[0] === 'สมควรให้ปฏิบัติงานต่อไป') return { cls: 'pass', label: 'ผ่าน (เอกฉันท์)' };
+    if (uniq[0] === 'ไม่สมควรให้ปฏิบัติงานต่อไป') return { cls: 'fail', label: 'ไม่ผ่าน (เอกฉันท์)' };
+    return { cls: 'improve', label: 'ควรปรับปรุง (เอกฉันท์)' };
+  }
+  return { cls: 'mixed', label: 'ความเห็นไม่ตรงกัน — ดูรายละเอียด' };
+}
+
+function renderStats(rows) {
+  const total = rows.length;
+  const complete = rows.filter(r => r.status === 'done').length;
+  const open = total - complete;
+  const finished = rows.filter(r => r.evaluatorCount > 0 && r.submittedCount === r.evaluatorCount);
+  const passed = finished.filter(r => overallDecisionBadge(r).cls === 'pass').length;
+  const scored = rows.filter(r => r.avgTotal != null);
+  const avg = scored.length ? (scored.reduce((s, r) => s + Number(r.avgTotal), 0) / scored.length) : null;
+  const pct = n => Math.max(0, Math.min(100, n));
+  document.getElementById('stats').innerHTML = `
+    <div class="stat violet">
+      <div class="stat-top"><span class="label">รายการทั้งหมด</span><span class="ico">${ICON.list}</span></div>
+      <div class="num">${total}</div><div class="foot">ประเมินครบแล้ว ${complete} รายการ</div>
+      <div class="strip"><i style="width:${total ? pct(complete / total * 100) : 0}%"></i></div>
+    </div>
+    <div class="stat blue">
+      <div class="stat-top"><span class="label">ผ่านการประเมิน</span><span class="ico">${ICON.check}</span></div>
+      <div class="num">${passed}</div><div class="foot">จาก ${finished.length} รายการที่ส่งครบทุกคน</div>
+      <div class="strip"><i style="width:${finished.length ? pct(passed / finished.length * 100) : 0}%"></i></div>
+    </div>
+    <div class="stat amber">
+      <div class="stat-top"><span class="label">ยังค้างประเมิน</span><span class="ico">${ICON.clock}</span></div>
+      <div class="num">${open}</div><div class="foot">รอผู้ประเมินส่งแบบ</div>
+      <div class="strip"><i style="width:${total ? pct(open / total * 100) : 0}%"></i></div>
+    </div>
+    <div class="stat pink">
+      <div class="stat-top"><span class="label">คะแนนเฉลี่ยรวม</span><span class="ico">${ICON.star}</span></div>
+      <div class="num">${avg != null ? avg.toFixed(1) : '–'}<small>/ 100</small></div><div class="foot">จาก ${scored.length} รายการที่มีคะแนน</div>
+      <div class="strip"><i style="width:${avg != null ? pct(avg) : 0}%"></i></div>
+    </div>`;
+  renderDonut(rows);
+  renderRounds(rows);
+  renderPending(rows);
+}
+
+// กราฟวงกลม: ผลสรุปของรายการที่ผู้ประเมินส่งครบทุกคนแล้ว
+function renderDonut(rows) {
+  const finished = rows.filter(r => r.evaluatorCount > 0 && r.submittedCount === r.evaluatorCount);
+  const groups = [
+    { cls: 'pass', label: 'ผ่าน', color: '#2FB985' },
+    { cls: 'improve', label: 'ควรปรับปรุง', color: '#FFB02E' },
+    { cls: 'fail', label: 'ไม่ผ่าน', color: '#E8554E' },
+    { cls: 'mixed', label: 'ความเห็นไม่ตรงกัน', color: '#6D4FE6' }
+  ];
+  groups.forEach(g => g.count = finished.filter(r => overallDecisionBadge(r).cls === g.cls).length);
+  const area = document.getElementById('donutArea');
+  if (!finished.length) { area.innerHTML = '<div class="empty">ยังไม่มีรายการที่ผู้ประเมินส่งครบ</div>'; return; }
+  const R = 15.9155; // เส้นรอบวง = 100 หน่วย
+  let offset = 0;
+  const arcs = groups.filter(g => g.count).map(g => {
+    const pct = g.count / finished.length * 100;
+    const arc = `<circle cx="21" cy="21" r="${R}" fill="none" stroke="${g.color}" stroke-width="5.2" stroke-dasharray="${pct} ${100 - pct}" stroke-dashoffset="${-offset}"></circle>`;
+    offset += pct;
+    return arc;
+  }).join('');
+  area.innerHTML = `
+    <div class="donut-wrap">
+      <div class="donut" role="img" aria-label="ผลสรุป ${finished.length} รายการ">
+        <svg viewBox="0 0 42 42"><circle cx="21" cy="21" r="${R}" fill="none" stroke="#E7EAF6" stroke-width="5.2"></circle>${arcs}</svg>
+        <div class="center"><b>${finished.length}</b><span>รายการ</span></div>
+      </div>
+      <ul class="legend">${groups.map(g => `<li><i style="background:${g.color}"></i>${g.label}<b>${g.count}</b></li>`).join('')}</ul>
+    </div>`;
+}
+
+// คะแนนเฉลี่ยของแต่ละรอบ
+function renderRounds(rows) {
+  const area = document.getElementById('roundsArea');
+  const parts = [1, 2, 3].map(n => {
+    const rs = rows.filter(r => Number(r.round) === n && r.avgTotal != null);
+    return { n, count: rs.length, avg: rs.length ? rs.reduce((s, r) => s + Number(r.avgTotal), 0) / rs.length : null };
+  });
+  if (!parts.some(p => p.count)) { area.innerHTML = '<div class="empty">ยังไม่มีคะแนนให้สรุป</div>'; return; }
+  area.innerHTML = parts.map(p => `
+    <div class="round-row">
+      <div class="round-top"><span>ครั้งที่ ${p.n}${p.count ? ' (' + p.count + ' รายการ)' : ''}</span><b>${p.avg != null ? p.avg.toFixed(1) : '–'}</b></div>
+      <div class="bar"><i style="width:${p.avg != null ? Math.min(100, p.avg) : 0}%"></i></div>
+    </div>`).join('');
+}
+
+// รายการที่ยังรอผู้ประเมิน
+function renderPending(rows) {
+  const area = document.getElementById('pendingArea');
+  const open = rows.filter(r => r.status !== 'done').slice(0, 6);
+  if (!open.length) { area.innerHTML = '<div class="empty">ไม่มีรายการค้างประเมิน</div>'; return; }
+  area.innerHTML = open.map(r => `
+    <div class="pending-row">
+      <div class="pending-top">${avatarHtml(r.evaluateeName)}<div><strong>${escapeHtml(r.evaluateeName)}</strong><small>${escapeHtml(r.position)}, รอบที่ ${r.round}</small></div></div>
+      ${segBar(r.submittedCount, r.evaluatorCount)}
+    </div>`).join('');
+}
+
+// บอร์ดสถานะ: 3 คอลัมน์ตามสถานะของรายการ
+function renderBoard(rows) {
+  const area = document.getElementById('boardArea');
+  const lanes = [
+    { key: 'pending', title: 'รอผู้ประเมิน', color: '#FFB02E' },
+    { key: 'partial', title: 'ประเมินบางส่วน', color: '#3D5AF1' },
+    { key: 'done', title: 'ประเมินครบแล้ว', color: '#2FB985' }
+  ];
+  const formTypeLabel = { vet: 'ฟอร์มสัตวแพทย์', staff: 'ฟอร์มบุคลากรทั่วไป' };
+  area.innerHTML = lanes.map(l => {
+    const items = rows.filter(r => r.status === l.key);
+    const cards = items.map(r => {
+      const badge = overallDecisionBadge(r);
+      const score = r.avgTotal != null
+        ? `<div class="kscore"><b>${r.avgTotal}<small>/ 100</small></b><span class="chip">ระดับ${escapeHtml(r.level || '-')}</span></div>` : '';
+      const outcome = (l.key === 'done') ? `<div style="margin-top:10px;"><span class="badge ${badge.cls}">${badge.label}</span></div>` : '';
+      return `
+      <article class="kcard">
+        <div class="kcard-top">${avatarHtml(r.evaluateeName)}<div><strong>${escapeHtml(r.evaluateeName)}</strong><small>${escapeHtml(r.position)}</small></div></div>
+        <div class="chips"><span class="chip">รอบที่ ${r.round}</span><span class="chip alt">${formTypeLabel[r.formType] || r.formType}</span></div>
+        ${segBar(r.submittedCount, r.evaluatorCount)}
+        ${score}${outcome}
+        <button type="button" class="klink" aria-expanded="false" onclick="toggleCard(this, '${r.id}')">ดูรายละเอียด</button>
+        <div class="kdetail" hidden></div>
+      </article>`;
+    }).join('');
+    return `
+    <section class="lane" aria-label="${l.title}">
+      <div class="lane-head"><i style="background:${l.color}"></i>${l.title}<span class="count">${items.length}</span></div>
+      ${cards || '<div class="empty">ไม่มีรายการ</div>'}
+    </section>`;
+  }).join('');
+}
+
+function toggleCard(btn, id) {
+  const box = btn.nextElementSibling;
+  const open = box.hidden;
+  if (open && !box.innerHTML) {
+    const r = allRows.find(x => x.id === id);
+    box.innerHTML = r ? renderDetail(r) : '';
+  }
+  box.hidden = !open;
+  btn.setAttribute('aria-expanded', String(open));
+  btn.textContent = open ? 'ซ่อนรายละเอียด' : 'ดูรายละเอียด';
+}
+
+function renderTable(rows) {
+  const area = document.getElementById('tableArea');
+  if (!rows.length) { area.innerHTML = '<div class="empty">ไม่พบข้อมูล</div>'; return; }
+  const formTypeLabel = { vet: 'สัตวแพทย์', staff: 'บุคลากรทั่วไป' };
+  area.innerHTML = `<div class="table-wrap"><table>
+    <thead><tr>
+      <th>ชื่อ</th><th>ตำแหน่ง</th><th>ประเภท</th><th>รอบ</th><th>ผู้ประเมิน</th><th>คะแนนเฉลี่ย</th><th>ระดับ</th><th>ผลสรุป</th>
+    </tr></thead>
+    <tbody>
+      ${rows.map((r, i) => {
+        const badge = overallDecisionBadge(r);
+        return `
+        <tr class="row" onclick="toggleDetail(${i})">
+          <td><div class="cell-name">${avatarHtml(r.evaluateeName)}${escapeHtml(r.evaluateeName)}</div></td>
+          <td>${escapeHtml(r.position)}</td>
+          <td>${formTypeLabel[r.formType] || r.formType}</td>
+          <td>ครั้งที่ ${r.round}</td>
+          <td>${segBar(r.submittedCount, r.evaluatorCount)}</td>
+          <td class="score-cell">${r.avgTotal != null ? r.avgTotal + ' / 100' : '-'}</td>
+          <td>${escapeHtml(r.level || '-')}</td>
+          <td><span class="badge ${badge.cls}">${badge.label}</span></td>
+        </tr>
+        <tr class="detail-row" id="detail-${i}" style="display:none;"><td colspan="8">${renderDetail(r)}</td></tr>
+      `;}).join('')}
+    </tbody>
+  </table></div>`;
+}
+
+function renderDetail(r) {
+  if (!r.evaluatorScores || !r.evaluatorScores.length) {
+    return '<div class="empty">ยังไม่มีผู้ประเมินส่งแบบประเมิน</div>';
+  }
+  const blocks = r.evaluatorScores.map(ev => {
+    let personalItems = [], secondItems = [];
+    try { personalItems = JSON.parse(ev.personalItemsJson || '[]'); } catch (e) {}
+    try { secondItems = JSON.parse(ev.secondItemsJson || '[]'); } catch (e) {}
+    return `
+      <div class="evaluator-block">
+        <h4>${escapeHtml(ev.evaluatorName)} — ${ev.totalScore}/100 (${escapeHtml(ev.decision)})</h4>
+        <div class="meta">ส่งเมื่อ ${ev.submittedAt ? new Date(ev.submittedAt).toLocaleString('th-TH') : '-'}</div>
+        <ul>${personalItems.map(it => `<li>${escapeHtml(it.name)}: ${it.score}/${it.max}</li>`).join('')}</ul>
+        <ul>${secondItems.map(it => `<li>${escapeHtml(it.name)}: ${it.score}/${it.max}</li>`).join('')}</ul>
+        ${ev.decisionReason ? `<div class="meta">รายละเอียด: ${escapeHtml(ev.decisionReason)}</div>` : ''}
+        ${ev.decisionEffectiveDate ? `<div class="meta">มีผลตั้งแต่: ${escapeHtml(ev.decisionEffectiveDate)}</div>` : ''}
+        ${ev.suggestion ? `<div class="meta">ข้อเสนอแนะ: ${escapeHtml(ev.suggestion)}</div>` : ''}
+      </div>
+    `;
+  }).join('');
+  return `${blocks}<button type="button" class="print-btn" onclick="printReport(event, '${r.id}')">พิมพ์ / บันทึกเป็น PDF</button>`;
+}
+
+function toggleDetail(i) {
+  const el = document.getElementById(`detail-${i}`);
+  el.style.display = el.style.display === 'none' ? 'table-row' : 'none';
+}
+
+function printReport(e, requestId) {
+  e.stopPropagation();
+  const r = allRows.find(x => x.id === requestId);
+  if (!r) return;
+  const w = window.open('', '_blank');
+  const formTypeLabel = { vet: 'นายสัตวแพทย์', staff: 'บุคลากรทั่วไป' };
+  const rows = (r.evaluatorScores || []).map(ev => `
+    <tr><td>${escapeHtml(ev.evaluatorName)}</td><td style="text-align:center;">${ev.totalScore}</td><td>${escapeHtml(ev.decision)}</td></tr>
+  `).join('');
+  w.document.write(`
+    <html><head><meta charset="UTF-8"><title>สรุปผลประเมิน - ${escapeHtml(r.evaluateeName)}</title>
+    <style>
+      body { font-family: "Sarabun", sans-serif; padding: 40px; color: #2c2c2a; }
+      h1 { font-size: 18px; text-align: center; }
+      table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 14px; }
+      th, td { border: 1px solid #999; padding: 8px; }
+      .info div { margin-bottom: 4px; }
+      .sign { margin-top: 60px; }
+      .sign div { margin-bottom: 40px; }
+    </style></head><body>
+    <h1>สรุปผลการประเมินทดลองปฏิบัติงาน<br>โรงพยาบาลสัตว์ มหาวิทยาลัยสงขลานครินทร์</h1>
+    <div class="info">
+      <div><b>ชื่อผู้รับการประเมิน:</b> ${escapeHtml(r.evaluateeName)}</div>
+      <div><b>ตำแหน่ง:</b> ${escapeHtml(r.position)} (${formTypeLabel[r.formType] || r.formType})</div>
+      <div><b>รอบการประเมิน:</b> ครั้งที่ ${r.round} (${r.periodMonths} เดือน)</div>
+      <div><b>คะแนนเฉลี่ยรวม:</b> ${r.avgTotal != null ? r.avgTotal : '-'} / 100 (${escapeHtml(r.level || '-')})</div>
+    </div>
+    <table><thead><tr><th>ผู้ประเมิน</th><th>คะแนนรวม</th><th>ผลสรุป</th></tr></thead><tbody>${rows}</tbody></table>
+    <div class="sign">
+      ${(r.evaluatorScores || []).map(() => '<div>ลงชื่อ .............................................. กรรมการ<br>(...........................................)</div>').join('')}
+    </div>
+    <script>window.print();<\/script>
+    </body></html>
+  `);
+  w.document.close();
+}
+
+function applyFilters() {
+  const name = document.getElementById('searchName').value.trim().toLowerCase();
+  const type = document.getElementById('filterType').value;
+  const status = document.getElementById('filterStatus').value;
+  const filtered = allRows.filter(r => {
+    if (name && !r.evaluateeName.toLowerCase().includes(name)) return false;
+    if (type && r.formType !== type) return false;
+    if (status && r.status !== status) return false;
+    return true;
+  });
+  renderTable(filtered);
+  renderBoard(filtered);
+}
+
+function setView(v) {
+  currentView = v;
+  document.querySelectorAll('.tabs button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.view === v)));
+  document.getElementById('viewOverview').hidden = v !== 'overview';
+  document.getElementById('viewList').hidden = v === 'overview';
+  document.getElementById('boardArea').hidden = v !== 'board';
+  document.getElementById('tableCard').hidden = v !== 'table';
+}
+document.querySelectorAll('.tabs button').forEach(b => b.addEventListener('click', () => setView(b.dataset.view)));
+
+['searchName', 'filterType', 'filterStatus'].forEach(id => {
+  document.getElementById(id).addEventListener('input', applyFilters);
+});
+
+async function load() {
+  try {
+    allRows = await api('listEvaluations', {});
+    renderStats(allRows);
+    renderTable(allRows);
+    renderBoard(allRows);
+  } catch (err) {
+    const msg = `<div class="empty">โหลดข้อมูลไม่สำเร็จ: ${escapeHtml(err.message)}</div>`;
+    ['tableArea', 'boardArea', 'donutArea', 'roundsArea', 'pendingArea'].forEach(id => { document.getElementById(id).innerHTML = msg; });
+  }
+}
+
+load();
+</script>
+</body>
+</html>
