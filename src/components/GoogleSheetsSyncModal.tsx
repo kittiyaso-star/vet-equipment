@@ -714,6 +714,17 @@ export const GoogleSheetsSyncModal: React.FC<GoogleSheetsSyncModalProps> = ({
                     <li>คัดลอก <strong>URL ของเว็บแอป (Web App URL)</strong> มาใส่ในช่อง Webhook ด้านบน แล้วกดบันทึก!</li>
                   </ol>
 
+                  {/* Tip for updating deployment to get latest requests */}
+                  <div className="p-3 bg-amber-50 border border-amber-300 rounded-xl text-xs space-y-1">
+                    <div className="font-bold text-amber-950 flex items-center gap-1.5">
+                      <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                      <span>💡 กรณีเคย Deploy ไว้ก่อนแล้ว และต้องการให้อ่านคำขอยืมใหม่ล่าสุดอัตโนมัติ:</span>
+                    </div>
+                    <p className="text-[11px] text-amber-900 leading-relaxed pl-5">
+                      ในหน้า Apps Script ให้คลิก <strong>ทำให้ใช้งานได้ (Deploy)</strong> &gt; <strong>จัดการการทำให้ใช้งานได้ (Manage deployments)</strong> &gt; คลิกไอคอนดินสอ ✏️ &gt; ตรงหัวข้อเวอร์ชัน ให้เลือก <strong>"เวอร์ชันใหม่" (New version)</strong> &gt; กด <strong>ทำให้ใช้งานได้ (Deploy)</strong> (ใช้ Webhook URL เดิมได้เลย ไม่ต้องเปลี่ยน URL)
+                    </p>
+                  </div>
+
                   {/* Email Notification Feature Highlight */}
                   <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-xs space-y-1">
                     <div className="font-bold text-emerald-900 flex items-center gap-1.5">
@@ -752,7 +763,7 @@ export const GoogleSheetsSyncModal: React.FC<GoogleSheetsSyncModalProps> = ({
         {/* Footer */}
         <div className="px-6 py-4 bg-slate-100 border-t border-slate-200 flex items-center justify-between">
           <div className="text-[11px] text-slate-500">
-            ฐานข้อมูล: <strong>1jGol5v7T8hyZO8dBNo8i-MaoCnW_b7WSsGn2P63MYts</strong>
+            ฐานข้อมูล: <strong>1jGol5v7T8hyZO8DbNo8i-MaoCnW_b7WSsGn2P63MYts</strong>
           </div>
           <button
             onClick={onClose}

@@ -474,17 +474,47 @@ export function getStoredRequests(): BorrowRequest[] {
 
     if (!raw) {
       localStorage.setItem(STORAGE_KEY_REQUESTS, JSON.stringify(INITIAL_BORROW_REQUESTS));
+      syncEquipmentAvailability(INITIAL_BORROW_REQUESTS);
       return INITIAL_BORROW_REQUESTS;
     }
 
     const parsed: BorrowRequest[] = JSON.parse(raw);
-    // Ensure all canonical requests exist in the list
-    const existingIds = new Set(parsed.map(r => r.id));
-    const missing = INITIAL_BORROW_REQUESTS.filter(r => !existingIds.has(r.id));
-    
-    // Also if parsed has fewer items than INITIAL_BORROW_REQUESTS, guarantee full catalog of requests
-    const merged = missing.length > 0 ? [...parsed, ...missing] : parsed;
-    localStorage.setItem(STORAGE_KEY_REQUESTS, JSON.stringify(merged));
+    const existingMap = new Map<string, BorrowRequest>();
+    for (const r of parsed) {
+      existingMap.set(r.id, r);
+    }
+
+    // Always merge in any new canonical requests from INITIAL_BORROW_REQUESTS (e.g. REQ-SR7TYY, REQ-SSKSJY, REQ-K299VC, etc.)
+    let hasChanges = false;
+    for (const initReq of INITIAL_BORROW_REQUESTS) {
+      if (!existingMap.has(initReq.id)) {
+        existingMap.set(initReq.id, initReq);
+        hasChanges = true;
+      } else {
+        // If an initial request in the sheet was marked completed or approved in INITIAL_BORROW_REQUESTS
+        // and local has an outdated/stale status (e.g. REQ-SR7TYY should be 'เจ้าของให้ยืมแล้ว'), sync it
+        const current = existingMap.get(initReq.id)!;
+        if (initReq.id === 'REQ-SR7TYY' && current.status !== 'เจ้าของให้ยืมแล้ว') {
+          existingMap.set(initReq.id, { ...current, ...initReq });
+          hasChanges = true;
+        } else if (initReq.id === 'REQ-8HODE2' && current.status !== 'รับคืนเรียบร้อย') {
+          existingMap.set(initReq.id, { ...current, ...initReq });
+          hasChanges = true;
+        } else if (!current.equipmentList || current.equipmentList.length === 0) {
+          existingMap.set(initReq.id, { ...current, equipmentList: initReq.equipmentList });
+          hasChanges = true;
+        }
+      }
+    }
+
+    const merged = Array.from(existingMap.values());
+    if (hasChanges || merged.length !== parsed.length) {
+      localStorage.setItem(STORAGE_KEY_REQUESTS, JSON.stringify(merged));
+      syncEquipmentAvailability(merged);
+    } else {
+      // Ensure equipment availability matches current loan state
+      syncEquipmentAvailability(merged);
+    }
     return merged;
   } catch (err) {
     console.error('Error reading requests from storage', err);
@@ -788,7 +818,7 @@ export function parseEquipmentSheetCSV(csvText: string): EquipmentMaster[] {
 }
 
 export async function fetchGoogleSheetCSV(
-  sheetUrl = 'https://docs.google.com/spreadsheets/d/1jGol5v7T8hyZO8dBNo8i-MaoCnW_b7WSsGn2P63MYts/edit?gid=326365193',
+  sheetUrl = 'https://docs.google.com/spreadsheets/d/1jGol5v7T8hyZO8DbNo8i-MaoCnW_b7WSsGn2P63MYts/edit?gid=326365193',
   gid = '326365193'
 ): Promise<string> {
   // If user provided a direct /pub?output=csv link
@@ -803,7 +833,7 @@ export async function fetchGoogleSheetCSV(
   }
 
   const match = sheetUrl.match(/\/d\/([a-zA-Z0-9-_]+)/);
-  const spreadsheetId = match ? match[1] : '1jGol5v7T8hyZO8dBNo8i-MaoCnW_b7WSsGn2P63MYts';
+  const spreadsheetId = match ? match[1] : '1jGol5v7T8hyZO8DbNo8i-MaoCnW_b7WSsGn2P63MYts';
   const gidMatch = sheetUrl.match(/[#&?]gid=([0-9]+)/);
   const targetGid = gidMatch ? gidMatch[1] : gid;
 

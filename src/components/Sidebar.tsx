@@ -58,6 +58,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onCloseMobile
 }) => {
   const isAdmin = currentUser.role === 'admin';
+  const isPortalAdmin = currentPortal === 'admin' && isAdmin;
 
   const menuItems = [
     {
@@ -86,12 +87,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
       badge: activeLoansCount > 0 ? activeLoansCount : null,
       badgeColor: 'bg-[#0090FF] text-white'
     },
-    {
-      key: 'history' as NavViewKey,
-      label: 'ประวัติทำรายการ',
-      icon: History,
-      badge: null
-    }
+    ...(isPortalAdmin
+      ? [
+          {
+            key: 'history' as NavViewKey,
+            label: 'ประวัติทำรายการ',
+            icon: History,
+            badge: null
+          }
+        ]
+      : [])
   ];
 
   return (

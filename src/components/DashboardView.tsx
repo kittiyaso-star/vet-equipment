@@ -1,19 +1,21 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { 
   Package, 
   CheckCircle2, 
   Clock, 
   AlertTriangle, 
   ArrowRight, 
-  FileText, 
-  Calendar, 
-  Building2, 
-  ChevronRight,
   TrendingUp,
   PieChart as PieIcon,
-  BarChart2
+  BarChart2,
+  Filter,
+  Award,
+  RotateCcw
 } from 'lucide-react';
 import { BorrowRequest, EquipmentMaster } from '../types';
+import { BorrowAnalyticsBarChart } from './BorrowAnalyticsBarChart';
+import { MonthlySummaryReportModule } from './MonthlySummaryReportModule';
+import { BorrowCalendarView } from './BorrowCalendarView';
 
 interface DashboardViewProps {
   equipment: EquipmentMaster[];
@@ -22,6 +24,8 @@ interface DashboardViewProps {
   onSelectRequest: (request: BorrowRequest) => void;
   onOpenNewBorrow: () => void;
 }
+
+type DashboardStatusFilter = 'ALL' | 'PENDING' | 'BORROWING' | 'RETURNED' | 'CANCELLED';
 
 // Color palette directly sampled from Image 2 (Matching Gradient & Generic Gradient)
 const PALETTE_COLORS = [
@@ -43,6 +47,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   onSelectRequest,
   onOpenNewBorrow
 }) => {
+  const [statusFilter, setStatusFilter] = useState<DashboardStatusFilter>('ALL');
+  const [showAllTopEquipment, setShowAllTopEquipment] = useState(false);
+
   const todayStr = new Date().toISOString().split('T')[0];
   const currentMonthStr = todayStr.substring(0, 7); // YYYY-MM
 
@@ -55,7 +62,15 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   // 2. Sub-metrics bar
   const pendingRequestsCount = requests.filter(r => r.status === 'ยื่นขออนุมัติ' || r.status === 'รอผู้บริหารอนุมัติ').length;
   const borrowedTodayCount = requests.filter(r => (r.status === 'เจ้าของให้ยืมแล้ว' || r.status === 'กำลังยืมใช้งาน') && r.borrowFrom === todayStr).length;
-  const borrowedThisMonthCount = requests.filter(r => (r.status === 'เจ้าของให้ยืมแล้ว' || r.status === 'กำลังยืมใช้งาน' || r.status === 'รับคืนเรียบร้อย') && (r.borrowFrom || '').startsWith(currentMonthStr)).length;
+  const borrowedThisMonthCount = requests.filter(
+    r =>
+      (r.status === 'เจ้าของให้ยืมแล้ว' ||
+        r.status === 'กำลังยืมใช้งาน' ||
+        r.status === 'รับคืนเรียบร้อย' ||
+        r.status === 'คืนครุภัณฑ์แล้ว' ||
+        r.status === 'เสร็จสิ้น') &&
+      (r.borrowFrom || '').startsWith(currentMonthStr)
+  ).length;
   const returnedThisMonthCount = requests.filter(r => (r.status === 'รับคืนเรียบร้อย' || r.status === 'เสร็จสิ้น' || r.status === 'คืนครุภัณฑ์แล้ว') && (r.updatedAt || '').startsWith(currentMonthStr)).length;
 
   // 3. Category proportions for Donut Chart
@@ -104,12 +119,136 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
   const maxStatusCount = Math.max(1, ...statusStats.map(s => s.count));
 
-  // 5. Recent Requests (latest 5)
-  const recentRequests = useMemo(() => {
-    return [...requests]
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-      .slice(0, 5);
+  // 5. Most Borrowed & Returned Equipment Statistics
+  const topBorrowedEquipment = useMemo(() => {
+    const equipmentMap = new Map<
+      string,
+      {
+        code: string;
+        name: string;
+        location: string;
+        totalBorrows: number;
+        returnedCount: number;
+        activeCount: number;
+        pendingCount: number;
+      }
+    >();
+
+    // Lookup map from master equipment for canonical naming
+    const masterByCode = new Map<string, EquipmentMaster>();
+    for (const eq of equipment) {
+      if (eq.code) {
+        masterByCode.set(eq.code.trim().toLowerCase(), eq);
+      }
+    }
+
+    for (const req of requests) {
+      if (req.status === 'ยกเลิกคำขอ') continue;
+
+      const isReturned =
+        req.status === 'รับคืนเรียบร้อย' ||
+        req.status === 'คืนครุภัณฑ์แล้ว' ||
+        req.status === 'เสร็จสิ้น';
+      const isActive =
+        req.status === 'เจ้าของให้ยืมแล้ว' || req.status === 'กำลังยืมใช้งาน';
+      const isPending =
+        req.status === 'ยื่นขออนุมัติ' || req.status === 'รอผู้บริหารอนุมัติ';
+
+      const seenInReq = new Set<string>();
+      for (const item of req.equipmentList || []) {
+        const rawCode = (item.code || '').trim();
+        const rawName = (item.name || '').trim();
+        const key = (rawCode || rawName).toLowerCase();
+        if (!key || seenInReq.has(key)) continue;
+        seenInReq.add(key);
+
+        const master = rawCode ? masterByCode.get(rawCode.toLowerCase()) : undefined;
+        const displayName = master?.name || rawName || rawCode;
+        const displayCode = master?.code || rawCode || '-';
+        const displayLocation = master?.location || item.location || '-';
+
+        const existing = equipmentMap.get(key) || {
+          code: displayCode,
+          name: displayName,
+          location: displayLocation,
+          totalBorrows: 0,
+          returnedCount: 0,
+          activeCount: 0,
+          pendingCount: 0
+        };
+
+        existing.totalBorrows += 1;
+        if (isReturned) existing.returnedCount += 1;
+        else if (isActive) existing.activeCount += 1;
+        else if (isPending) existing.pendingCount += 1;
+
+        equipmentMap.set(key, existing);
+      }
+    }
+
+    return Array.from(equipmentMap.values()).sort((a, b) => {
+      if (b.totalBorrows !== a.totalBorrows) return b.totalBorrows - a.totalBorrows;
+      if (b.returnedCount !== a.returnedCount) return b.returnedCount - a.returnedCount;
+      return a.name.localeCompare(b.name, 'th');
+    });
+  }, [requests, equipment]);
+
+  const maxBorrowCount = Math.max(1, topBorrowedEquipment[0]?.totalBorrows || 1);
+  const displayedTopEquipment = showAllTopEquipment
+    ? topBorrowedEquipment
+    : topBorrowedEquipment.slice(0, 5);
+
+  // 6. Status counts for dropdown labels
+  const filterCounts = useMemo(() => {
+    let pending = 0;
+    let borrowing = 0;
+    let returned = 0;
+    let cancelled = 0;
+
+    for (const r of requests) {
+      if (r.status === 'ยื่นขออนุมัติ' || r.status === 'รอผู้บริหารอนุมัติ') pending++;
+      else if (r.status === 'เจ้าของให้ยืมแล้ว' || r.status === 'กำลังยืมใช้งาน') borrowing++;
+      else if (r.status === 'รับคืนเรียบร้อย' || r.status === 'คืนครุภัณฑ์แล้ว' || r.status === 'เสร็จสิ้น') returned++;
+      else if (r.status === 'ยกเลิกคำขอ') cancelled++;
+    }
+
+    return {
+      all: requests.length,
+      pending,
+      borrowing,
+      returned,
+      cancelled
+    };
   }, [requests]);
+
+  // 7. Filtered Requests for Dashboard Table
+  const filteredRequests = useMemo(() => {
+    const matchesStatus = (req: BorrowRequest) => {
+      switch (statusFilter) {
+        case 'PENDING':
+          return req.status === 'ยื่นขออนุมัติ' || req.status === 'รอผู้บริหารอนุมัติ';
+        case 'BORROWING':
+          return req.status === 'เจ้าของให้ยืมแล้ว' || req.status === 'กำลังยืมใช้งาน';
+        case 'RETURNED':
+          return (
+            req.status === 'รับคืนเรียบร้อย' ||
+            req.status === 'คืนครุภัณฑ์แล้ว' ||
+            req.status === 'เสร็จสิ้น'
+          );
+        case 'CANCELLED':
+          return req.status === 'ยกเลิกคำขอ';
+        case 'ALL':
+        default:
+          return true;
+      }
+    };
+
+    const sorted = [...requests]
+      .filter(matchesStatus)
+      .sort((a, b) => (new Date(b.createdAt).getTime() || 0) - (new Date(a.createdAt).getTime() || 0));
+
+    return statusFilter === 'ALL' ? sorted.slice(0, 5) : sorted.slice(0, 10);
+  }, [requests, statusFilter]);
 
   return (
     <div className="space-y-6">
@@ -288,21 +427,203 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
       </div>
 
-      {/* 4. Bottom Table: รายการขอยืมล่าสุด (Matching Image 4) */}
+      {/* 3.3 Calendar View: ตารางเวลาการยืมครุภัณฑ์รายวัน */}
+      <BorrowCalendarView
+        equipment={equipment}
+        requests={requests}
+        onSelectRequest={onSelectRequest}
+        onOpenNewBorrow={onOpenNewBorrow}
+      />
+
+      {/* 3.5 Recharts Bar Chart Analytics Module: แยกตามหมวดหมู่ / รายการที่ถูกยืมมากที่สุด (30 วันล่าสุด) */}
+      <BorrowAnalyticsBarChart equipment={equipment} requests={requests} />
+
+      {/* 3.8 Monthly Summary PDF Report Module: รายงานสรุปสถิติการยืม-คืนประจำเดือน */}
+      <MonthlySummaryReportModule equipment={equipment} requests={requests} />
+
+      {/* 4. Top Most Borrowed & Returned Equipment Section */}
       <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs overflow-hidden">
-        <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between">
+        <div className="p-4 sm:p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-[#0090FF]/10 text-[#0090FF] flex items-center justify-center shrink-0">
+              <TrendingUp className="w-4 h-4" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-slate-900">
+                อันดับครุภัณฑ์ที่มีการยืม-คืนมากที่สุด
+              </h3>
+              <p className="text-[11px] text-slate-500">
+                สถิติความถี่การยืมและคืนสำเร็จของครุภัณฑ์แต่ละรายการ (ไม่นับรวมคำขอที่ถูกยกเลิก)
+              </p>
+            </div>
+          </div>
+
+          {topBorrowedEquipment.length > 5 && (
+            <button
+              type="button"
+              onClick={() => setShowAllTopEquipment(prev => !prev)}
+              className="text-xs font-semibold text-[#0090FF] hover:text-[#0083AF] bg-blue-50/80 hover:bg-blue-100/80 px-3 py-1.5 rounded-xl transition cursor-pointer self-start sm:self-auto"
+            >
+              {showAllTopEquipment
+                ? 'แสดงเฉพาะ 5 อันดับแรก'
+                : `ดูทั้งหมด (${topBorrowedEquipment.length} รายการ)`}
+            </button>
+          )}
+        </div>
+
+        <div className="p-4 sm:p-5">
+          {topBorrowedEquipment.length === 0 ? (
+            <div className="py-8 text-center text-xs text-slate-400">
+              ยังไม่มีประวัติการยืม-คืนครุภัณฑ์ในระบบ
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {/* Highlight #1 Most Borrowed Item */}
+              {topBorrowedEquipment[0] && (
+                <div className="p-3.5 sm:p-4 rounded-xl bg-gradient-to-r from-[#0090FF]/8 via-[#008EE4]/5 to-[#007473]/8 border border-[#0090FF]/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-10 h-10 rounded-xl bg-[#0090FF] text-white flex items-center justify-center shrink-0 shadow-xs">
+                      <Award className="w-5 h-5" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-[11px] font-bold text-[#0083AF] uppercase tracking-wide">
+                        อันดับ 1 ยืม-คืนบ่อยที่สุด
+                      </div>
+                      <div className="text-sm font-bold text-slate-900 truncate">
+                        {topBorrowedEquipment[0].name}
+                      </div>
+                      <div className="text-[11px] text-slate-500 font-mono">
+                        รหัส: {topBorrowedEquipment[0].code} • จุดเก็บ: {topBorrowedEquipment[0].location}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 shrink-0">
+                    <div className="px-3 py-1.5 rounded-xl bg-white border border-slate-200/90 text-center">
+                      <div className="text-[10px] text-slate-500 font-medium">ยืมทั้งหมด</div>
+                      <div className="text-base font-black text-[#0090FF]">
+                        {topBorrowedEquipment[0].totalBorrows} <span className="text-[11px] font-semibold">ครั้ง</span>
+                      </div>
+                    </div>
+                    <div className="px-3 py-1.5 rounded-xl bg-white border border-slate-200/90 text-center">
+                      <div className="text-[10px] text-slate-500 font-medium">คืนสำเร็จแล้ว</div>
+                      <div className="text-base font-black text-[#007473]">
+                        {topBorrowedEquipment[0].returnedCount} <span className="text-[11px] font-semibold">ครั้ง</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Ranked Bar List */}
+              <div className="divide-y divide-slate-100">
+                {displayedTopEquipment.map((item, idx) => {
+                  const barWidth = Math.max(8, Math.round((item.totalBorrows / maxBorrowCount) * 100));
+                  const rankColors =
+                    idx === 0
+                      ? 'bg-amber-100 text-amber-800 border-amber-300'
+                      : idx === 1
+                      ? 'bg-slate-200 text-slate-800 border-slate-300'
+                      : idx === 2
+                      ? 'bg-orange-100 text-orange-800 border-orange-300'
+                      : 'bg-slate-50 text-slate-600 border-slate-200';
+
+                  return (
+                    <div
+                      key={`${item.code}-${item.name}`}
+                      className="py-3 first:pt-1 last:pb-1 space-y-2"
+                    >
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <span
+                            className={`w-7 h-7 rounded-lg border text-xs font-extrabold flex items-center justify-center shrink-0 ${rankColors}`}
+                          >
+                            {idx + 1}
+                          </span>
+                          <div className="min-w-0">
+                            <div className="text-xs sm:text-sm font-bold text-slate-900 truncate">
+                              {item.name}
+                            </div>
+                            <div className="text-[11px] text-slate-500 flex flex-wrap items-center gap-x-2">
+                              <span className="font-mono text-slate-600">{item.code}</span>
+                              <span>• {item.location}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 text-xs shrink-0 pl-9 sm:pl-0">
+                          <span className="px-2.5 py-1 rounded-lg bg-blue-50 text-[#0083AF] font-bold">
+                            ยืม {item.totalBorrows} ครั้ง
+                          </span>
+                          <span className="px-2.5 py-1 rounded-lg bg-teal-50 text-[#007473] font-semibold flex items-center gap-1">
+                            <RotateCcw className="w-3 h-3" />
+                            คืนแล้ว {item.returnedCount} ครั้ง
+                          </span>
+                          {item.activeCount > 0 && (
+                            <span className="px-2 py-1 rounded-lg bg-amber-50 text-amber-700 font-semibold">
+                              กำลังยืม {item.activeCount}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="pl-9">
+                        <div className="w-full h-2.5 rounded-full bg-slate-100 overflow-hidden flex">
+                          <div
+                            className="h-full rounded-full transition-all duration-500"
+                            style={{
+                              width: `${barWidth}%`,
+                              backgroundColor: PALETTE_COLORS[idx % PALETTE_COLORS.length]
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* 5. Bottom Table: รายการขอยืมล่าสุด พร้อม Dropdown กรองตามสถานะ */}
+      <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs overflow-hidden">
+        <div className="p-4 sm:p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <Clock className="w-4 h-4 text-[#0090FF]" />
             <h3 className="text-sm font-bold text-slate-900">รายการขอยืมล่าสุด</h3>
+            <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 text-slate-600">
+              แสดง {filteredRequests.length} รายการ
+            </span>
           </div>
-          <button
-            type="button"
-            onClick={onViewAllRequests}
-            className="text-xs font-semibold text-[#0090FF] hover:text-[#0083AF] flex items-center gap-1 transition cursor-pointer"
-          >
-            <span>ดูทั้งหมด</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </button>
+
+          <div className="flex flex-wrap items-center gap-2.5">
+            {/* Status Filter Dropdown */}
+            <div className="relative flex items-center">
+              <Filter className="w-3.5 h-3.5 text-slate-400 absolute left-3 pointer-events-none" />
+              <select
+                aria-label="กรองรายการคำขอตามสถานะ"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value as DashboardStatusFilter)}
+                className="pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 font-semibold focus:outline-hidden focus:border-[#0090FF] cursor-pointer hover:bg-slate-100/80 transition"
+              >
+                <option value="ALL">สถานะทั้งหมด ({filterCounts.all})</option>
+                <option value="PENDING">รอยืนยัน / รออนุมัติ ({filterCounts.pending})</option>
+                <option value="BORROWING">กำลังยืมใช้งาน ({filterCounts.borrowing})</option>
+                <option value="RETURNED">รับคืนแล้ว / เสร็จสิ้น ({filterCounts.returned})</option>
+                <option value="CANCELLED">ยกเลิกคำขอ ({filterCounts.cancelled})</option>
+              </select>
+            </div>
+
+            <button
+              type="button"
+              onClick={onViewAllRequests}
+              className="text-xs font-semibold text-[#0090FF] hover:text-[#0083AF] flex items-center gap-1 transition cursor-pointer px-2 py-1"
+            >
+              <span>ดูทั้งหมด</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
         </div>
 
         <div className="overflow-x-auto">
@@ -311,6 +632,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               <tr>
                 <th className="py-3 px-4">เลขที่คำขอ</th>
                 <th className="py-3 px-4">ผู้ขอยืม</th>
+                <th className="py-3 px-4">ครุภัณฑ์ที่ยืม</th>
                 <th className="py-3 px-4">หน่วยงาน</th>
                 <th className="py-3 px-4">กำหนดคืน</th>
                 <th className="py-3 px-4 text-center">สถานะ</th>
@@ -318,20 +640,25 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {recentRequests.length === 0 ? (
+              {filteredRequests.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-8 text-center text-slate-400">
-                    ยังไม่มีรายการคำขอยืมในระบบ
+                  <td colSpan={7} className="py-10 text-center text-slate-400">
+                    ไม่พบรายการคำขอในสถานะที่เลือก
                   </td>
                 </tr>
               ) : (
-                recentRequests.map((req) => (
+                filteredRequests.map((req) => (
                   <tr key={req.id} className="hover:bg-slate-50/60 transition">
                     <td className="py-3 px-4 font-mono font-bold text-[#0090FF]">
                       {req.id}
                     </td>
                     <td className="py-3 px-4 font-medium text-slate-900">
                       {req.requesterName}
+                    </td>
+                    <td className="py-3 px-4 text-slate-700 max-w-xs truncate" title={req.equipmentList.map(eq => eq.name).join(', ')}>
+                      {req.equipmentList.length > 0
+                        ? req.equipmentList.map(eq => eq.name).join(', ')
+                        : '-'}
                     </td>
                     <td className="py-3 px-4 text-slate-600">
                       {req.requesterDept || req.requesterFacultyTh || '-'}
@@ -341,11 +668,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                     </td>
                     <td className="py-3 px-4 text-center">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${
-                        req.status === 'ยื่นขออนุมัติ'
+                        req.status === 'ยื่นขออนุมัติ' || req.status === 'รอผู้บริหารอนุมัติ'
                           ? 'bg-amber-50 text-amber-800 border-amber-300'
                           : req.status === 'เจ้าของให้ยืมแล้ว' || req.status === 'กำลังยืมใช้งาน'
                           ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
-                          : req.status === 'รับคืนเรียบร้อย'
+                          : req.status === 'รับคืนเรียบร้อย' || req.status === 'คืนครุภัณฑ์แล้ว' || req.status === 'เสร็จสิ้น'
                           ? 'bg-teal-50 text-teal-800 border-teal-300'
                           : 'bg-slate-100 text-slate-700 border-slate-200'
                       }`}>

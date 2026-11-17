@@ -346,14 +346,14 @@ export const INITIAL_BORROW_REQUESTS: BorrowRequest[] = [
   },
   {
     id: "REQ-8HODE2",
-    status: "ยื่นขออนุมัติ",
+    status: "รับคืนเรียบร้อย",
     createdAt: "2026-08-25T09:55:17.834Z",
-    updatedAt: "2026-09-02T04:05:42.313Z",
+    updatedAt: "2026-09-24T17:04:28.642Z",
     requesterName: "บารมี ชาญชญานนท์",
     requesterPosition: "นักวิทยาศาสตร์",
     requesterDept: "สาขาวิชาสัตวแพทยศาสตร์",
     requesterEmail: "baramee.c@psu.ac.th",
-    purpose: "สำหรับการเรียนการสอยรายวิชา 145-694 คลินิกปฏิบัติสัตว์น้ำ",
+    purpose: "สำหรับการเรียนการสอนรายวิชา 145-694 คลินิกปฏิบัติตัตว์น้ำ",
     borrowFrom: "2026-08-31",
     borrowFromTime: "8:45",
     borrowTo: "2026-08-31",
@@ -365,9 +365,10 @@ export const INITIAL_BORROW_REQUESTS: BorrowRequest[] = [
         location: "2/ห้องผ่าตัด 2",
         responsible: "นภัสกร",
         responsibleEmail: "naphatsakon.s@psu.ac.th",
-        ownerStatus: "รอเจ้าของตกลง",
-        ownerCondition: "ปกติ",
-        ownerNote: ""
+        ownerStatus: "ยินยอม",
+        ownerCondition: "ปกติสมบูรณ์",
+        ownerNote: "อนุมัติเรียบร้อย",
+        condAfter: "ปกติสมบูรณ์"
       },
       {
         code: "รพส-001",
@@ -375,19 +376,160 @@ export const INITIAL_BORROW_REQUESTS: BorrowRequest[] = [
         location: "1/ห้องเอกซเรย์",
         responsible: "อัจฉรา",
         responsibleEmail: "atchara.m@psu.ac.th",
-        ownerStatus: "รอเจ้าของตกลง",
-        ownerCondition: "ปกติ",
-        ownerNote: ""
-      },
+        ownerStatus: "ยินยอม",
+        ownerCondition: "ปกติสมบูรณ์",
+        ownerNote: "อนุมัติเรียบร้อย",
+        condAfter: "ปกติสมบูรณ์"
+      }
+    ]
+  },
+  {
+    id: "REQ-67KS9Z",
+    status: "รับคืนเรียบร้อย",
+    createdAt: "2026-09-15T02:11:46.369Z",
+    updatedAt: "2026-10-26T04:29:34.502Z",
+    requesterName: "นางสาวซารีป๊ะ หมัดหมู้",
+    requesterPosition: "นักวิทยาศาสตร์",
+    requesterDept: "สาขาวิชาสัตวแพทยศาสตร์",
+    requesterEmail: "sareepah.m@psu.ac.th",
+    purpose: "การเรียนการสอน 145-547 ทันตกรรม",
+    borrowFrom: "2026-09-17",
+    borrowFromTime: "8:30",
+    borrowTo: "2026-09-17",
+    borrowToTime: "16:30",
+    equipmentList: [
+      {
+        code: "รพส-001",
+        name: "แผ่นฟิล์ม X-Ray",
+        location: "1/ห้องเอกซเรย์",
+        responsible: "อัจฉรา",
+        responsibleEmail: "atchara.m@psu.ac.th",
+        ownerStatus: "ยินยอม",
+        ownerCondition: "ปกติสมบูรณ์",
+        condAfter: "ปกติสมบูรณ์"
+      }
+    ]
+  },
+  {
+    id: "REQ-JADVIR",
+    status: "รับคืนเรียบร้อย",
+    createdAt: "2026-09-22T06:51:20.956Z",
+    updatedAt: "2026-09-24T06:28:22.913Z",
+    requesterName: "นางสาวซารีป๊ะ หมัดหมู้",
+    requesterPosition: "นักวิทยาศาสตร์",
+    requesterDept: "สาขาวิชาสัตวแพทยศาสตร์",
+    requesterEmail: "sareepah.m@psu.ac.th",
+    purpose: "การเรียนการสอนรายวิชา 145-547 ทันตกรรมทางสัตวแพทย์",
+    borrowFrom: "2026-09-24",
+    borrowFromTime: "8:30",
+    borrowTo: "2026-09-24",
+    borrowToTime: "16:30",
+    equipmentList: [
+      {
+        code: "สพ.6525-003-0001-1/1-59/กต.(1)",
+        name: "เครื่องอ่านเอ็กซเรย์ฟันสัตว์ (CR)",
+        location: "2/ห้องผ่าตัด 5",
+        responsible: "นภัสกร",
+        responsibleEmail: "naphatsakon.s@psu.ac.th",
+        ownerStatus: "ยินยอม",
+        ownerCondition: "ปกติสมบูรณ์",
+        condAfter: "ปกติสมบูรณ์"
+      }
+    ]
+  },
+  {
+    id: "REQ-K299VC",
+    status: "รับคืนเรียบร้อย",
+    createdAt: "2026-09-24T10:11:08.797Z",
+    updatedAt: "2026-09-24T10:11:56.780Z",
+    requesterName: "นางสาวซารีป๊ะ หมัดหมู้",
+    requesterPosition: "นักวิทยาศาสตร์",
+    requesterDept: "สาขาวิชาสัตวแพทยศาสตร์",
+    requesterEmail: "sareepah.m@psu.ac.th",
+    purpose: "การเรียนการสอน",
+    borrowFrom: "2026-09-24",
+    borrowFromTime: "8:00",
+    borrowTo: "2026-09-24",
+    borrowToTime: "16:30",
+    equipmentList: [
       {
         code: "รพส-002",
         name: "ชุดกันรังสี X-Ray",
         location: "1/ห้องเอกซเรย์",
         responsible: "เบญจมาศ",
         responsibleEmail: "benjamas.ji@psu.ac.th",
-        ownerStatus: "รอเจ้าของตกลง",
-        ownerCondition: "ปกติ",
-        ownerNote: ""
+        ownerStatus: "ยินยอม",
+        ownerCondition: "ปกติสมบูรณ์",
+        condAfter: "ปกติสมบูรณ์"
+      }
+    ]
+  },
+  {
+    id: "REQ-SSKSJY",
+    status: "รับคืนเรียบร้อย",
+    createdAt: "2026-10-01T04:50:01.203Z",
+    updatedAt: "2026-10-07T03:31:15.138Z",
+    requesterName: "นางสาวซารีป๊ะ หมัดหมู้",
+    requesterPosition: "นักวิทยาศาสตร์",
+    requesterDept: "งานอบรมวิชาการ ที่ รพส.ทุ่งใหญ่",
+    requesterEmail: "sareepah.m@psu.ac.th",
+    purpose: "งานอบรมวิชาการ ที่ รพส.ทุ่งใหญ่",
+    borrowFrom: "2026-10-04",
+    borrowFromTime: "8:00",
+    borrowTo: "2026-10-04",
+    borrowToTime: "17:00",
+    equipmentList: [
+      {
+        code: "รพส-001",
+        name: "แผ่นฟิล์ม X-Ray",
+        location: "1/ห้องเอกซเรย์",
+        responsible: "อัจฉรา",
+        responsibleEmail: "atchara.m@psu.ac.th",
+        ownerStatus: "ยินยอม",
+        ownerCondition: "ปกติสมบูรณ์",
+        condAfter: "ปกติสมบูรณ์"
+      }
+    ]
+  },
+  {
+    id: "REQ-SR7TYY",
+    status: "เจ้าของให้ยืมแล้ว",
+    createdAt: "2026-10-16T03:03:31.111Z",
+    updatedAt: "2026-10-16T04:27:00.414Z",
+    requesterName: "นายบารมี ชาญชญานนท์",
+    requesterTitleTh: "นาย",
+    requesterFirstNameTh: "บารมี",
+    requesterLastNameTh: "ชาญชญานนท์",
+    requesterPositionTh: "นักวิทยาศาสตร์",
+    requesterPosition: "นักวิทยาศาสตร์",
+    requesterFacultyTh: "สาขาวิชาสัตวแพทยศาสตร์",
+    requesterDept: "สาขาวิชาสัตวแพทยศาสตร์",
+    requesterEmail: "baramee.c@psu.ac.th",
+    purpose: "การเรียนการสอนรายวิชา 145-694 คลินิกปฏิบัติตัตว์น้ำ",
+    borrowFrom: "2026-10-28",
+    borrowFromTime: "8:45",
+    borrowTo: "2026-10-28",
+    borrowToTime: "16:30",
+    equipmentList: [
+      {
+        code: "สพ.6525-002-0003-1/2-59",
+        name: "เครื่องเอ็กซเรย์เคลื่อนที่",
+        location: "2/ห้องผ่าตัด 2",
+        responsible: "นภัสกร",
+        responsibleEmail: "naphatsakon.s@psu.ac.th",
+        ownerStatus: "ยินยอม",
+        ownerCondition: "ปกติสมบูรณ์",
+        ownerNote: "อนุมัติให้ยืมสำหรับการเรียนการสอน"
+      },
+      {
+        code: "รพส-001",
+        name: "แผ่นฟิล์ม X-Ray",
+        location: "1/ห้องเอกซเรย์",
+        responsible: "อัจฉรา",
+        responsibleEmail: "atchara.m@psu.ac.th",
+        ownerStatus: "ยินยอม",
+        ownerCondition: "ปกติสมบูรณ์",
+        ownerNote: "อนุมัติให้ยืมสำหรับการเรียนการสอน"
       }
     ]
   }

@@ -195,6 +195,13 @@ export default function App() {
     }
   }, [currentUser.role, currentPortal]);
 
+  // Safeguard: user/borrower mode does not see history view; redirect to dashboard if on history
+  useEffect(() => {
+    if (currentPortal === 'user' && currentNavView === 'history') {
+      setCurrentNavView('dashboard');
+    }
+  }, [currentPortal, currentNavView]);
+
   // Session timer (15 minutes limit) & Live detection if admin force-kicked this user's session
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -643,9 +650,13 @@ export default function App() {
         fetchEquipmentFromGoogleSheets(),
         fetchRequestsFromGoogleSheets()
       ]);
+      let updatedEqCount = 0;
+      let updatedReqCount = 0;
+
       if (eqRes.status === 'fulfilled' && eqRes.value.success && eqRes.value.equipment.length > 0) {
         setEquipment(eqRes.value.equipment);
         saveStoredEquipment(eqRes.value.equipment);
+        updatedEqCount = eqRes.value.equipment.length;
       }
       if (reqRes.status === 'fulfilled' && reqRes.value.success && reqRes.value.requests.length > 0) {
         const liveReqs = reqRes.value.requests;
@@ -655,8 +666,16 @@ export default function App() {
         setRequests(merged);
         saveStoredRequests(merged);
         setNotifications(generateSystemNotifications(merged));
+        updatedReqCount = liveReqs.length;
       }
-      triggerSyncToast('ดึงข้อมูลล่าสุดจาก Google Sheets สำเร็จเรียบร้อยแล้ว');
+
+      if (updatedReqCount > 0) {
+        triggerSyncToast(`ซิงค์ข้อมูลสำเร็จ: โหลดคำขอยืม ${updatedReqCount} รายการ และครุภัณฑ์ ${updatedEqCount || equipment.length} รายการ จาก Google Sheets`);
+      } else if (updatedEqCount > 0) {
+        triggerSyncToast(`ซิงค์ข้อมูลครุภัณฑ์ ${updatedEqCount} รายการจาก Google Sheets เรียบร้อย`);
+      } else {
+        triggerSyncToast('ดึงข้อมูลล่าสุดจากระบบและฐานข้อมูลเรียบร้อยแล้ว');
+      }
     } catch (e) {
       triggerSyncToast('เกิดข้อผิดพลาดในการดึงข้อมูลจาก Google Sheets');
     } finally {
@@ -967,8 +986,8 @@ export default function App() {
             </div>
           )}
 
-          {/* VIEW 5: ประวัติทำรายการ (Transaction History) */}
-          {currentNavView === 'history' && (
+          {/* VIEW 5: ประวัติทำรายการ (Transaction History - สงวนสิทธิ์เฉพาะ Admin) */}
+          {currentNavView === 'history' && currentPortal === 'admin' && (
             <div className="space-y-4">
               <div className="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-2xs flex items-center justify-between">
                 <div className="flex items-center gap-2.5">

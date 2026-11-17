@@ -1,11 +1,12 @@
 import { BorrowRequest, EquipmentMaster, StaffUser } from '../types';
 import { convertRequestsToCSV, parseRequestsCSV, formatStaffFullName, fetchGoogleSheetCSV, parseEquipmentSheetCSV } from './storage';
 
-export const SPREADSHEET_ID = '1jGol5v7T8hyZO8dBNo8i-MaoCnW_b7WSsGn2P63MYts';
-export const SPREADSHEET_URL = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/edit?gid=326365193#gid=326365193`;
+export const SPREADSHEET_ID = '1jGol5v7T8hyZO8DbNo8i-MaoCnW_b7WSsGn2P63MYts';
+export const SPREADSHEET_URL = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/edit?gid=1882317748#gid=1882317748`;
 export const TAB_REQUESTS = 'คำขอยืมครุภัณฑ์';
 export const TAB_EQUIPMENT = 'ครุภัณฑ์';
 export const TAB_STAFF = 'รายชื่อ';
+export const GID_REQUESTS = '1882317748';
 export const GID_EQUIPMENT = '326365193';
 
 // Official Web App URL deployed by PSU Vet Hospital Apps Script
@@ -364,6 +365,10 @@ export function getAppsScriptCode(): string {
  *    - ผู้มีสิทธิ์เข้าถึง: ทุกคน (Anyone) **(สำคัญที่สุด: ต้องเลือก "ทุกคน" เพื่อไม่ให้ระบบแจ้งเตือน 404)**
  * 6. กดปุ่ม "ทำให้ใช้งานได้" (Deploy) และให้สิทธิ์การเข้าถึง (Authorize access)
  * 7. คัดลอก "URL ของเว็บแอป" (Web App URL) นำมาใส่ในหน้าระบบยืมคืนได้ทันที!
+ * 
+ * 💡 หากเคย Deploy ไว้ก่อนแล้ว และต้องการอัปเดตให้อ่านคำขอใหม่ล่าสุดอัตโนมัติ:
+ * กด Deploy > "จัดการการทำให้ใช้งานได้" (Manage deployments) > คลิกไอคอนดินสอ ✏️ > 
+ * เลือกเวอร์ชัน "เวอร์ชันใหม่" (New version) > กด Deploy (ใช้ URL เดิม ไม่ต้องเปลี่ยน URL)
  * ==============================================================================
  */
 
@@ -1262,16 +1267,53 @@ export async function fetchRequestsFromGoogleSheets(
     }
   }
 
-  // Direct CSV fallback
+  // Direct CSV fallback via GID (tab "คำขอยืมครุภัณฑ์" gid=1882317748)
+  try {
+    const gidUrl = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid=${GID_REQUESTS}`;
+    const res = await fetch(gidUrl);
+    if (res.ok) {
+      const text = await res.text();
+      if (!text.includes('<!DOCTYPE html>') && !text.includes('accounts.google.com') && !text.includes('找不到網頁')) {
+        const parsed = parseRequestsCSV(text);
+        if (parsed.length > 0) {
+          saveLastSyncInfo('success', `ดึงรายการคำขอยืม ${parsed.length} รายการจากชีต "คำขอยืมครุภัณฑ์" สำเร็จ (Direct GID)`);
+          return { success: true, requests: parsed, message: `ดึงรายการคำขอยืม ${parsed.length} รายการสำเร็จ (Direct GID)` };
+        }
+      }
+    }
+  } catch {
+    // fallback failed
+  }
+
+  // Direct CSV fallback via Sheet Tab Name
   try {
     const directUrl = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(TAB_REQUESTS)}`;
     const res = await fetch(directUrl);
     if (res.ok) {
       const text = await res.text();
-      if (!text.includes('<!DOCTYPE html>') && !text.includes('accounts.google.com')) {
+      if (!text.includes('<!DOCTYPE html>') && !text.includes('accounts.google.com') && !text.includes('找不到網頁')) {
         const parsed = parseRequestsCSV(text);
         if (parsed.length > 0) {
-          return { success: true, requests: parsed, message: `ดึงรายการคำขอยืม ${parsed.length} รายการสำเร็จ (Direct)` };
+          saveLastSyncInfo('success', `ดึงรายการคำขอยืม ${parsed.length} รายการจากชีต "คำขอยืมครุภัณฑ์" สำเร็จ (Direct Sheet)`);
+          return { success: true, requests: parsed, message: `ดึงรายการคำขอยืม ${parsed.length} รายการสำเร็จ (Direct Sheet)` };
+        }
+      }
+    }
+  } catch {
+    // fallback failed
+  }
+
+  // Direct Export CSV fallback
+  try {
+    const exportUrl = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/export?format=csv&gid=${GID_REQUESTS}`;
+    const res = await fetch(exportUrl);
+    if (res.ok) {
+      const text = await res.text();
+      if (!text.includes('<!DOCTYPE html>') && !text.includes('accounts.google.com') && !text.includes('找不到網頁')) {
+        const parsed = parseRequestsCSV(text);
+        if (parsed.length > 0) {
+          saveLastSyncInfo('success', `ดึงรายการคำขอยืม ${parsed.length} รายการจากชีต "คำขอยืมครุภัณฑ์" สำเร็จ (Export CSV)`);
+          return { success: true, requests: parsed, message: `ดึงรายการคำขอยืม ${parsed.length} รายการสำเร็จ (Export CSV)` };
         }
       }
     }
@@ -1282,7 +1324,7 @@ export async function fetchRequestsFromGoogleSheets(
   return {
     success: false,
     requests: [],
-    message: 'ยังไม่สามารถดึงข้อมูลรายการคำขอยืมจากชีตได้'
+    message: 'ยังไม่สามารถดึงข้อมูลรายการคำขอยืมจากชีตได้ กรุณาอัปเดตเวอร์ชันการทำให้ใช้งานได้ (Deploy > Manage deployments > New version) ใน Google Apps Script'
   };
 }
 
