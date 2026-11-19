@@ -84,15 +84,25 @@ export const Header: React.FC<HeaderProps> = ({
             </span>
           </div>
           <div className="flex items-center gap-4 text-purple-200">
-            {/* Live 15-Minute Session Timer */}
-            <div className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold transition ${
-              isLowTime
-                ? 'bg-rose-500/30 text-rose-300 border border-rose-400/50 animate-pulse'
-                : 'bg-white/10 text-purple-200 border border-white/20'
-            }`} title="เซสชันจะหมดอายุอัตโนมัติภายใน 15 นาทีตามนโยบายความปลอดภัย">
-              <Clock className="w-3 h-3 text-amber-300" />
-              <span>เซสชันเหลือ: {formatTimer(sessionRemainingMs)} นาที</span>
-            </div>
+            {/* Live Session Timer (Unlimited for Admin, 15-Minute for Standard Users) */}
+            {isAdmin ? (
+              <div
+                className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-400/20 text-amber-200 border border-amber-300/40"
+                title="ผู้ดูแลระบบ (Admin) อยู่ในระบบได้ตลอดไม่จำกัดเวลา"
+              >
+                <ShieldCheck className="w-3 h-3 text-amber-300" />
+                <span>Admin • ไม่จำกัดเวลา</span>
+              </div>
+            ) : (
+              <div className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold transition ${
+                isLowTime
+                  ? 'bg-rose-500/30 text-rose-300 border border-rose-400/50 animate-pulse'
+                  : 'bg-white/10 text-purple-200 border border-white/20'
+              }`} title="เซสชันจะหมดอายุอัตโนมัติภายใน 15 นาทีตามนโยบายความปลอดภัย">
+                <Clock className="w-3 h-3 text-amber-300" />
+                <span>เซสชันเหลือ: {formatTimer(sessionRemainingMs)} นาที</span>
+              </div>
+            )}
             <span className="text-purple-400/60 hidden sm:inline">|</span>
             <a 
               href="https://kittiyaso-star.github.io/vet-equipment/" 

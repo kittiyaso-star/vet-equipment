@@ -17,6 +17,7 @@ import {
   ShieldCheck
 } from 'lucide-react';
 import { BorrowRequest, EquipmentMaster, BorrowedEquipmentItem, StaffUser } from '../types';
+import { resolveEquipmentOwner } from '../services/storage';
 
 interface EditBorrowRequestModalProps {
   isOpen: boolean;
@@ -117,12 +118,21 @@ export const EditBorrowRequestModal: React.FC<EditBorrowRequestModalProps> = ({
   // Add equipment item
   const handleAddEquipment = (eq: EquipmentMaster) => {
     setErrorMsg('');
+    const owner = resolveEquipmentOwner({
+      code: eq.code,
+      name: eq.name,
+      location: eq.location,
+      explicitResponsible: eq.responsible,
+      explicitEmail: eq.responsibleEmail,
+      existingEquipment: masterEquipment,
+      staffList: staffDatabase
+    });
     const newItem: BorrowedEquipmentItem = {
       code: eq.code,
       name: eq.name,
       location: eq.location || 'คณะสัตวแพทยศาสตร์ ม.อ.',
-      responsible: eq.responsible || 'รพ.สัตว์ ม.อ.',
-      responsibleEmail: eq.responsibleEmail || 'vethospital@psu.ac.th',
+      responsible: owner.responsible,
+      responsibleEmail: owner.responsibleEmail,
       condBefore: 'ปกติสมบูรณ์',
       ownerStatus: 'รอเจ้าของตกลง'
     };

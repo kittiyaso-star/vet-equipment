@@ -17,6 +17,289 @@ export const DEFAULT_ADMIN_PASSWORD = 'psuvet2026';
 export const SESSION_MAX_DURATION_MS = 15 * 60 * 1000; // 15 minutes limit
 
 /**
+ * Normalize date strings from Google Sheets (handles UTC-shifted ISO strings like
+ * "2026-11-24T17:00:00.000Z" -> "2026-11-25" in Asia/Bangkok, DD/MM/YYYY BE/CE, or YYYY-MM-DD)
+ */
+export function normalizeSheetDate(raw: any, outputFormat: 'iso' | 'display' = 'iso'): string {
+  if (raw === null || raw === undefined) return '';
+  const s = String(raw).trim();
+  if (!s) return '';
+
+  // Pure YYYY-MM-DD
+  const ymdMatch = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (ymdMatch) {
+    return s;
+  }
+
+  // ISO timestamp e.g. 2026-11-24T17:00:00.000Z (Sheets Date serialized to UTC by Apps Script getValues())
+  if (/^\d{4}-\d{2}-\d{2}T/.test(s)) {
+    const d = new Date(s);
+    if (!isNaN(d.getTime())) {
+      const bkk = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Asia/Bangkok',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      }).format(d);
+      if (outputFormat === 'display') {
+        const [y, m, day] = bkk.split('-');
+        return `${day}/${m}/${y}`;
+      }
+      return bkk;
+    }
+  }
+
+  // DD/MM/YYYY (possibly Thai Buddhist year e.g. 18/11/2569)
+  const dmyMatch = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (dmyMatch) {
+    if (outputFormat === 'display') return s;
+    const dd = dmyMatch[1].padStart(2, '0');
+    const mm = dmyMatch[2].padStart(2, '0');
+    let yyyy = parseInt(dmyMatch[3], 10);
+    if (yyyy > 2400) yyyy -= 543;
+    return `${yyyy}-${mm}-${dd}`;
+  }
+
+  return s;
+}
+
+/**
+ * Normalize time strings from Google Sheets (handles 1899-12-30 UTC-shifted ISO timestamps
+ * like "1899-12-30T03:17:56.000Z" -> "10:00" in Asia/Bangkok, or "9:00" -> "09:00")
+ */
+export function normalizeSheetTime(raw: any): string {
+  if (raw === null || raw === undefined) return '';
+  const s = String(raw).trim();
+  if (!s) return '';
+
+  // ISO timestamp from Google Sheets Time cell (e.g. 1899-12-30T03:17:56.000Z)
+  if (/^\d{4}-\d{2}-\d{2}T/.test(s)) {
+    const d = new Date(s);
+    if (!isNaN(d.getTime())) {
+      const formatted = new Intl.DateTimeFormat('en-GB', {
+        timeZone: 'Asia/Bangkok',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+      }).format(d);
+      return formatted === '24:00' ? '00:00' : formatted;
+    }
+  }
+
+  // Standard HH:mm or H:mm or HH:mm:ss or HH.mm
+  const hmMatch = s.match(/^(\d{1,2})[:.](\d{2})(?::\d{2})?$/);
+  if (hmMatch) {
+    const hh = hmMatch[1].padStart(2, '0');
+    const mm = hmMatch[2];
+    return `${hh}:${mm}`;
+  }
+
+  return s;
+}
+
+const GENERIC_OWNER_NAMES = new Set(['', 'n/a', 'รพ.สัตว์ ม.อ.', 'เจ้าหน้าที่พยาบาลสัตว์', 'คณะสัตวแพทยศาสตร์ ม.อ.']);
+
+/**
+ * Verified owners matched directly from the hospital's official Excel register
+ */
+export const VERIFIED_EXCEL_OWNERS_BY_CODE: Record<string, { responsible: string; responsibleEmail?: string }> = {
+  'สพ.6530-051-0002-1/3-56/บ.': { responsible: 'เมธาพร', responsibleEmail: '' },
+  'สพ.6530-051-0002-2/3-56/บ.': { responsible: 'เมธาพร', responsibleEmail: '' },
+  'สพ.6650-002-0001-1/3-57/งป.': { responsible: 'เกียรติดำรงค์', responsibleEmail: 'kietdumrong.k@psu.ac.th' },
+  'สพ.6530-040-0008-1/1-57/บ.': { responsible: 'เมธาพร', responsibleEmail: '' },
+  'สพ.6525-003-0001-1/1-57/บ.': { responsible: 'อัจฉรา', responsibleEmail: 'atchara.m@psu.ac.th' },
+  'สพ.6515-085-0001-1/1-60/ง.': { responsible: 'นิศากร', responsibleEmail: 'nisakorn.sae@psu.ac.th' },
+  'สพ.6515-085-0001-1/1-60/ง.(1)': { responsible: 'นิศากร', responsibleEmail: 'nisakorn.sae@psu.ac.th' },
+  'รพส.6630-082-0001-1/1-61/รด.': { responsible: 'เกียรติดำรงค์', responsibleEmail: 'kietdumrong.k@psu.ac.th' },
+  'รพส.6530-004-0000-1/1-62/งป.(2)': { responsible: 'พีรพัฒน์', responsibleEmail: 'peerapat.ka@psu.ac.th' },
+  'รพส.6530-004-0000-1/1-62/งป.(5)': { responsible: 'พีรพัฒน์', responsibleEmail: 'peerapat.ka@psu.ac.th' },
+  'รพส.6530-004-0000-1/1-62/งป.(6)': { responsible: 'พีรพัฒน์', responsibleEmail: 'peerapat.ka@psu.ac.th' }
+};
+
+export function findStaffEmailByName(respName: string, staffList: StaffUser[] = STAFF_USERS): string {
+  const clean = respName.trim().toLowerCase();
+  if (!clean || GENERIC_OWNER_NAMES.has(clean)) return '';
+  const staffPool = staffList.length > 0 ? staffList : STAFF_USERS;
+  const match = staffPool.find(s => {
+    const full = `${s.title_th || ''}${s.name || ''}`.toLowerCase();
+    const pure = (s.name || '').toLowerCase();
+    const first = (s.first_name_th || pure.split(' ')[0] || '').toLowerCase();
+    return (
+      pure === clean ||
+      full === clean ||
+      (first && (clean === first || clean.includes(first) || first.includes(clean))) ||
+      pure.includes(clean)
+    );
+  });
+  return match?.email || '';
+}
+
+/**
+ * Resolve authentic equipment owner name and PSU email without losing existing assignments
+ */
+export function resolveEquipmentOwner(params: {
+  code?: string;
+  name?: string;
+  location?: string;
+  explicitResponsible?: string;
+  explicitEmail?: string;
+  existingEquipment?: EquipmentMaster[];
+  staffList?: StaffUser[];
+}): { responsible: string; responsibleEmail: string } {
+  const {
+    code = '',
+    name = '',
+    location = '',
+    explicitResponsible = '',
+    explicitEmail = '',
+    existingEquipment = [],
+    staffList = STAFF_USERS
+  } = params;
+
+  const staffPool = staffList.length > 0 ? staffList : STAFF_USERS;
+  const findStaffEmail = (respName: string) => findStaffEmailByName(respName, staffPool);
+
+  // 1. Explicit non-generic owner from Google Sheet / Excel / User edit
+  // Preserve explicit owner name even if they are not yet in STAFF_USERS / รายชื่อ (so email is '')
+  const expResp = explicitResponsible.trim();
+  const expEmail = explicitEmail.trim();
+  if (expResp && !GENERIC_OWNER_NAMES.has(expResp.toLowerCase())) {
+    const resolvedEmail = expEmail && expEmail.includes('@') ? expEmail : findStaffEmail(expResp);
+    return { responsible: expResp, responsibleEmail: resolvedEmail };
+  }
+  if (expEmail && expEmail.includes('@')) {
+    return { responsible: 'ผู้ดูแลครุภัณฑ์', responsibleEmail: expEmail };
+  }
+
+  // 2. Preserve existing non-generic owner from local catalog or verified Excel map
+  const codeNorm = code.trim().toLowerCase();
+  const verifiedExcel = codeNorm ? VERIFIED_EXCEL_OWNERS_BY_CODE[codeNorm] : undefined;
+  if (verifiedExcel) {
+    return {
+      responsible: verifiedExcel.responsible,
+      responsibleEmail: verifiedExcel.responsibleEmail || findStaffEmail(verifiedExcel.responsible)
+    };
+  }
+
+  if (codeNorm && codeNorm !== 'n/a') {
+    const existing = existingEquipment.find(e => (e.code || '').trim().toLowerCase() === codeNorm);
+    if (existing) {
+      const exResp = (existing.responsible || '').trim();
+      const exEmail = (existing.responsibleEmail || '').trim();
+      if (exResp && !GENERIC_OWNER_NAMES.has(exResp.toLowerCase())) {
+        return {
+          responsible: exResp,
+          responsibleEmail: exEmail && exEmail.includes('@') ? exEmail : findStaffEmail(exResp)
+        };
+      }
+      if (exEmail && exEmail.includes('@')) {
+        return {
+          responsible: 'ผู้ดูแลครุภัณฑ์',
+          responsibleEmail: exEmail
+        };
+      }
+    }
+  }
+
+  // 3. Location / equipment zone-based owner assignment
+  const locLower = location.toLowerCase();
+  const textToMatch = `${name} ${location}`.toLowerCase();
+
+  let defaultFirst = 'วทันยา';
+  let defaultEmail = 'watanya.po@psu.ac.th';
+
+  if (locLower.includes('ห้องผ่าตัด') || textToMatch.includes('ห้องผ่าตัด')) {
+    defaultFirst = 'นภัสกร';
+    defaultEmail = 'naphatsakon.s@psu.ac.th';
+  } else if (locLower.includes('ศัลยกรรม') || textToMatch.includes('ศัลยกรรม')) {
+    defaultFirst = 'เบญจมาศ';
+    defaultEmail = 'benjamas.ji@psu.ac.th';
+  } else if (
+    locLower.includes('เอกซเรย์') ||
+    locLower.includes('หัตถการ') ||
+    locLower.includes('ccu') ||
+    locLower.includes('ชันสูตร') ||
+    locLower.includes('ธนาคารเลือด') ||
+    locLower.includes('อัลตร้าซาวด์') ||
+    textToMatch.includes('เอกซเรย์') ||
+    textToMatch.includes('ธนาคารเลือด')
+  ) {
+    defaultFirst = 'อัจฉรา';
+    defaultEmail = 'atchara.m@psu.ac.th';
+  }
+
+  const matchedEmail = findStaffEmail(defaultFirst) || defaultEmail;
+  return { responsible: defaultFirst, responsibleEmail: matchedEmail };
+}
+
+/**
+ * Enrich requests so normalized dates/times and real equipment owners/emails are restored
+ * even if Google Sheets returned UTC timestamps or lacked owner columns
+ */
+export function enrichRequestsWithEquipmentOwners(
+  requests: BorrowRequest[],
+  equipmentCatalog: EquipmentMaster[],
+  staffList?: StaffUser[]
+): BorrowRequest[] {
+  const eqByCode = new Map<string, EquipmentMaster>();
+  for (const eq of equipmentCatalog) {
+    if (eq.code) eqByCode.set(eq.code.trim().toLowerCase(), eq);
+  }
+
+  return requests.map(req => {
+    const normBorrowFrom = normalizeSheetDate(req.borrowFrom);
+    const normBorrowFromTime = normalizeSheetTime(req.borrowFromTime);
+    const normBorrowTo = normalizeSheetDate(req.borrowTo);
+    const normBorrowToTime = normalizeSheetTime(req.borrowToTime);
+
+    const enrichedItems = (req.equipmentList || []).map(item => {
+      const currentResp = (item.responsible || '').trim();
+      const currentEmail = (item.responsibleEmail || '').trim();
+      const codeNorm = (item.code || '').trim().toLowerCase();
+      const verified = codeNorm ? VERIFIED_EXCEL_OWNERS_BY_CODE[codeNorm] : undefined;
+      const matchedEq = codeNorm ? eqByCode.get(codeNorm) : undefined;
+      const eqHasRealOwner = matchedEq && matchedEq.responsible && !GENERIC_OWNER_NAMES.has(matchedEq.responsible.trim().toLowerCase());
+
+      // Upgrade if missing owner/email, generic placeholder, or verified Excel owner differs from old stale fallback
+      const needsOwnerFix =
+        !currentEmail ||
+        !currentEmail.includes('@') ||
+        GENERIC_OWNER_NAMES.has(currentResp.toLowerCase()) ||
+        Boolean(verified && currentResp !== verified.responsible) ||
+        Boolean(eqHasRealOwner && currentResp !== matchedEq!.responsible);
+
+      if (!needsOwnerFix) return item;
+
+      const resolved = resolveEquipmentOwner({
+        code: item.code,
+        name: item.name,
+        location: item.location || matchedEq?.location || '',
+        explicitResponsible: matchedEq?.responsible || currentResp,
+        explicitEmail: matchedEq?.responsibleEmail || currentEmail,
+        existingEquipment: equipmentCatalog,
+        staffList
+      });
+
+      return {
+        ...item,
+        location: item.location || matchedEq?.location || '',
+        responsible: resolved.responsible,
+        responsibleEmail: resolved.responsibleEmail
+      };
+    });
+
+    return {
+      ...req,
+      borrowFrom: normBorrowFrom || req.borrowFrom,
+      borrowFromTime: normBorrowFromTime || req.borrowFromTime,
+      borrowTo: normBorrowTo || req.borrowTo,
+      borrowToTime: normBorrowToTime || req.borrowToTime,
+      equipmentList: enrichedItems
+    };
+  });
+}
+
+/**
  * Initial sample login logs to provide realistic audit records
  */
 function createInitialSampleLogs(): LoginLog[] {
@@ -31,12 +314,12 @@ function createInitialSampleLogs(): LoginLog[] {
       role: 'admin',
       loginAt: new Date(now - 45 * 60 * 1000).toISOString(),
       lastActiveAt: new Date(now - 30 * 60 * 1000).toISOString(),
-      expiresAt: new Date(now - 30 * 60 * 1000).toISOString(),
+      expiresAt: 'UNLIMITED',
       ipAddress: '172.24.89.14',
       userAgent: 'Chrome 128 (Windows 11)',
       deviceType: 'Desktop',
-      status: 'expired',
-      logoutReason: 'หมดเวลาการใช้งาน (เกิน 15 นาที)'
+      status: 'logged_out',
+      logoutReason: 'ผู้ดูแลระบบกดออกจากระบบ'
     },
     {
       id: 'LOG-002',
@@ -161,12 +444,13 @@ function detectClientEnvironment(): { ip: string; agent: string; device: 'Deskto
 }
 
 /**
- * Record a new login event into the audit log & initialize 15-minute session
+ * Record a new login event into the audit log & initialize session (unlimited for Admin, 15 minutes for standard users)
  */
 export function recordLoginEvent(user: StaffUser): { log: LoginLog; updatedLogs: LoginLog[] } {
   const now = Date.now();
   const sessionId = `SESS-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
   const env = detectClientEnvironment();
+  const isAdmin = user.role === 'admin';
 
   const newLog: LoginLog = {
     id: `LOG-${Date.now().toString(36).toUpperCase()}`,
@@ -177,7 +461,7 @@ export function recordLoginEvent(user: StaffUser): { log: LoginLog; updatedLogs:
     role: user.role || 'user',
     loginAt: new Date(now).toISOString(),
     lastActiveAt: new Date(now).toISOString(),
-    expiresAt: new Date(now + SESSION_MAX_DURATION_MS).toISOString(),
+    expiresAt: isAdmin ? 'UNLIMITED' : new Date(now + SESSION_MAX_DURATION_MS).toISOString(),
     ipAddress: env.ip,
     userAgent: env.agent,
     deviceType: env.device,
@@ -311,15 +595,35 @@ export function revokeAllActiveSessionsExceptAdmin(adminName: string): LoginLog[
 }
 
 /**
- * Check if current active session is valid (not expired past 15 mins, and not revoked by admin)
+ * Check if current active session is valid (unlimited for Admin; 15-minute timeout for standard users; checks Force Logout)
  */
-export function checkCurrentSessionValid(): { 
+export function checkCurrentSessionValid(currentUserRole?: StaffUser['role']): { 
   isValid: boolean; 
   reason?: 'expired' | 'revoked_by_admin' | 'none'; 
-  remainingMs: number 
+  remainingMs: number;
+  isUnlimited?: boolean;
 } {
   const startTime = getSessionStartTime();
   const currentSessionId = getCurrentSessionId();
+  const logs = getStoredLoginLogs();
+  const currentLog = currentSessionId ? logs.find(l => l.sessionId === currentSessionId) : undefined;
+
+  // 1. Check if admin revoked this session explicitly
+  if (currentLog && currentLog.status === 'revoked_by_admin') {
+    setStoredLogoutReason(currentLog.logoutReason || 'เซสชันของคุณถูกบังคับให้ออกจากระบบโดยผู้ดูแลระบบ');
+    return { isValid: false, reason: 'revoked_by_admin', remainingMs: 0 };
+  }
+
+  // 2. Determine if this session belongs to an Admin (exempt from 15-minute timeout)
+  const activeEmail = getStoredActiveUserEmail().toLowerCase().trim();
+  const isAdminSession =
+    currentUserRole === 'admin' ||
+    currentLog?.role === 'admin' ||
+    activeEmail === 'kittiya.so@psu.ac.th';
+
+  if (isAdminSession) {
+    return { isValid: true, remainingMs: SESSION_MAX_DURATION_MS, isUnlimited: true };
+  }
 
   if (!startTime || !currentSessionId) {
     return { isValid: false, reason: 'none', remainingMs: 0 };
@@ -328,22 +632,14 @@ export function checkCurrentSessionValid(): {
   const elapsed = Date.now() - startTime;
   const remainingMs = Math.max(0, SESSION_MAX_DURATION_MS - elapsed);
 
-  // 1. Check if 15 minutes have passed
+  // 3. For standard users, check if 15 minutes have passed
   if (elapsed >= SESSION_MAX_DURATION_MS) {
     recordLogoutEvent(currentSessionId, 'หมดเวลาการใช้งาน (เกิน 15 นาที)');
     setStoredLogoutReason('หมดเวลาการใช้งาน (เกิน 15 นาที) กรุณาเข้าสู่ระบบอีกครั้ง');
     return { isValid: false, reason: 'expired', remainingMs: 0 };
   }
 
-  // 2. Check if admin revoked this session
-  const logs = getStoredLoginLogs();
-  const currentLog = logs.find(l => l.sessionId === currentSessionId);
-  if (currentLog && currentLog.status === 'revoked_by_admin') {
-    setStoredLogoutReason(currentLog.logoutReason || 'เซสชันของคุณถูกบังคับให้ออกจากระบบโดยผู้ดูแลระบบ');
-    return { isValid: false, reason: 'revoked_by_admin', remainingMs: 0 };
-  }
-
-  return { isValid: true, remainingMs };
+  return { isValid: true, remainingMs, isUnlimited: false };
 }
 
 export function getStoredAdminPassword(): string {
@@ -473,9 +769,11 @@ export function getStoredRequests(): BorrowRequest[] {
     }
 
     if (!raw) {
-      localStorage.setItem(STORAGE_KEY_REQUESTS, JSON.stringify(INITIAL_BORROW_REQUESTS));
-      syncEquipmentAvailability(INITIAL_BORROW_REQUESTS);
-      return INITIAL_BORROW_REQUESTS;
+      const storedEq = getStoredEquipment();
+      const hydratedReqs = enrichRequestsWithEquipmentOwners(INITIAL_BORROW_REQUESTS, storedEq);
+      localStorage.setItem(STORAGE_KEY_REQUESTS, JSON.stringify(hydratedReqs));
+      syncEquipmentAvailability(hydratedReqs);
+      return hydratedReqs;
     }
 
     const parsed: BorrowRequest[] = JSON.parse(raw);
@@ -507,8 +805,12 @@ export function getStoredRequests(): BorrowRequest[] {
       }
     }
 
-    const merged = Array.from(existingMap.values());
-    if (hasChanges || merged.length !== parsed.length) {
+    const rawMerged = Array.from(existingMap.values());
+    const storedEquipment = getStoredEquipment();
+    const merged = enrichRequestsWithEquipmentOwners(rawMerged, storedEquipment);
+    const normalizedChanged = JSON.stringify(merged) !== JSON.stringify(rawMerged);
+
+    if (hasChanges || normalizedChanged || merged.length !== parsed.length) {
       localStorage.setItem(STORAGE_KEY_REQUESTS, JSON.stringify(merged));
       syncEquipmentAvailability(merged);
     } else {
@@ -535,8 +837,18 @@ export function getStoredEquipment(): EquipmentMaster[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY_EQUIPMENT);
     if (!raw) {
-      localStorage.setItem(STORAGE_KEY_EQUIPMENT, JSON.stringify(INITIAL_EQUIPMENT_MASTER));
-      return INITIAL_EQUIPMENT_MASTER;
+      const hydrated = INITIAL_EQUIPMENT_MASTER.map(eq => {
+        const owner = resolveEquipmentOwner({
+          code: eq.code,
+          name: eq.name,
+          location: eq.location,
+          explicitResponsible: eq.responsible,
+          explicitEmail: eq.responsibleEmail
+        });
+        return { ...eq, ...owner };
+      });
+      localStorage.setItem(STORAGE_KEY_EQUIPMENT, JSON.stringify(hydrated));
+      return hydrated;
     }
     const parsed: EquipmentMaster[] = JSON.parse(raw);
     
@@ -557,8 +869,46 @@ export function getStoredEquipment(): EquipmentMaster[] {
         map.set(key, item);
       }
     }
-    const combined = Array.from(map.values());
-    if (combined.length !== parsed.length) {
+    const hasMigratedExcelOwners = localStorage.getItem('psu_vet_excel_owners_v1_migrated') === '1';
+    let ownerHydrated = false;
+    const combined = Array.from(map.values()).map(item => {
+      const resp = (item.responsible || '').trim();
+      const email = (item.responsibleEmail || '').trim();
+      const codeNorm = (item.code || '').trim().toLowerCase();
+      const verified = codeNorm ? VERIFIED_EXCEL_OWNERS_BY_CODE[codeNorm] : undefined;
+
+      // Upgrade stale room-heuristic fallback once when verified Excel owner exists (or whenever owner is blank/generic)
+      if (verified && resp !== verified.responsible && (!hasMigratedExcelOwners || !resp || GENERIC_OWNER_NAMES.has(resp.toLowerCase()))) {
+        const verifiedEmail = verified.responsibleEmail || findStaffEmailByName(verified.responsible);
+        ownerHydrated = true;
+        return {
+          ...item,
+          responsible: verified.responsible,
+          responsibleEmail: verifiedEmail
+        };
+      }
+
+      if (GENERIC_OWNER_NAMES.has(resp.toLowerCase())) {
+        const resolved = resolveEquipmentOwner({
+          code: item.code,
+          name: item.name,
+          location: item.location,
+          explicitResponsible: resp,
+          explicitEmail: email
+        });
+        ownerHydrated = true;
+        return {
+          ...item,
+          responsible: resolved.responsible,
+          responsibleEmail: resolved.responsibleEmail
+        };
+      }
+      return item;
+    });
+    if (!hasMigratedExcelOwners) {
+      localStorage.setItem('psu_vet_excel_owners_v1_migrated', '1');
+    }
+    if (combined.length !== parsed.length || ownerHydrated) {
       localStorage.setItem(STORAGE_KEY_EQUIPMENT, JSON.stringify(combined));
     }
     return combined;
@@ -629,7 +979,9 @@ export function parseEquipmentSheetCSV(csvText: string): EquipmentMaster[] {
   // Column 4: รุ่น
   // Column 5: สถานที่ติดตั้ง
   // Column 6: Serial number
-  // Column 7: ราคา
+  // Column 7: ราคา (or สถานะ in Excel export)
+  // Column 8: ผู้รับผิดชอบ
+  // Column 9: อีเมลผู้รับผิดชอบ
   let headerIndex = -1;
   let codeIdx = 0;
   let dateIdx = 1;
@@ -639,8 +991,9 @@ export function parseEquipmentSheetCSV(csvText: string): EquipmentMaster[] {
   let locIdx = 5;
   let snIdx = 6;
   let priceIdx = 7;
-  let respIdx = -1;
-  let emailIdx = -1;
+  let statusIdx = -1;
+  let respIdx = 8;
+  let emailIdx = 9;
 
   // Search for an explicit header row. A real header row MUST have at least 2 matching column titles.
   for (let r = 0; r < Math.min(rows.length, 5); r++) {
@@ -654,17 +1007,24 @@ export function parseEquipmentSheetCSV(csvText: string): EquipmentMaster[] {
     const matchesLoc = rowStr.includes('สถานที่') || rowStr.includes('ติดตั้ง') || rowStr.includes('location');
     const matchesSN = rowStr.includes('serial') || rowStr.includes('sn');
     const matchesPrice = rowStr.includes('ราคา') || rowStr.includes('price');
+    const matchesStatus = rowStr.includes('สถานะ') || rowStr.includes('status');
     const matchesResp = rowStr.includes('เจ้าของ') || rowStr.includes('ผู้รับผิดชอบ') || rowStr.includes('owner') || rowStr.includes('responsible');
 
-    const matchCount = [matchesCode, matchesName, matchesDate, matchesBrand, matchesLoc, matchesSN, matchesPrice, matchesResp].filter(Boolean).length;
+    const matchCount = [matchesCode, matchesName, matchesDate, matchesBrand, matchesLoc, matchesSN, matchesPrice, matchesStatus, matchesResp].filter(Boolean).length;
     if (matchCount >= 2) {
       headerIndex = r;
+      // Reset optional column indices when explicit header exists
+      priceIdx = -1;
+      statusIdx = -1;
+      respIdx = -1;
+      emailIdx = -1;
       row.forEach((col, idx) => {
         const cLow = col.toLowerCase();
         if (cLow.includes('รหัส') || cLow.includes('code')) codeIdx = idx;
         else if (cLow.includes('ตรวจรับ') || cLow.includes('วันที่') || cLow.includes('date')) dateIdx = idx;
-        else if (cLow.includes('ชื่อเจ้าของ') || cLow.includes('ผู้รับผิดชอบ') || cLow.includes('เจ้าของ') || cLow.includes('owner') || cLow.includes('responsible')) respIdx = idx;
         else if (cLow.includes('อีเมล') || cLow.includes('email')) emailIdx = idx;
+        else if (cLow.includes('ชื่อเจ้าของ') || cLow.includes('ผู้รับผิดชอบ') || cLow.includes('เจ้าของ') || cLow.includes('owner') || cLow.includes('responsible')) respIdx = idx;
+        else if (cLow.includes('สถานะ') || cLow.includes('status')) statusIdx = idx;
         else if (cLow.includes('ชื่อ') || cLow.includes('name')) nameIdx = idx;
         else if (cLow.includes('ยี่ห้อ') || cLow.includes('brand')) brandIdx = idx;
         else if (cLow.includes('รุ่น') || cLow.includes('model')) modelIdx = idx;
@@ -693,13 +1053,10 @@ export function parseEquipmentSheetCSV(csvText: string): EquipmentMaster[] {
     let code = cells[codeIdx]?.trim();
     let name = cells[nameIdx]?.trim();
 
-    // Priority Check: If cells[0] clearly looks like an authentic equipment code (e.g. starts with 'สพ.', 'รพส', or alphanumeric code)
-    // and codeIdx was accidentally pointing elsewhere, prioritize cells[0]!
     if (cells[0] && (cells[0].includes('สพ.') || cells[0].includes('รพส') || /^[A-Za-z0-9\.\-\/]{4,}$/.test(cells[0]))) {
       code = cells[0].trim();
     }
 
-    // Priority Check: If name is missing or empty, but cells[2] has Thai/English name text
     if (!name && cells[2]?.trim() && cells[2].trim().toUpperCase() !== 'N/A') {
       name = cells[2].trim();
     }
@@ -713,9 +1070,26 @@ export function parseEquipmentSheetCSV(csvText: string): EquipmentMaster[] {
     const brand = cells[brandIdx]?.trim() || 'N/A';
     const model = cells[modelIdx]?.trim() || 'N/A';
     const serial = cells[snIdx]?.trim() || 'N/A';
-    const receivedDate = cells[dateIdx]?.trim() || '';
-    const rawPrice = cells[priceIdx]?.replace(/,/g, '') || '';
-    const price = !isNaN(Number(rawPrice)) && rawPrice !== '' ? Number(rawPrice) : rawPrice;
+    const receivedDate = normalizeSheetDate(cells[dateIdx]?.trim() || '', 'display');
+
+    let price: number | string = '';
+    if (priceIdx !== -1 && cells[priceIdx] !== undefined) {
+      const rawPrice = cells[priceIdx].replace(/,/g, '').trim();
+      if (rawPrice && !isNaN(Number(rawPrice))) {
+        price = Number(rawPrice);
+      }
+    }
+
+    const rawExcelStatus = statusIdx !== -1 ? (cells[statusIdx]?.trim() || '') : '';
+    let mappedStatus: EquipmentMaster['status'] = 'พร้อมใช้งาน';
+    let mappedCondition = 'ปกติสมบูรณ์';
+    if (rawExcelStatus.includes('จำหน่าย')) {
+      mappedStatus = 'รอจำหน่าย';
+      mappedCondition = `สถานะใน Excel: ${rawExcelStatus}`;
+    } else if (rawExcelStatus.includes('ชำรุด') || rawExcelStatus.includes('เสื่อม') || rawExcelStatus.includes('ซ่อม')) {
+      mappedStatus = 'ซ่อมบำรุง';
+      mappedCondition = `สถานะใน Excel: ${rawExcelStatus}`;
+    }
 
     // Determine category
     let category: EquipmentMaster['category'] = 'อื่นๆ';
@@ -761,40 +1135,17 @@ export function parseEquipmentSheetCSV(csvText: string): EquipmentMaster[] {
       category = 'อุปกรณ์กายภาพ/เวชศาสตร์ฟื้นฟู';
     }
 
-    // Determine responsible staff
-    let responsible = 'เจ้าหน้าที่พยาบาลสัตว์';
-    let responsibleEmail = 'vet.hospital@psu.ac.th';
-
-    if (respIdx !== -1 && cells[respIdx]?.trim() && cells[respIdx].trim().toUpperCase() !== 'N/A') {
-      responsible = cells[respIdx].trim();
-      if (emailIdx !== -1 && cells[emailIdx]?.trim() && cells[emailIdx].trim().includes('@')) {
-        responsibleEmail = cells[emailIdx].trim();
-      } else {
-        // Find staff by name
-        const foundStaff = STAFF_USERS.find(s => s.name.includes(responsible) || responsible.includes(s.name.split(' ')[0]));
-        if (foundStaff) {
-          responsibleEmail = foundStaff.email;
-        }
-      }
-    } else if (loc.includes('ห้องผ่าตัด') || textToMatch.includes('ห้องผ่าตัด')) {
-      responsible = 'นภัสกร';
-      responsibleEmail = 'naphatsakon.s@psu.ac.th';
-    } else if (loc.includes('ศัลยกรรม') || textToMatch.includes('ศัลยกรรม')) {
-      responsible = 'เบญจมาศ';
-      responsibleEmail = 'benjamas.ji@psu.ac.th';
-    } else if (
-      loc.includes('เอกซเรย์') || 
-      loc.includes('หัตถการ') || 
-      loc.includes('ccu') || 
-      loc.includes('ชันสูตร') || 
-      loc.includes('ธนาคารเลือด')
-    ) {
-      responsible = 'อัจฉรา';
-      responsibleEmail = 'atchara.m@psu.ac.th';
-    } else {
-      responsible = 'วทันยา';
-      responsibleEmail = 'watanya.po@psu.ac.th';
-    }
+    const explicitResp = respIdx !== -1 ? (cells[respIdx]?.trim() || '') : '';
+    const explicitEmail = emailIdx !== -1 ? (cells[emailIdx]?.trim() || '') : '';
+    const resolvedOwner = resolveEquipmentOwner({
+      code,
+      name,
+      location: loc,
+      explicitResponsible: explicitResp,
+      explicitEmail,
+      existingEquipment: INITIAL_EQUIPMENT_MASTER,
+      staffList: STAFF_USERS
+    });
 
     result.push({
       id: `EQ-SHEET-${i + 1}`,
@@ -802,19 +1153,276 @@ export function parseEquipmentSheetCSV(csvText: string): EquipmentMaster[] {
       name,
       category,
       location: loc,
-      responsible,
-      responsibleEmail,
+      responsible: resolvedOwner.responsible,
+      responsibleEmail: resolvedOwner.responsibleEmail,
       serialNumber: serial,
       brand,
       model,
       receivedDate,
       price,
-      status: 'พร้อมใช้งาน',
-      condition: 'ปกติสมบูรณ์'
+      status: mappedStatus,
+      condition: mappedCondition
     });
   }
 
   return result;
+}
+
+export interface ExcelParsedRow {
+  code: string;
+  receivedDate: string;
+  name: string;
+  brand: string;
+  model: string;
+  location: string;
+  serialNumber: string;
+  excelStatus: string;
+  responsible: string;
+}
+
+export interface ExcelReconcileMatch {
+  catalogItem: EquipmentMaster;
+  excelRow: ExcelParsedRow;
+  updatedItem: EquipmentMaster;
+  resolvedEmail: string;
+  missingStaffEmail: boolean;
+  ownerChanged: boolean;
+  statusChanged: boolean;
+  diffs: string[];
+}
+
+export interface ExcelReconcileReport {
+  excelRowCount: number;
+  sheetCount: number;
+  matchedItems: ExcelReconcileMatch[];
+  unmatchedSheetItems: { item: EquipmentMaster; closeMatchCode?: string }[];
+  unmatchedExcelCount: number;
+  missingEmailOwners: { name: string; count: number; codes: string[] }[];
+  nonActiveStatusItems: ExcelReconcileMatch[];
+  fieldDiffItems: ExcelReconcileMatch[];
+  updatedCatalog: EquipmentMaster[];
+}
+
+/**
+ * Parse raw TSV/CSV exported from the hospital Excel register and reconcile against existing Google Sheet catalog
+ * Preserves existing price, category, id, and active loan fields while syncing owner, email, status, and metadata.
+ */
+export function reconcileEquipmentWithExcel(
+  rawText: string,
+  currentCatalog: EquipmentMaster[],
+  staffList: StaffUser[] = STAFF_USERS,
+  options: {
+    updateStatusFromExcel?: boolean;
+    updateDetailsFromExcel?: boolean;
+  } = { updateStatusFromExcel: true, updateDetailsFromExcel: true }
+): ExcelReconcileReport {
+  const { updateStatusFromExcel = true, updateDetailsFromExcel = true } = options;
+
+  const rawLines = rawText.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+  const sampleLines = rawLines.filter(l => l.trim()).slice(0, 5);
+  const isTsv = sampleLines.some(l => l.includes('\t'));
+  const delimiter = isTsv ? '\t' : ',';
+
+  const rows: string[][] = [];
+  for (const line of rawLines) {
+    if (!line.trim()) continue;
+    const cells: string[] = [];
+    let cur = '';
+    let inQuote = false;
+    for (let i = 0; i < line.length; i++) {
+      const c = line[i];
+      const next = line[i + 1];
+      if (c === '"' && inQuote && next === '"') {
+        cur += '"';
+        i++;
+      } else if (c === '"') {
+        inQuote = !inQuote;
+      } else if (c === delimiter && !inQuote) {
+        cells.push(cur.trim());
+        cur = '';
+      } else {
+        cur += c;
+      }
+    }
+    cells.push(cur.trim());
+    if (cells.some(c => c.length > 0)) rows.push(cells);
+  }
+
+  let headerIdx = -1;
+  let codeIdx = 0;
+  let dateIdx = 1;
+  let nameIdx = 2;
+  let brandIdx = 3;
+  let modelIdx = 4;
+  let locIdx = 5;
+  let snIdx = 6;
+  let statusIdx = 7;
+  let respIdx = 8;
+
+  for (let r = 0; r < Math.min(rows.length, 5); r++) {
+    const row = rows[r];
+    const rowStr = row.join(' ').toLowerCase();
+    if ((rowStr.includes('รหัส') || rowStr.includes('code')) && (rowStr.includes('ชื่อ') || rowStr.includes('ผู้รับผิดชอบ'))) {
+      headerIdx = r;
+      row.forEach((col, idx) => {
+        const cLow = col.toLowerCase();
+        if (cLow.includes('รหัส') || cLow.includes('code')) codeIdx = idx;
+        else if (cLow.includes('ตรวจรับ') || cLow.includes('วันที่') || cLow.includes('date')) dateIdx = idx;
+        else if (cLow.includes('ผู้รับผิดชอบ') || cLow.includes('เจ้าของ') || cLow.includes('owner') || cLow.includes('responsible')) respIdx = idx;
+        else if (cLow.includes('สถานะ') || cLow.includes('status')) statusIdx = idx;
+        else if (cLow.includes('ชื่อ') || cLow.includes('name')) nameIdx = idx;
+        else if (cLow.includes('ยี่ห้อ') || cLow.includes('brand')) brandIdx = idx;
+        else if (cLow.includes('รุ่น') || cLow.includes('model')) modelIdx = idx;
+        else if (cLow.includes('สถานที่') || cLow.includes('ติดตั้ง') || cLow.includes('location')) locIdx = idx;
+        else if (cLow.includes('serial') || cLow.includes('s/n') || cLow.includes('sn')) snIdx = idx;
+      });
+      break;
+    }
+  }
+
+  const startRow = headerIdx >= 0 ? headerIdx + 1 : 0;
+  const excelByCode = new Map<string, ExcelParsedRow>();
+  const excelRows: ExcelParsedRow[] = [];
+
+  for (let i = startRow; i < rows.length; i++) {
+    const cells = rows[i];
+    const code = (cells[codeIdx] || '').trim();
+    const name = (cells[nameIdx] || '').trim();
+    if (!code || code.toLowerCase().includes('รหัสครุภัณฑ์')) continue;
+    const parsedRow: ExcelParsedRow = {
+      code,
+      receivedDate: normalizeSheetDate(cells[dateIdx] || '', 'display'),
+      name,
+      brand: (cells[brandIdx] || '').trim(),
+      model: (cells[modelIdx] || '').trim(),
+      location: (cells[locIdx] || '').trim(),
+      serialNumber: (cells[snIdx] || '').trim(),
+      excelStatus: (cells[statusIdx] || '').trim(),
+      responsible: (cells[respIdx] || '').trim()
+    };
+    excelRows.push(parsedRow);
+    const normKey = code.replace(/\s+/g, '').toLowerCase();
+    if (!excelByCode.has(normKey)) {
+      excelByCode.set(normKey, parsedRow);
+    }
+  }
+
+  const staffPool = staffList.length > 0 ? staffList : STAFF_USERS;
+  const matchedItems: ExcelReconcileMatch[] = [];
+  const unmatchedSheetItems: { item: EquipmentMaster; closeMatchCode?: string }[] = [];
+  const missingEmailMap = new Map<string, { name: string; count: number; codes: string[] }>();
+  const matchedExcelKeys = new Set<string>();
+
+  const normClean = (v?: string) => (v || '').trim().replace(/\s+/g, ' ');
+  const isNAOrBlank = (v?: string) => {
+    const t = normClean(v).toUpperCase();
+    return !t || t === 'N/A' || t === '-';
+  };
+
+  const updatedCatalog: EquipmentMaster[] = currentCatalog.map(item => {
+    const normCode = (item.code || '').replace(/\s+/g, '').toLowerCase();
+    const excel = excelByCode.get(normCode);
+    if (!excel) {
+      // Find possible close code (e.g. 3/3-56 vs 13/3-56)
+      const prefix = normCode.split('-').slice(0, 3).join('-');
+      const close = prefix.length > 6 ? excelRows.find(er => er.code.replace(/\s+/g, '').toLowerCase().startsWith(prefix)) : undefined;
+      unmatchedSheetItems.push({ item, closeMatchCode: close?.code });
+      return item;
+    }
+
+    matchedExcelKeys.add(normCode);
+
+    const diffs: string[] = [];
+    if (normClean(excel.name) && normClean(excel.name) !== normClean(item.name)) {
+      diffs.push(`ชื่อ: "${item.name}" → "${excel.name}"`);
+    }
+    if (!isNAOrBlank(excel.location) && normClean(excel.location) !== normClean(item.location)) {
+      diffs.push(`สถานที่: "${item.location || '-'}" → "${excel.location}"`);
+    }
+    if (!isNAOrBlank(excel.brand) && normClean(excel.brand) !== normClean(item.brand)) {
+      diffs.push(`ยี่ห้อ: "${item.brand || '-'}" → "${excel.brand}"`);
+    }
+    if (!isNAOrBlank(excel.model) && normClean(excel.model) !== normClean(item.model)) {
+      diffs.push(`รุ่น: "${item.model || '-'}" → "${excel.model}"`);
+    }
+    if (!isNAOrBlank(excel.serialNumber) && normClean(excel.serialNumber) !== normClean(item.serialNumber)) {
+      diffs.push(`S/N: "${item.serialNumber || '-'}" → "${excel.serialNumber}"`);
+    }
+
+    const nextResp = excel.responsible && !GENERIC_OWNER_NAMES.has(excel.responsible.toLowerCase())
+      ? excel.responsible
+      : item.responsible;
+    const resolvedEmail = nextResp ? findStaffEmailByName(nextResp, staffPool) : '';
+    const missingStaffEmail = Boolean(nextResp && !GENERIC_OWNER_NAMES.has(nextResp.toLowerCase()) && !resolvedEmail);
+    const ownerChanged = normClean(nextResp) !== normClean(item.responsible) || resolvedEmail !== (item.responsibleEmail || '');
+
+    if (missingStaffEmail) {
+      const existingMissing = missingEmailMap.get(nextResp) || { name: nextResp, count: 0, codes: [] };
+      existingMissing.count += 1;
+      if (existingMissing.codes.length < 5) existingMissing.codes.push(item.code);
+      missingEmailMap.set(nextResp, existingMissing);
+    }
+
+    let nextStatus = item.status;
+    let nextCondition = item.condition;
+    const st = excel.excelStatus;
+    if (updateStatusFromExcel && st) {
+      if (st.includes('จำหน่าย')) {
+        nextStatus = 'รอจำหน่าย';
+        nextCondition = `สถานะใน Excel: ${st}`;
+      } else if (st.includes('ชำรุด') || st.includes('เสื่อม') || st.includes('ซ่อม')) {
+        nextStatus = 'ซ่อมบำรุง';
+        nextCondition = `สถานะใน Excel: ${st}`;
+      } else if (st.includes('ใช้งาน') && (item.status === 'ซ่อมบำรุง' || item.status === 'รอจำหน่าย')) {
+        nextStatus = 'พร้อมใช้งาน';
+        nextCondition = 'ปกติสมบูรณ์';
+      }
+    }
+    const statusChanged = nextStatus !== item.status;
+
+    const updatedItem: EquipmentMaster = {
+      ...item,
+      responsible: nextResp,
+      responsibleEmail: resolvedEmail || (normClean(nextResp) === normClean(item.responsible) ? item.responsibleEmail : ''),
+      status: nextStatus,
+      condition: nextCondition,
+      ...(updateDetailsFromExcel
+        ? {
+            name: excel.name || item.name,
+            location: excel.location ? excel.location : item.location,
+            brand: excel.brand || item.brand,
+            model: excel.model || item.model,
+            serialNumber: excel.serialNumber || item.serialNumber,
+            receivedDate: excel.receivedDate || item.receivedDate
+          }
+        : {})
+    };
+
+    const matchEntry: ExcelReconcileMatch = {
+      catalogItem: item,
+      excelRow: excel,
+      updatedItem,
+      resolvedEmail,
+      missingStaffEmail,
+      ownerChanged,
+      statusChanged,
+      diffs
+    };
+    matchedItems.push(matchEntry);
+    return updatedItem;
+  });
+
+  return {
+    excelRowCount: excelRows.length,
+    sheetCount: currentCatalog.length,
+    matchedItems,
+    unmatchedSheetItems,
+    unmatchedExcelCount: Math.max(0, excelRows.length - matchedExcelKeys.size),
+    missingEmailOwners: Array.from(missingEmailMap.values()).sort((a, b) => b.count - a.count),
+    nonActiveStatusItems: matchedItems.filter(m => m.excelRow.excelStatus && !m.excelRow.excelStatus.includes('ใช้งาน')),
+    fieldDiffItems: matchedItems.filter(m => m.diffs.length > 0),
+    updatedCatalog
+  };
 }
 
 export async function fetchGoogleSheetCSV(
@@ -1128,10 +1736,10 @@ export function parseRequestsCSV(csvText: string): BorrowRequest[] {
         requesterDept: cells[6] || '',
         requesterEmail: cells[7] || '',
         purpose: cells[8] || '',
-        borrowFrom: cells[9] || '',
-        borrowFromTime: cells[10] || '',
-        borrowTo: cells[11] || '',
-        borrowToTime: cells[12] || '',
+        borrowFrom: normalizeSheetDate(cells[9] || ''),
+        borrowFromTime: normalizeSheetTime(cells[10] || ''),
+        borrowTo: normalizeSheetDate(cells[11] || ''),
+        borrowToTime: normalizeSheetTime(cells[12] || ''),
         equipmentList
       });
     }

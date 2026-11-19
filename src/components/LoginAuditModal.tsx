@@ -89,9 +89,12 @@ export const LoginAuditModal: React.FC<LoginAuditModalProps> = ({
     }
   };
 
-  const formatRemainingTime = (expiresAt: string) => {
+  const formatRemainingTime = (expiresAt: string, role?: string) => {
+    if (role === 'admin' || expiresAt === 'UNLIMITED') {
+      return 'ไม่จำกัดเวลา (Admin)';
+    }
     const diffMs = new Date(expiresAt).getTime() - Date.now();
-    if (diffMs <= 0) return 'หมดเวลาแล้ว';
+    if (isNaN(diffMs) || diffMs <= 0) return 'หมดเวลาแล้ว';
     const mins = Math.floor(diffMs / 60000);
     const secs = Math.floor((diffMs % 60000) / 1000);
     return `${mins} นาที ${secs} วินาที`;
@@ -121,7 +124,7 @@ export const LoginAuditModal: React.FC<LoginAuditModalProps> = ({
                 </span>
               </h2>
               <p className="text-xs text-slate-400">
-                ตรวจสอบเวลาเข้าใช้, IP, อุปกรณ์, ควบคุมสิทธิ์การใช้งานไม่เกิน 15 นาที และสั่ง Force Logout ผู้ใช้
+                ตรวจสอบเวลาเข้าใช้, IP, อุปกรณ์, ควบคุมสิทธิ์การใช้งาน (ผู้ใช้ทั่วไป 15 นาที / Admin ไม่จำกัดเวลา) และสั่ง Force Logout ผู้ใช้
               </p>
             </div>
           </div>
@@ -176,10 +179,10 @@ export const LoginAuditModal: React.FC<LoginAuditModalProps> = ({
           <div className="p-3.5 bg-white rounded-xl border border-slate-200 shadow-2xs flex items-center justify-between">
             <div>
               <div className="text-xs text-slate-500 font-medium">อายุเซสชันการใช้งาน</div>
-              <div className="text-lg font-bold text-indigo-700 mt-0.5">
-                ไม่เกิน 15 นาที
+              <div className="text-base font-bold text-indigo-700 mt-0.5">
+                ผู้ใช้ 15 นาที / Admin ไม่จำกัด
               </div>
-              <div className="text-[11px] text-slate-400">ครบกำหนดจะดีด Logout อัตโนมัติ</div>
+              <div className="text-[11px] text-slate-400">Admin อยู่ในระบบได้ตลอด • ผู้ใช้ทั่วไป 15 นาที</div>
             </div>
             <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
               <Clock className="w-5 h-5" />
@@ -268,7 +271,7 @@ export const LoginAuditModal: React.FC<LoginAuditModalProps> = ({
                   <th className="py-3 px-4">สิทธิ์การใช้งาน</th>
                   <th className="py-3 px-4">IP Address / อุปกรณ์</th>
                   <th className="py-3 px-4">สถานะเซสชัน</th>
-                  <th className="py-3 px-4">เวลาคงเหลือ (จาก 15 นาที)</th>
+                  <th className="py-3 px-4">เวลาคงเหลือ</th>
                   <th className="py-3 px-4 text-center">จัดการ</th>
                 </tr>
               </thead>
@@ -345,10 +348,17 @@ export const LoginAuditModal: React.FC<LoginAuditModalProps> = ({
 
                       <td className="py-3 px-4">
                         {log.status === 'active' ? (
-                          <div className="font-semibold text-purple-700 flex items-center gap-1">
-                            <Clock className="w-3 h-3 text-purple-600" />
-                            <span>{formatRemainingTime(log.expiresAt)}</span>
-                          </div>
+                          log.role === 'admin' || log.expiresAt === 'UNLIMITED' ? (
+                            <div className="font-semibold text-amber-700 flex items-center gap-1">
+                              <ShieldCheck className="w-3.5 h-3.5 text-amber-600" />
+                              <span>ไม่จำกัดเวลา (Admin)</span>
+                            </div>
+                          ) : (
+                            <div className="font-semibold text-purple-700 flex items-center gap-1">
+                              <Clock className="w-3 h-3 text-purple-600" />
+                              <span>{formatRemainingTime(log.expiresAt, log.role)}</span>
+                            </div>
+                          )
                         ) : (
                           <span className="text-[11px] text-slate-400">
                             {log.logoutReason || 'สิ้นสุดเซสชัน'}
@@ -392,7 +402,7 @@ export const LoginAuditModal: React.FC<LoginAuditModalProps> = ({
         {/* Modal Footer */}
         <div className="bg-slate-50 px-6 py-3 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-500">
           <div>
-            ระบบควบคุมเซสชันอัตโนมัติ 15 นาทีตามนโยบายความปลอดภัย • บันทึกทุกการเข้าใช้ใน Local/Cloud
+            ระบบควบคุมเซสชันอัตโนมัติ (ผู้ใช้ทั่วไป 15 นาที • Admin อยู่ในระบบได้ตลอดไม่จำกัดเวลา) • บันทึกทุกการเข้าใช้ใน Local/Cloud
           </div>
           <button
             type="button"

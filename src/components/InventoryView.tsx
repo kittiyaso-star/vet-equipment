@@ -15,7 +15,8 @@ import {
   CheckCircle2,
   AlertCircle,
   LayoutGrid,
-  List
+  List,
+  FileSpreadsheet
 } from 'lucide-react';
 import { EquipmentMaster, StaffUser } from '../types';
 
@@ -24,6 +25,7 @@ interface InventoryViewProps {
   onAddNewEquipment: (equipment: EquipmentMaster) => void;
   onUpdateEquipment: (equipment: EquipmentMaster) => void;
   onSelectToBorrow: (equipment: EquipmentMaster) => void;
+  onOpenExcelReconcile?: () => void;
   isAdmin: boolean;
   staffList?: StaffUser[];
 }
@@ -33,6 +35,7 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
   onAddNewEquipment,
   onUpdateEquipment,
   onSelectToBorrow,
+  onOpenExcelReconcile,
   isAdmin,
   staffList = []
 }) => {
@@ -51,6 +54,7 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
   const [formCategory, setFormCategory] = useState<EquipmentMaster['category']>('เครื่องมือวินิจฉัย/เอ็กซเรย์');
   const [formLocation, setFormLocation] = useState('');
   const [formResponsible, setFormResponsible] = useState('');
+  const [formResponsibleEmail, setFormResponsibleEmail] = useState('');
   const [formBrand, setFormBrand] = useState('');
   const [formModel, setFormModel] = useState('');
   const [formStatus, setFormStatus] = useState<EquipmentMaster['status']>('พร้อมใช้งาน');
@@ -79,6 +83,18 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
     });
   }, [equipment, searchTerm, categoryFilter, statusFilter]);
 
+  const matchStaffEmail = (nameInput: string) => {
+    const clean = nameInput.trim().toLowerCase();
+    if (!clean) return '';
+    const matched = staffList.find(s => {
+      const pure = (s.name || '').toLowerCase();
+      const first = (s.first_name_th || pure.split(' ')[0] || '').toLowerCase();
+      const full = (s.display_name_th || '').toLowerCase();
+      return pure === clean || full === clean || (first && (clean === first || clean.includes(first))) || pure.includes(clean);
+    });
+    return matched?.email || '';
+  };
+
   const openAddModal = () => {
     setEditingItem(null);
     setFormName('');
@@ -86,6 +102,7 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
     setFormCategory('เครื่องมือวินิจฉัย/เอ็กซเรย์');
     setFormLocation('ห้องผ่าตัด 1');
     setFormResponsible(staffList[0]?.name || 'ดร.สพ.ญ.ญาดา ดวงนำสว่าง');
+    setFormResponsibleEmail(staffList[0]?.email || 'yada.d@psu.ac.th');
     setFormBrand('');
     setFormModel('');
     setFormStatus('พร้อมใช้งาน');
@@ -99,6 +116,7 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
     setFormCategory(eq.category);
     setFormLocation(eq.location || '');
     setFormResponsible(eq.responsible || '');
+    setFormResponsibleEmail(eq.responsibleEmail || matchStaffEmail(eq.responsible || ''));
     setFormBrand(eq.brand || '');
     setFormModel(eq.model || '');
     setFormStatus(eq.status);
@@ -109,6 +127,8 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
     e.preventDefault();
     if (!formName.trim() || !formCode.trim()) return;
 
+    const resolvedEmail = formResponsibleEmail.trim() || matchStaffEmail(formResponsible);
+
     if (editingItem) {
       onUpdateEquipment({
         ...editingItem,
@@ -117,6 +137,7 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
         category: formCategory,
         location: formLocation.trim(),
         responsible: formResponsible.trim(),
+        responsibleEmail: resolvedEmail,
         brand: formBrand.trim() || undefined,
         model: formModel.trim() || undefined,
         status: formStatus
@@ -129,7 +150,7 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
         category: formCategory,
         location: formLocation.trim(),
         responsible: formResponsible.trim(),
-        responsibleEmail: '',
+        responsibleEmail: resolvedEmail,
         brand: formBrand.trim() || undefined,
         model: formModel.trim() || undefined,
         status: formStatus,
@@ -213,7 +234,19 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
             </button>
           </div>
 
-          {/* "+ เพิ่มอุปกรณ์" Button (Styled with Image 2 cyan/blue #0090FF) */}
+          {/* Admin: Excel Reconciler & Catalog Sheet Sync + "+ เพิ่มอุปกรณ์" Button */}
+          {isAdmin && onOpenExcelReconcile && (
+            <button
+              type="button"
+              onClick={onOpenExcelReconcile}
+              id="btn-open-excel-reconcile"
+              className="px-3.5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm shadow-indigo-600/20 active:scale-[0.98] transition cursor-pointer"
+              title="ตรวจเทียบไฟล์ Excel ทะเบียนครุภัณฑ์ อัปเดตชื่อเจ้าของ และซิงค์ Google Sheet"
+            >
+              <FileSpreadsheet className="w-4 h-4 text-white" />
+              <span>เทียบ Excel / อัปเดตเจ้าของ</span>
+            </button>
+          )}
           {isAdmin && (
             <button
               type="button"
@@ -557,26 +590,51 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
                   <label className="block font-semibold text-slate-700 mb-1">ผู้ดูแลรับผิดชอบ</label>
                   <input
                     type="text"
+                    list="inventory-staff-list"
                     value={formResponsible}
-                    onChange={(e) => setFormResponsible(e.target.value)}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setFormResponsible(val);
+                      const autoEmail = matchStaffEmail(val);
+                      if (autoEmail) setFormResponsibleEmail(autoEmail);
+                    }}
                     placeholder="ชื่อผู้ดูแล หรือ เจ้าของ"
                     className="w-full px-3 py-2 rounded-xl border border-slate-200"
                   />
+                  <datalist id="inventory-staff-list">
+                    {staffList.map(s => (
+                      <option key={s.id} value={s.first_name_th || s.name}>
+                        {s.display_name_th || s.name} ({s.email})
+                      </option>
+                    ))}
+                  </datalist>
                 </div>
               </div>
 
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">สถานะ</label>
-                <select
-                  value={formStatus}
-                  onChange={(e) => setFormStatus(e.target.value as any)}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 cursor-pointer"
-                >
-                  <option value="พร้อมใช้งาน">พร้อมใช้งาน</option>
-                  <option value="ถูกยืมใช้งาน">ถูกยืมใช้งาน</option>
-                  <option value="ซ่อมบำรุง">ซ่อมบำรุง</option>
-                  <option value="รอจำหน่าย">รอจำหน่าย</option>
-                </select>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">อีเมลเจ้าของ (สำหรับส่งแจ้งเตือน)</label>
+                  <input
+                    type="email"
+                    value={formResponsibleEmail}
+                    onChange={(e) => setFormResponsibleEmail(e.target.value)}
+                    placeholder="name@psu.ac.th"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">สถานะ</label>
+                  <select
+                    value={formStatus}
+                    onChange={(e) => setFormStatus(e.target.value as any)}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 cursor-pointer"
+                  >
+                    <option value="พร้อมใช้งาน">พร้อมใช้งาน</option>
+                    <option value="ถูกยืมใช้งาน">ถูกยืมใช้งาน</option>
+                    <option value="ซ่อมบำรุง">ซ่อมบำรุง</option>
+                    <option value="รอจำหน่าย">รอจำหน่าย</option>
+                  </select>
+                </div>
               </div>
 
               <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">

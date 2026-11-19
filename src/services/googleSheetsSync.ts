@@ -1,5 +1,16 @@
 import { BorrowRequest, EquipmentMaster, StaffUser } from '../types';
-import { convertRequestsToCSV, parseRequestsCSV, formatStaffFullName, fetchGoogleSheetCSV, parseEquipmentSheetCSV } from './storage';
+import {
+  convertRequestsToCSV,
+  parseRequestsCSV,
+  formatStaffFullName,
+  fetchGoogleSheetCSV,
+  parseEquipmentSheetCSV,
+  normalizeSheetDate,
+  normalizeSheetTime,
+  resolveEquipmentOwner,
+  enrichRequestsWithEquipmentOwners,
+  getStoredEquipment
+} from './storage';
 
 export const SPREADSHEET_ID = '1jGol5v7T8hyZO8DbNo8i-MaoCnW_b7WSsGn2P63MYts';
 export const SPREADSHEET_URL = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/edit?gid=1882317748#gid=1882317748`;
@@ -70,7 +81,9 @@ export function convertEquipmentToCSV(equipment: EquipmentMaster[]): string {
     'รุ่น',
     'สถานที่ติดตั้ง',
     'Serial number',
-    'ราคา'
+    'ราคา',
+    'ผู้รับผิดชอบ',
+    'อีเมลผู้รับผิดชอบ'
   ];
 
   const rows = equipment.map(item => [
@@ -81,7 +94,9 @@ export function convertEquipmentToCSV(equipment: EquipmentMaster[]): string {
     `"${(item.model || '').replace(/"/g, '""')}"`,
     `"${(item.location || '').replace(/"/g, '""')}"`,
     `"${(item.serialNumber || '').replace(/"/g, '""')}"`,
-    `"${item.price !== undefined ? item.price : ''}"`
+    `"${item.price !== undefined ? item.price : ''}"`,
+    `"${(item.responsible || '').replace(/"/g, '""')}"`,
+    `"${(item.responsibleEmail || '').replace(/"/g, '""')}"`
   ].join(','));
 
   return [headers.join(','), ...rows].join('\n');
@@ -260,7 +275,9 @@ export async function syncEquipmentToGoogleSheet(
         model: eq.model || '',
         location: eq.location || '',
         serialNumber: eq.serialNumber || '',
-        price: eq.price || ''
+        price: eq.price || '',
+        responsible: eq.responsible || '',
+        responsibleEmail: eq.responsibleEmail || ''
       }))
     };
 
@@ -417,7 +434,7 @@ function doPost(e) {
       ];
       sheet.appendRow(headers);
 
-      // เขียนข้อมูลแต่ละแถว
+      // เขียนข้อมูลแต่ละแถว (กำหนด Format ข้อความให้คอลัมน์วัน-เวลา J..M เพื่อไม่ให้ Sheets แปลงเป็น 1899-12-30)
       if (data.requests.length > 0) {
         var rows = data.requests.map(function(r) {
           return [
@@ -438,6 +455,7 @@ function doPost(e) {
           ];
         });
 
+        sheet.getRange(2, 10, rows.length, 4).setNumberFormat("@");
         sheet.getRange(2, 1, rows.length, headers.length).setValues(rows);
       }
 
@@ -473,7 +491,9 @@ function doPost(e) {
         "รุ่น",
         "สถานที่ติดตั้ง",
         "Serial number",
-        "ราคา"
+        "ราคา",
+        "ผู้รับผิดชอบ",
+        "อีเมลผู้รับผิดชอบ"
       ];
       sheet.appendRow(headers);
 
@@ -487,10 +507,13 @@ function doPost(e) {
             eq.model || "",
             eq.location || "",
             eq.serialNumber || "",
-            eq.price !== undefined ? eq.price : ""
+            eq.price !== undefined ? eq.price : "",
+            eq.responsible || "",
+            eq.responsibleEmail || ""
           ];
         });
 
+        sheet.getRange(2, 2, rows.length, 1).setNumberFormat("@");
         sheet.getRange(2, 1, rows.length, headers.length).setValues(rows);
       }
 
@@ -553,19 +576,17 @@ function doPost(e) {
         JSON.stringify(r.equipmentList || [])
       ];
 
-      if (foundRow > 0) {
-        sheet.getRange(foundRow, 1, 1, rowData.length).setValues([rowData]);
-      } else {
-        sheet.appendRow(rowData);
-      }
+      var targetRow = foundRow > 0 ? foundRow : lastRow + 1;
+      sheet.getRange(targetRow, 10, 1, 4).setNumberFormat("@");
+      sheet.getRange(targetRow, 1, 1, rowData.length).setValues([rowData]);
 
-      // ส่งอีเมลแจ้งเตือนอัตโนมัติตามสถานะ (ถ้ามีอีเมลระบุ)
-      sendNotificationEmail(r);
+      // ส่งอีเมลแจ้งเตือนอัตโนมัติตามสถานะ
+      sendNotificationEmail(ss, r);
 
       return ContentService.createTextOutput(JSON.stringify({
         status: "success",
         message: "อัปเดตคำขอ " + r.id + " ลงในชีตและส่งแจ้งเตือนเรียบร้อย",
-        row: foundRow > 0 ? foundRow : lastRow + 1
+        row: targetRow
       })).setMimeType(ContentService.MimeType.JSON);
     }
 
@@ -585,7 +606,9 @@ function doPost(e) {
           "รุ่น",
           "สถานที่ติดตั้ง",
           "Serial number",
-          "ราคา"
+          "ราคา",
+          "ผู้รับผิดชอบ",
+          "อีเมลผู้รับผิดชอบ"
         ];
         sheet.appendRow(headers);
         sheet.getRange(1, 1, 1, headers.length)
@@ -603,11 +626,10 @@ function doPost(e) {
         eq.model || "",
         eq.location || "",
         eq.serialNumber || "",
-        eq.price !== undefined ? eq.price : ""
+        eq.price !== undefined ? eq.price : "",
+        eq.responsible || "",
+        eq.responsibleEmail || ""
       ];
-      if (eq.responsible) {
-        newRow.push(eq.responsible);
-      }
 
       sheet.appendRow(newRow); // ต่อท้ายแถวล่างสุดเสมอ ไม่ไปแทรกแถวบนสุด!
 
@@ -634,10 +656,42 @@ function doPost(e) {
 }
 
 /**
+ * ค้นหาอีเมลเจ้าของครุภัณฑ์จากรายการ หรือชีต "รายชื่อ" หรือโซนห้อง
+ */
+function resolveOwnerEmailInScript(ss, item) {
+  if (item && item.responsibleEmail && item.responsibleEmail.indexOf("@") > -1) {
+    return item.responsibleEmail.trim();
+  }
+  var respName = item && item.responsible ? String(item.responsible).trim() : "";
+  if (respName && respName !== "รพ.สัตว์ ม.อ." && ss) {
+    var staffSheet = ss.getSheetByName("รายชื่อ");
+    if (staffSheet) {
+      var staffRows = staffSheet.getDataRange().getDisplayValues();
+      for (var i = 1; i < staffRows.length; i++) {
+        var rowName = String(staffRows[i][0] || "");
+        var rowEmail = String(staffRows[i][3] || "").trim();
+        if (rowName.indexOf(respName) > -1 && rowEmail.indexOf("@") > -1) {
+          return rowEmail;
+        }
+      }
+    }
+  }
+  var loc = item && item.location ? String(item.location).toLowerCase() : "";
+  var nm = item && item.name ? String(item.name).toLowerCase() : "";
+  var txt = loc + " " + nm;
+  if (txt.indexOf("ห้องผ่าตัด") > -1) return "naphatsakon.s@psu.ac.th";
+  if (txt.indexOf("ศัลยกรรม") > -1) return "benjamas.ji@psu.ac.th";
+  if (txt.indexOf("เอกซเรย์") > -1 || txt.indexOf("หัตถการ") > -1 || txt.indexOf("ccu") > -1 || txt.indexOf("ชันสูตร") > -1 || txt.indexOf("ธนาคารเลือด") > -1 || txt.indexOf("อัลตร้าซาวด์") > -1) {
+    return "atchara.m@psu.ac.th";
+  }
+  return "watanya.po@psu.ac.th";
+}
+
+/**
  * ฟังก์ชันส่งอีเมลแจ้งเตือนอัตโนมัติ (Google MailApp / PSU Email)
  * ทำงานผ่านสิทธิ์ของบัญชีผู้ Deploy (ไม่เสียค่าบริการและส่งตรงถึง @psu.ac.th ได้ทันที)
  */
-function sendNotificationEmail(r) {
+function sendNotificationEmail(ss, r) {
   try {
     if (!r) return;
     var reqId = r.id || "";
@@ -645,7 +699,7 @@ function sendNotificationEmail(r) {
     var reqDept = r.requesterDept || "";
     var reqEmail = r.requesterEmail || "";
     var purpose = r.purpose || "เพื่อการปฏิบัติงาน/การเรียนการสอน";
-    var dateRange = (r.borrowFrom || "") + " ถึง " + (r.borrowTo || "");
+    var dateRange = (r.borrowFrom || "") + " (" + (r.borrowFromTime || "-") + ") ถึง " + (r.borrowTo || "") + " (" + (r.borrowToTime || "-") + ")";
     
     var eqItems = r.equipmentList || [];
     var eqSummaryLines = [];
@@ -653,10 +707,11 @@ function sendNotificationEmail(r) {
 
     for (var i = 0; i < eqItems.length; i++) {
       var item = eqItems[i];
-      eqSummaryLines.push("  - " + (item.code || "") + " : " + (item.name || "") + " (ผู้รับผิดชอบ: " + (item.responsible || "-") + " | " + (item.responsibleEmail || "-") + ")");
-      if (item.responsibleEmail && item.responsibleEmail.indexOf("@") > -1) {
-        var em = item.responsibleEmail.trim();
-        ownerEmails[em] = item.responsible || "อาจารย์/เจ้าหน้าที่ผู้ดูแลครุภัณฑ์";
+      var resolvedEmail = resolveOwnerEmailInScript(ss, item);
+      var ownerLabel = (item.responsible && item.responsible !== "รพ.สัตว์ ม.อ.") ? item.responsible : "เจ้าหน้าที่ผู้ดูแลครุภัณฑ์";
+      eqSummaryLines.push("  - " + (item.code || "") + " : " + (item.name || "") + " (ผู้รับผิดชอบ: " + ownerLabel + " | " + (resolvedEmail || "-") + ")");
+      if (resolvedEmail && resolvedEmail.indexOf("@") > -1) {
+        ownerEmails[resolvedEmail] = ownerLabel;
       }
     }
     var eqListText = eqSummaryLines.join("\\n");
@@ -674,7 +729,7 @@ function sendNotificationEmail(r) {
           "• วัตถุประสงค์: " + purpose + "\\n\\n" +
           "รายการครุภัณฑ์ที่ขอยืม:\\n" + eqListText + "\\n\\n" +
           "โปรดเข้าสู่ระบบยืม-คืนครุภัณฑ์ เพื่อตรวจสอบสภาพและกด 'ยินยอมให้ยืม' หรือ 'ไม่อนุมัติ':\\n" +
-          "ระบบยืม-คืนครุภัณฑ์ โรงพยาบาลสัตว์ ม.อ. คณะสัตวแพทยศาสตร์\\n\\n" +
+          "https://kittiyaso-star.github.io/vet-equipment/\\n\\n" +
           "--------------------------------------------------\\n" +
           "อีเมลอัตโนมัติจากระบบฐานข้อมูลยืม-คืนครุภัณฑ์ โรงพยาบาลสัตว์ ม.อ.";
 
@@ -687,12 +742,12 @@ function sendNotificationEmail(r) {
       }
     }
 
-    // 2. กรณี: เจ้าของกดยินยอมแล้ว -> แจ้งเตือนผู้บริหาร (ดร.สพ.ญ.ญาดา ดวงนำสว่าง)
-    else if (r.status === "รอผู้บริหารอนุมัติ") {
+    // 2. กรณี: เจ้าของครุภัณฑ์อนุมัติครบแล้ว -> ส่งอีเมลยืนยันถึง ดร.สพ.ญ.ญาดา ดวงนำสว่าง และแจ้งผู้ขอยืม
+    else if (r.status === "เจ้าของให้ยืมแล้ว" || r.status === "กำลังยืมใช้งาน") {
       var execEmail = "yada.d@psu.ac.th";
-      var subject = "[ระบบยืม-คืนครุภัณฑ์ รพ.สัตว์ ม.อ.] รอผู้บริหารอนุมัติคำขอยืม (" + reqId + ")";
-      var body = "เรียน ดร.สพ.ญ.ญาดา ดวงนำสว่าง (รองผู้อำนวยการ รพ.สัตว์ ม.อ.),\\n\\n" +
-        "คำขอยืมครุภัณฑ์เลขที่ " + reqId + " ได้รับการยินยอมจากเจ้าของครุภัณฑ์เรียบร้อยแล้ว ขณะนี้รอการอนุมัติขั้นสุดท้ายจากท่าน:\\n\\n" +
+      var execSubject = "[รพ.สัตว์ ม.อ. - ยืนยันการอนุมัติ] คำขอยืม " + reqId + " เจ้าของครุภัณฑ์กดอนุมัติแล้ว";
+      var execBody = "เรียน ดร.สพ.ญ.ญาดา ดวงนำสว่าง (รองผู้อำนวยการ รพ.สัตว์ ม.อ.),\\n\\n" +
+        "ระบบขอเรียนแจ้งยืนยันว่า คำขอยืมครุภัณฑ์เลขที่ " + reqId + " โดย " + reqName + " ได้รับการกดยินยอมจากเจ้าของครุภัณฑ์ครบถ้วนแล้ว (ผู้บริหารไม่ต้องเข้ามากดอนุมัติซ้ำในระบบ):\\n\\n" +
         "• ผู้ขอยืม: " + reqName + " (" + reqDept + ")\\n" +
         "• กำหนดวันยืม: " + dateRange + "\\n" +
         "• วัตถุประสงค์: " + purpose + "\\n\\n" +
@@ -702,13 +757,10 @@ function sendNotificationEmail(r) {
 
       MailApp.sendEmail({
         to: execEmail,
-        subject: subject,
-        body: body
+        subject: execSubject,
+        body: execBody
       });
-    }
 
-    // 3. กรณี: อนุมัติแล้ว -> แจ้งยืนยันแก่ผู้ขอยืม
-    else if (r.status === "เจ้าของให้ยืมแล้ว" || r.status === "กำลังยืมใช้งาน") {
       if (reqEmail && reqEmail.indexOf("@") > -1) {
         var subject = "[ระบบยืม-คืนครุภัณฑ์ รพ.สัตว์ ม.อ.] คำขอยืม (" + reqId + ") ได้รับการอนุมัติแล้ว";
         var body = "เรียน " + reqName + ",\\n\\n" +
@@ -735,7 +787,7 @@ function doGet(e) {
   var action = (e && e.parameter && e.parameter.action) ? e.parameter.action : "status";
   var ss = SpreadsheetApp.getActiveSpreadsheet();
 
-  // ดึงข้อมูลครุภัณฑ์จากชีต "ครุภัณฑ์"
+  // ดึงข้อมูลครุภัณฑ์จากชีต "ครุภัณฑ์" (ใช้ getDisplayValues เพื่อไม่ให้วันที่เพี้ยนตาม UTC)
   if (action === "get_equipment") {
     var sheet = ss.getSheetByName("ครุภัณฑ์");
     if (!sheet) {
@@ -744,7 +796,7 @@ function doGet(e) {
         message: "ไม่พบแท็บ ครุภัณฑ์"
       })).setMimeType(ContentService.MimeType.JSON);
     }
-    var values = sheet.getDataRange().getValues();
+    var values = sheet.getDataRange().getDisplayValues();
     return ContentService.createTextOutput(JSON.stringify({
       status: "success",
       rows: values
@@ -760,14 +812,14 @@ function doGet(e) {
         message: "ไม่พบแท็บ รายชื่อ"
       })).setMimeType(ContentService.MimeType.JSON);
     }
-    var values = sheet.getDataRange().getValues();
+    var values = sheet.getDataRange().getDisplayValues();
     return ContentService.createTextOutput(JSON.stringify({
       status: "success",
       rows: values
     })).setMimeType(ContentService.MimeType.JSON);
   }
 
-  // ดึงรายการคำขอยืมครุภัณฑ์จากชีต "คำขอยืมครุภัณฑ์"
+  // ดึงรายการคำขอยืมครุภัณฑ์จากชีต "คำขอยืมครุภัณฑ์" (ใช้ getDisplayValues เพื่อคืนค่า YYYY-MM-DD และ HH:mm ตรงตามชีต)
   if (action === "get_requests" || action === "get_borrow_requests") {
     var sheet = ss.getSheetByName("คำขอยืมครุภัณฑ์");
     if (!sheet) {
@@ -776,7 +828,7 @@ function doGet(e) {
         message: "ไม่พบแท็บ คำขอยืมครุภัณฑ์"
       })).setMimeType(ContentService.MimeType.JSON);
     }
-    var values = sheet.getDataRange().getValues();
+    var values = sheet.getDataRange().getDisplayValues();
     return ContentService.createTextOutput(JSON.stringify({
       status: "success",
       rows: values
@@ -796,7 +848,11 @@ function doGet(e) {
 /**
  * Parse 2D rows from Google Sheets tab 'ครุภัณฑ์' into EquipmentMaster array
  */
-export function parseEquipmentRows(rows: any[][]): EquipmentMaster[] {
+export function parseEquipmentRows(
+  rows: any[][],
+  existingEquipment: EquipmentMaster[] = [],
+  staffList: StaffUser[] = []
+): EquipmentMaster[] {
   if (!rows || rows.length < 2) return [];
   const headerRow = rows[0].map((h: any) => String(h || '').trim().toLowerCase());
 
@@ -813,6 +869,7 @@ export function parseEquipmentRows(rows: any[][]): EquipmentMaster[] {
   const colLocation = findCol(['สถานที่', 'ห้อง', 'location'], 5);
   const colSerial = findCol(['serial', 's/n', 'ซีเรียล'], 6);
   const colPrice = findCol(['ราคา', 'price'], 7);
+  const colStatus = findCol(['สถานะ', 'status'], -1);
   const colResp = findCol(['ผู้รับผิดชอบ', 'เจ้าของ', 'responsible', 'owner'], 8);
   const colRespEmail = findCol(['อีเมล', 'email'], 9);
   const colCategory = findCol(['หมวด', 'ประเภท', 'category'], -1);
@@ -825,8 +882,25 @@ export function parseEquipmentRows(rows: any[][]): EquipmentMaster[] {
     const name = String(row[colName] || '').trim();
     if (!code && !name) continue;
 
+    const location = String(row[colLocation] || '').trim() || 'รพ.สัตว์ ม.อ.';
+    const explicitResp = String(row[colResp] || '').trim();
+    const explicitEmail = String(row[colRespEmail] || '').trim();
+    const resolvedOwner = resolveEquipmentOwner({
+      code,
+      name,
+      location,
+      explicitResponsible: explicitResp,
+      explicitEmail,
+      existingEquipment,
+      staffList
+    });
+
+    const existingItem = existingEquipment.find(
+      e => e.code && code && e.code.trim().toLowerCase() === code.toLowerCase()
+    );
+
     const catRaw = colCategory >= 0 ? String(row[colCategory] || '').trim() : '';
-    let category: EquipmentMaster['category'] = 'อื่นๆ';
+    let category: EquipmentMaster['category'] = existingItem?.category || 'อื่นๆ';
     if (catRaw.includes('วินิจฉัย') || catRaw.includes('เอ็กซเรย์') || name.includes('X-Ray') || name.includes('Ultrasound') || name.includes('เอ็กซเรย์')) {
       category = 'เครื่องมือวินิจฉัย/เอ็กซเรย์';
     } else if (catRaw.includes('ผ่าตัด') || catRaw.includes('ศัลยกรรม') || name.includes('ผ่าตัด') || name.includes('ดมยา')) {
@@ -837,21 +911,43 @@ export function parseEquipmentRows(rows: any[][]): EquipmentMaster[] {
       category = 'อุปกรณ์กายภาพ/เวชศาสตร์ฟื้นฟู';
     }
 
+    const rawPriceVal = row[colPrice];
+    const parsedPrice =
+      rawPriceVal !== undefined && rawPriceVal !== ''
+        ? isNaN(Number(rawPriceVal))
+          ? String(rawPriceVal)
+          : Number(rawPriceVal)
+        : existingItem?.price ?? '';
+
+    const rawStatus = colStatus >= 0 ? String(row[colStatus] || '').trim() : '';
+    let mappedStatus: EquipmentMaster['status'] = existingItem?.status || 'พร้อมใช้งาน';
+    let mappedCondition = existingItem?.condition || 'ปกติสมบูรณ์';
+    if (rawStatus.includes('จำหน่าย')) {
+      mappedStatus = 'รอจำหน่าย';
+      mappedCondition = `สถานะในชีต: ${rawStatus}`;
+    } else if (rawStatus.includes('ชำรุด') || rawStatus.includes('เสื่อม') || rawStatus.includes('ซ่อม')) {
+      mappedStatus = 'ซ่อมบำรุง';
+      mappedCondition = `สถานะในชีต: ${rawStatus}`;
+    }
+
     items.push({
-      id: code || `EQ-${i}`,
+      id: existingItem?.id || code || `EQ-${i}`,
       code: code || `ITEM-${i}`,
       name: name || code,
       category,
-      receivedDate: String(row[colDate] || '').trim(),
+      receivedDate: normalizeSheetDate(row[colDate], 'display'),
       brand: String(row[colBrand] || '').trim(),
       model: String(row[colModel] || '').trim(),
-      location: String(row[colLocation] || '').trim() || 'รพ.สัตว์ ม.อ.',
+      location,
       serialNumber: String(row[colSerial] || '').trim(),
-      price: row[colPrice] !== undefined && row[colPrice] !== '' ? (isNaN(Number(row[colPrice])) ? String(row[colPrice]) : Number(row[colPrice])) : '',
-      responsible: String(row[colResp] || '').trim() || 'รพ.สัตว์ ม.อ.',
-      responsibleEmail: String(row[colRespEmail] || '').trim(),
-      status: 'พร้อมใช้งาน',
-      condition: 'ปกติสมบูรณ์'
+      price: parsedPrice,
+      responsible: resolvedOwner.responsible,
+      responsibleEmail: resolvedOwner.responsibleEmail,
+      status: mappedStatus,
+      condition: mappedCondition,
+      currentBorrowRequestId: existingItem?.currentBorrowRequestId,
+      currentBorrowerName: existingItem?.currentBorrowerName,
+      currentDueTo: existingItem?.currentDueTo
     });
   }
   return items;
@@ -1064,9 +1160,12 @@ export function parseStaffCSV(csvText: string): StaffUser[] {
  * Fetches real equipment catalog from Google Sheet (via Webhook or direct CSV)
  */
 export async function fetchEquipmentFromGoogleSheets(
-  overrideWebhookUrl?: string
+  overrideWebhookUrl?: string,
+  existingEquipment?: EquipmentMaster[],
+  staffList: StaffUser[] = []
 ): Promise<{ success: boolean; equipment: EquipmentMaster[]; message: string }> {
   const url = (overrideWebhookUrl || getStoredWebhookUrl()).trim();
+  const baseEquipment = existingEquipment && existingEquipment.length > 0 ? existingEquipment : getStoredEquipment();
 
   if (url) {
     try {
@@ -1082,7 +1181,7 @@ export async function fetchEquipmentFromGoogleSheets(
 
       const data = await res.json();
       if (data.status === 'success' && Array.isArray(data.rows)) {
-        const parsed = parseEquipmentRows(data.rows);
+        const parsed = parseEquipmentRows(data.rows, baseEquipment, staffList);
         if (parsed.length > 0) {
           saveLastSyncInfo('success', `ดึงข้อมูลครุภัณฑ์ ${parsed.length} รายการจากชีตสำเร็จ`);
           return { success: true, equipment: parsed, message: `ดึงข้อมูลครุภัณฑ์ ${parsed.length} รายการจากชีตสำเร็จ` };
@@ -1190,7 +1289,11 @@ export async function fetchStaffFromGoogleSheets(
 /**
  * Parses rows array from Google Sheet tab 'คำขอยืมครุภัณฑ์' into BorrowRequest array
  */
-export function parseRequestRows(rows: any[][]): BorrowRequest[] {
+export function parseRequestRows(
+  rows: any[][],
+  equipmentCatalog: EquipmentMaster[] = [],
+  staffList: StaffUser[] = []
+): BorrowRequest[] {
   if (!rows || rows.length < 2) return [];
 
   const requests: BorrowRequest[] = [];
@@ -1221,24 +1324,28 @@ export function parseRequestRows(rows: any[][]): BorrowRequest[] {
       requesterDept: row[6] ? String(row[6]).trim() : '',
       requesterEmail: row[7] ? String(row[7]).trim() : '',
       purpose: row[8] ? String(row[8]).trim() : '',
-      borrowFrom: row[9] ? String(row[9]).trim() : '',
-      borrowFromTime: row[10] ? String(row[10]).trim() : '',
-      borrowTo: row[11] ? String(row[11]).trim() : '',
-      borrowToTime: row[12] ? String(row[12]).trim() : '',
+      borrowFrom: normalizeSheetDate(row[9]),
+      borrowFromTime: normalizeSheetTime(row[10]),
+      borrowTo: normalizeSheetDate(row[11]),
+      borrowToTime: normalizeSheetTime(row[12]),
       equipmentList: Array.isArray(equipmentList) ? equipmentList : []
     });
   }
 
-  return requests;
+  const catalog = equipmentCatalog.length > 0 ? equipmentCatalog : getStoredEquipment();
+  return enrichRequestsWithEquipmentOwners(requests, catalog, staffList);
 }
 
 /**
  * Fetches real borrow requests from Google Sheet tab 'คำขอยืมครุภัณฑ์' (via Webhook or direct CSV)
  */
 export async function fetchRequestsFromGoogleSheets(
-  overrideWebhookUrl?: string
+  overrideWebhookUrl?: string,
+  equipmentCatalog: EquipmentMaster[] = [],
+  staffList: StaffUser[] = []
 ): Promise<{ success: boolean; requests: BorrowRequest[]; message: string }> {
   const url = (overrideWebhookUrl || getStoredWebhookUrl()).trim();
+  const catalog = equipmentCatalog.length > 0 ? equipmentCatalog : getStoredEquipment();
 
   if (url) {
     try {
@@ -1254,7 +1361,7 @@ export async function fetchRequestsFromGoogleSheets(
 
       const data = await res.json();
       if (data.status === 'success' && Array.isArray(data.rows)) {
-        const parsed = parseRequestRows(data.rows);
+        const parsed = parseRequestRows(data.rows, catalog, staffList);
         if (parsed.length > 0) {
           saveLastSyncInfo('success', `ดึงรายการคำขอยืม ${parsed.length} รายการจากชีต "คำขอยืมครุภัณฑ์" สำเร็จ`);
           return { success: true, requests: parsed, message: `ดึงรายการคำขอยืม ${parsed.length} รายการจากชีตสำเร็จ` };
@@ -1274,7 +1381,7 @@ export async function fetchRequestsFromGoogleSheets(
     if (res.ok) {
       const text = await res.text();
       if (!text.includes('<!DOCTYPE html>') && !text.includes('accounts.google.com') && !text.includes('找不到網頁')) {
-        const parsed = parseRequestsCSV(text);
+        const parsed = enrichRequestsWithEquipmentOwners(parseRequestsCSV(text), catalog, staffList);
         if (parsed.length > 0) {
           saveLastSyncInfo('success', `ดึงรายการคำขอยืม ${parsed.length} รายการจากชีต "คำขอยืมครุภัณฑ์" สำเร็จ (Direct GID)`);
           return { success: true, requests: parsed, message: `ดึงรายการคำขอยืม ${parsed.length} รายการสำเร็จ (Direct GID)` };
@@ -1292,7 +1399,7 @@ export async function fetchRequestsFromGoogleSheets(
     if (res.ok) {
       const text = await res.text();
       if (!text.includes('<!DOCTYPE html>') && !text.includes('accounts.google.com') && !text.includes('找不到網頁')) {
-        const parsed = parseRequestsCSV(text);
+        const parsed = enrichRequestsWithEquipmentOwners(parseRequestsCSV(text), catalog, staffList);
         if (parsed.length > 0) {
           saveLastSyncInfo('success', `ดึงรายการคำขอยืม ${parsed.length} รายการจากชีต "คำขอยืมครุภัณฑ์" สำเร็จ (Direct Sheet)`);
           return { success: true, requests: parsed, message: `ดึงรายการคำขอยืม ${parsed.length} รายการสำเร็จ (Direct Sheet)` };
@@ -1310,7 +1417,7 @@ export async function fetchRequestsFromGoogleSheets(
     if (res.ok) {
       const text = await res.text();
       if (!text.includes('<!DOCTYPE html>') && !text.includes('accounts.google.com') && !text.includes('找不到網頁')) {
-        const parsed = parseRequestsCSV(text);
+        const parsed = enrichRequestsWithEquipmentOwners(parseRequestsCSV(text), catalog, staffList);
         if (parsed.length > 0) {
           saveLastSyncInfo('success', `ดึงรายการคำขอยืม ${parsed.length} รายการจากชีต "คำขอยืมครุภัณฑ์" สำเร็จ (Export CSV)`);
           return { success: true, requests: parsed, message: `ดึงรายการคำขอยืม ${parsed.length} รายการสำเร็จ (Export CSV)` };

@@ -27,8 +27,13 @@ import {
   Edit2
 } from 'lucide-react';
 import { EquipmentMaster, StaffUser } from '../types';
-import { fetchGoogleSheetCSV, parseEquipmentSheetCSV, getStoredStaffUsers } from '../services/storage';
-import { fetchEquipmentFromGoogleSheets } from '../services/googleSheetsSync';
+import {
+  fetchGoogleSheetCSV,
+  parseEquipmentSheetCSV,
+  getStoredStaffUsers,
+  reconcileEquipmentWithExcel
+} from '../services/storage';
+import { fetchEquipmentFromGoogleSheets, convertEquipmentToCSV } from '../services/googleSheetsSync';
 
 interface EquipmentCatalogModalProps {
   isOpen: boolean;
@@ -110,7 +115,11 @@ export const EquipmentCatalogModal: React.FC<EquipmentCatalogModalProps> = ({
   }>({ type: 'idle' });
 
   const [showImportModal, setShowImportModal] = useState(false);
+  const [importMode, setImportMode] = useState<'reconcile' | 'replace'>('reconcile');
   const [csvInputText, setCsvInputText] = useState('');
+  const [reconcileUpdateStatus, setReconcileUpdateStatus] = useState(true);
+  const [reconcileUpdateDetails, setReconcileUpdateDetails] = useState(true);
+  const [reconcileDetailTab, setReconcileDetailTab] = useState<'missing_email' | 'non_active' | 'unmatched' | 'diffs' | 'matched'>('missing_email');
   const [showHelpModal, setShowHelpModal] = useState(false);
 
   // Form states
@@ -209,6 +218,16 @@ export const EquipmentCatalogModal: React.FC<EquipmentCatalogModalProps> = ({
       p.position.toLowerCase().includes(q)
     );
   }, [personnelSuggestions, newResponsible]);
+
+  // Live Excel vs Google Sheet reconciliation report
+  const excelReconcileReport = useMemo(() => {
+    if (importMode !== 'reconcile' || !csvInputText.trim()) return null;
+    const activeStaff = staffList && staffList.length > 0 ? staffList : getStoredStaffUsers();
+    return reconcileEquipmentWithExcel(csvInputText, equipmentList, activeStaff, {
+      updateStatusFromExcel: reconcileUpdateStatus,
+      updateDetailsFromExcel: reconcileUpdateDetails
+    });
+  }, [importMode, csvInputText, equipmentList, staffList, reconcileUpdateStatus, reconcileUpdateDetails]);
 
   if (!isOpen) return null;
 
@@ -339,7 +358,7 @@ export const EquipmentCatalogModal: React.FC<EquipmentCatalogModalProps> = ({
     setSyncStatus({ type: 'idle' });
 
     try {
-      const res = await fetchEquipmentFromGoogleSheets();
+      const res = await fetchEquipmentFromGoogleSheets(undefined, equipmentList, staffList || getStoredStaffUsers());
       if (res.success && res.equipment.length > 0) {
         if (onBatchUpdateEquipment) {
           onBatchUpdateEquipment(res.equipment);
@@ -388,7 +407,7 @@ export const EquipmentCatalogModal: React.FC<EquipmentCatalogModalProps> = ({
     }
   };
 
-  // Handle Manual CSV Import or Paste
+  // Handle Manual CSV Import or Paste (Full Replace mode)
   const handleProcessCsv = (csvText: string) => {
     try {
       const parsedItems = parseEquipmentSheetCSV(csvText);
@@ -412,18 +431,57 @@ export const EquipmentCatalogModal: React.FC<EquipmentCatalogModalProps> = ({
     }
   };
 
+  const handleApplyExcelReconcile = () => {
+    if (!excelReconcileReport || excelReconcileReport.matchedItems.length === 0) return;
+    if (onBatchUpdateEquipment) {
+      onBatchUpdateEquipment(excelReconcileReport.updatedCatalog);
+    }
+    setSyncStatus({
+      type: 'success',
+      count: excelReconcileReport.matchedItems.length,
+      message: `อัปเดตเจ้าของครุภัณฑ์และข้อมูลจาก Excel ตรงกับ Google Sheet สำเร็จ ${excelReconcileReport.matchedItems.length} จาก ${excelReconcileReport.sheetCount} รายการ (คงค่า "ราคา" เดิมไว้ครบถ้วน)`
+    });
+    setShowImportModal(false);
+    setCsvInputText('');
+  };
+
+  const handleDownloadReconciledCsv = () => {
+    if (!excelReconcileReport) return;
+    const csv = convertEquipmentToCSV(excelReconcileReport.updatedCatalog);
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `ครุภัณฑ์-อัปเดตเจ้าของจากExcel-${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     const reader = new FileReader();
     reader.onload = (event) => {
-      const content = event.target?.result as string;
-      if (content) {
+      const buffer = event.target?.result as ArrayBuffer;
+      if (!buffer) return;
+      // Decode UTF-8 first, fallback to windows-874 / tis-620 if Excel exported ANSI Thai CSV
+      let content = new TextDecoder('utf-8').decode(buffer);
+      if (content.includes('\uFFFD')) {
+        try {
+          content = new TextDecoder('windows-874').decode(buffer);
+        } catch {
+          // keep utf-8 if windows-874 unsupported
+        }
+      }
+      if (importMode === 'reconcile') {
+        setCsvInputText(content);
+      } else {
         handleProcessCsv(content);
       }
     };
-    reader.readAsText(file, 'utf-8');
+    reader.readAsArrayBuffer(file);
   };
 
   return (
@@ -474,7 +532,7 @@ export const EquipmentCatalogModal: React.FC<EquipmentCatalogModalProps> = ({
             </span>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={handleSyncFromGoogleSheet}
               disabled={isSyncing}
@@ -496,11 +554,14 @@ export const EquipmentCatalogModal: React.FC<EquipmentCatalogModalProps> = ({
             )}
 
             <button
-              onClick={() => setShowImportModal(true)}
-              className="px-3 py-1.5 bg-blue-800 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer shadow-xs"
+              onClick={() => {
+                setImportMode('reconcile');
+                setShowImportModal(true);
+              }}
+              className="px-3 py-1.5 bg-indigo-700 hover:bg-indigo-600 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer shadow-xs"
             >
               <Upload className="w-3.5 h-3.5" />
-              <span>นำเข้า / วางตารางจากชีต (Ctrl+V)</span>
+              <span>ตรวจเทียบ Excel / อัปเดตเจ้าของ</span>
             </button>
 
             {isAdmin && (
@@ -1125,183 +1186,404 @@ export const EquipmentCatalogModal: React.FC<EquipmentCatalogModalProps> = ({
         </div>
       </div>
 
-      {/* CSV / Direct Sheet Paste Import Modal */}
+      {/* CSV / Direct Sheet Paste & Excel Reconciliation Modal */}
       {showImportModal && (
         <div className="fixed inset-0 z-60 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
-          <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-slate-200 flex flex-col max-h-[90vh] overflow-hidden">
+          <div className="bg-white rounded-2xl max-w-4xl w-full p-5 sm:p-6 shadow-2xl border border-slate-200 flex flex-col max-h-[92vh] overflow-hidden">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 shrink-0">
-              <div className="flex items-center gap-2">
-                <Upload className="w-5 h-5 text-blue-600" />
+              <div className="flex items-center gap-2.5">
+                <FileSpreadsheet className="w-5 h-5 text-indigo-600" />
                 <div>
-                  <h4 className="text-sm font-bold text-slate-900">นำเข้าข้อมูลครุภัณฑ์จาก Google Sheets</h4>
-                  <p className="text-[11px] text-slate-500">เลือกวิธีที่สะดวกที่สุดเพื่อดึงข้อมูลทั้งหมดเข้าสู่ระบบ</p>
+                  <h4 className="text-sm font-bold text-slate-900">
+                    {importMode === 'reconcile'
+                      ? 'ตรวจสอบและอัปเดตเจ้าของครุภัณฑ์จากไฟล์ Excel เทียบกับ Google Sheet'
+                      : 'นำเข้าข้อมูลครุภัณฑ์ทั้งหมดจาก Google Sheets'}
+                  </h4>
+                  <p className="text-[11px] text-slate-500">
+                    {importMode === 'reconcile'
+                      ? 'รองรับไฟล์ Excel ขนาดใหญ่ (2,000+ แถว) โดยคงรายการให้ยืม 249 รายการและคอลัมน์ "ราคา" เดิมไว้ครบถ้วน'
+                      : 'นำเข้าเพื่อแทนที่รายการครุภัณฑ์ทั้งหมดจากแท็บ "ครุภัณฑ์"'}
+                  </p>
                 </div>
               </div>
-              <button onClick={() => setShowImportModal(false)} className="text-slate-400 hover:text-slate-600 p-1">
+              <button onClick={() => setShowImportModal(false)} className="text-slate-400 hover:text-slate-600 p-1 cursor-pointer">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="overflow-y-auto pr-1 mt-4 space-y-4 text-xs">
-              {/* Emergency Solution Callout for User Issues */}
-              <div className="p-4 bg-amber-50/90 border border-amber-300 rounded-xl space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-amber-950 flex items-center gap-1.5 text-xs">
-                    <AlertTriangle className="w-4 h-4 text-amber-600" />
-                    วิธีแก้ไขด่วน: กู้คืน 200+ รายการ และแก้รายการใหม่ขึ้นไปอยู่แถวบนสุด
-                  </span>
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-200 text-amber-900 font-semibold">
-                    ทำตาม 3 ขั้นตอนนี้
-                  </span>
-                </div>
+            {/* Mode Switcher */}
+            <div className="flex items-center gap-2 pt-3 pb-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => setImportMode('reconcile')}
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                  importMode === 'reconcile'
+                    ? 'bg-indigo-700 text-white shadow-xs'
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                }`}
+              >
+                1. เทียบกับไฟล์ Excel (อัปเดตเจ้าของ + ตรวจความต่าง)
+              </button>
+              <button
+                type="button"
+                onClick={() => setImportMode('replace')}
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                  importMode === 'replace'
+                    ? 'bg-blue-700 text-white shadow-xs'
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                }`}
+              >
+                2. นำเข้า / แทนที่ทั้งตารางจาก Google Sheet
+              </button>
+            </div>
 
-                <div className="space-y-2.5 text-slate-700 text-[11px] leading-relaxed">
-                  <div className="p-2.5 bg-white/90 rounded-lg border border-amber-200">
-                    <strong className="text-amber-950">1. แก้แถวที่ 1 ใน Google Sheet (ที่ทำให้ระบบหาข้อมูลไม่เจอ):</strong>
-                    <p className="mt-1 text-slate-600">
-                      ใน Google Sheet แถวที่ 1 กำลังถูก <strong>"ผสานเซลล์ (Merge Cells)"</strong> รวมกัน ให้คลิกที่แถวที่ 1 แล้วกดปุ่ม <strong>"ยกเลิกการผสานเซลล์"</strong> (ไอคอนตารางผสานเซลล์ด้านบน) จากนั้นกดปุ่มคัดลอกด้านล่างนี้แล้ววางลงที่เซลล์ <strong>A1</strong> เพื่อใส่หัวตารางมาตรฐาน:
-                    </p>
-                    <div className="mt-2 flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={handleCopyHeaderRow}
-                        className="px-3 py-1.5 bg-amber-700 hover:bg-amber-800 text-white rounded-lg font-semibold flex items-center gap-1.5 transition cursor-pointer shadow-xs"
-                      >
-                        {hasCopiedHeader ? <Check className="w-3.5 h-3.5 text-emerald-300" /> : <Copy className="w-3.5 h-3.5" />}
-                        <span>{hasCopiedHeader ? 'คัดลอกแล้ว! นำไปวางในเซลล์ A1 ได้เลย' : 'คลิกคัดลอกหัวตาราง 8 คอลัมน์ที่ถูกต้อง'}</span>
-                      </button>
+            <div className="overflow-y-auto pr-1 mt-2 space-y-4 text-xs">
+              {importMode === 'reconcile' ? (
+                <>
+                  {/* Step 1: Paste or Upload Excel */}
+                  <div className="p-4 bg-indigo-50/70 border border-indigo-200 rounded-xl space-y-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span className="font-bold text-indigo-950 text-xs">
+                        วางข้อมูลจากไฟล์ Excel (Ctrl+A &gt; Ctrl+C แล้ว Ctrl+V) หรือเลือกไฟล์ .CSV / .TSV
+                      </span>
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800 font-semibold border border-indigo-200">
+                        คอลัมน์: รหัสครุภัณฑ์ | วันที่ตรวจรับ | ชื่อ | ยี่ห้อ | รุ่น | สถานที่ติดตั้ง | S/N | สถานะ | ผู้รับผิดชอบ
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-start">
+                      <div className="md:col-span-2">
+                        <textarea
+                          rows={5}
+                          value={csvInputText}
+                          onChange={(e) => setCsvInputText(e.target.value)}
+                          placeholder="วางข้อมูลจาก Excel ที่นี่ได้เลย (ไม่จำกัดจำนวนแถว ระบบจะจับคู่เฉพาะรหัสที่มีใน Google Sheet 249 รายการให้อัตโนมัติ ไม่นำโต๊ะ/เก้าอี้มาปน)..."
+                          className="w-full p-3 font-mono text-[11px] border border-indigo-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                        />
+                      </div>
+                      <div className="p-3 bg-white rounded-xl border border-indigo-100 space-y-2.5">
+                        <div className="font-semibold text-slate-800 text-[11px]">หรืออัปโหลดไฟล์ CSV จาก Excel:</div>
+                        <input
+                          type="file"
+                          accept=".csv,.tsv,.txt,text/csv,text/tab-separated-values"
+                          onChange={handleFileUpload}
+                          className="w-full text-[11px] text-slate-600 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-[11px] file:font-semibold file:bg-indigo-100 file:text-indigo-800 hover:file:bg-indigo-200 cursor-pointer"
+                        />
+                        <p className="text-[10px] text-slate-500 leading-relaxed">
+                          รองรับทั้ง UTF-8 และ CSV ภาษาไทยจาก Microsoft Excel (Windows-874 / TIS-620)
+                        </p>
+                        {csvInputText && (
+                          <button
+                            type="button"
+                            onClick={() => setCsvInputText('')}
+                            className="text-[11px] text-rose-600 hover:underline cursor-pointer"
+                          >
+                            ล้างข้อมูลที่วางไว้
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-4 pt-1 text-[11px] text-slate-700">
+                      <label className="inline-flex items-center gap-1.5 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={reconcileUpdateStatus}
+                          onChange={(e) => setReconcileUpdateStatus(e.target.checked)}
+                          className="rounded border-slate-300 text-indigo-600"
+                        />
+                        <span>อัปเดตสถานะ <strong>ชำรุด / เสื่อมสภาพ / จำหน่ายแล้ว</strong> ตาม Excel</span>
+                      </label>
+                      <label className="inline-flex items-center gap-1.5 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={reconcileUpdateDetails}
+                          onChange={(e) => setReconcileUpdateDetails(e.target.checked)}
+                          className="rounded border-slate-300 text-indigo-600"
+                        />
+                        <span>อัปเดต ชื่อ / สถานที่ / ยี่ห้อ / รุ่น / S/N ให้ตรง Excel (คง <strong>ราคา</strong> เดิมไว้)</span>
+                      </label>
                     </div>
                   </div>
 
-                  <div className="p-2.5 bg-white/90 rounded-lg border border-amber-200">
-                    <strong className="text-amber-950">2. แก้ไขรายการใหม่ (รพส-009 Wood's lamp) ที่แทรกอยู่แถวบนสุด:</strong>
-                    <p className="mt-1 text-slate-600">
-                      ในชีต แถวที่ 2 มีรายการ <code>รพส-009</code> แทรกอยู่ ให้คลิกขวาที่แถวที่ 2 เลือก <strong>"ตัด" (Ctrl+X)</strong> แล้วเลื่อนลงไปคลิกขวาที่แถวล่างสุด (ใต้แถวที่ 200 กว่า) เลือก <strong>"วาง" (Ctrl+V)</strong> จากนั้นคลิกขวาที่แถว 2 ที่ว่างอยู่แล้วเลือก <strong>"ลบแถว"</strong>
-                    </p>
-                    <p className="mt-1 text-emerald-700 font-medium">
-                      ✓ <em>ระบบได้รับการอัปเดตแล้ว:</em> การกดเพิ่มครุภัณฑ์ใหม่หลังจากนี้ ระบบจะส่งไปต่อท้ายล่างสุดของชีตเสมอ ไม่แทรกบนสุดอีกต่อไป!
-                    </p>
-                  </div>
-
-                  <div className="p-2.5 bg-white/90 rounded-lg border border-amber-200">
-                    <strong className="text-amber-950">3. วิธีกู้คืนข้อมูล 200+ รายการกลับเข้าสู่ระบบทันที:</strong>
-                    <p className="mt-1 text-slate-600">
-                      ใน Google Sheet แท็บ <strong>"ครุภัณฑ์"</strong> กด <kbd className="px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded font-mono text-[10px]">Ctrl + A</kbd> (หรือลากคลุมแถวทั้งหมด) แล้วกด <kbd className="px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded font-mono text-[10px]">Ctrl + C</kbd> เพื่อคัดลอก จากนั้นนำมากด <strong>Ctrl + V</strong> วางลงในช่องข้อความด้านล่างนี้ได้เลย
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Option 1: Quick Copy-Paste from Google Sheets (Easiest & 100% Reliable) */}
-              <div className="p-4 bg-blue-50/70 border border-blue-200 rounded-xl space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-blue-950 flex items-center gap-1.5 text-xs">
-                    <span className="w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center text-[10px] font-bold">1</span>
-                    วิธีที่ 1 (แนะนำ - เร็วที่สุด 5 วินาที): คัดลอกจากชีตแล้ววาง (Ctrl+C & Ctrl+V)
-                  </span>
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-200 text-blue-800 font-semibold">
-                    ไม่ต้องแก้สิทธิ์ Google
-                  </span>
-                </div>
-                <p className="text-slate-600 text-[11px] leading-relaxed">
-                  1. ในหน้า Google Sheets แผ่นงานแท็บ <strong className="text-blue-900">"ครุภัณฑ์"</strong> กด <kbd className="px-1.5 py-0.5 bg-white border border-slate-300 rounded font-mono text-[10px]">Ctrl + A</kbd> (หรือลากคลุมแถวที่ต้องการ)<br/>
-                  2. กด <kbd className="px-1.5 py-0.5 bg-white border border-slate-300 rounded font-mono text-[10px]">Ctrl + C</kbd> เพื่อคัดลอก<br/>
-                  3. นำมากด <kbd className="px-1.5 py-0.5 bg-white border border-slate-300 rounded font-mono text-[10px]">Ctrl + V</kbd> วางในกล่องข้อความด้านล่างนี้ได้เลย
-                </p>
-
-                <div className="mt-2">
-                  <textarea
-                    rows={5}
-                    value={csvInputText}
-                    onChange={(e) => setCsvInputText(e.target.value)}
-                    placeholder="คลิกที่นี่แล้วกด Ctrl + V เพื่อวางข้อมูลตารางที่คัดลอกมาจาก Google Sheets (รองรับทั้งแบบตาราง Tab และ CSV)..."
-                    className="w-full p-3 font-mono text-[11px] border border-blue-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-600 bg-white"
-                  />
-                </div>
-
-                {/* Live Preview if text pasted */}
-                {csvInputText.trim() && (
-                  (() => {
-                    const parsed = parseEquipmentSheetCSV(csvInputText);
-                    return (
-                      <div className="p-2.5 bg-white border border-blue-200 rounded-lg space-y-1.5">
-                        <div className="flex items-center justify-between">
-                          <span className="font-semibold text-emerald-800 flex items-center gap-1 text-[11px]">
-                            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                            ตรวจพบข้อมูลถูกต้องจำนวน {parsed.length} รายการ
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => handleProcessCsv(csvInputText)}
-                            className="px-3 py-1 bg-emerald-700 hover:bg-emerald-800 text-white rounded text-xs font-semibold cursor-pointer transition shadow-xs"
-                          >
-                            บันทึกนำเข้า {parsed.length} รายการทันที
-                          </button>
+                  {/* Step 2: Comparison Report */}
+                  {excelReconcileReport && (
+                    <div className="space-y-3 border border-slate-200 rounded-xl p-4 bg-slate-50/70">
+                      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
+                        <div className="p-2.5 bg-white rounded-lg border border-slate-200">
+                          <div className="text-[10px] text-slate-500">แถวจาก Excel</div>
+                          <div className="text-base font-bold text-slate-900">{excelReconcileReport.excelRowCount.toLocaleString()}</div>
                         </div>
-                        {parsed.length > 0 && (
-                          <div className="text-[10px] text-slate-500 bg-slate-50 p-2 rounded max-h-24 overflow-y-auto">
-                            <span className="font-semibold text-slate-700">ตัวอย่างข้อมูลที่ตรวจพบ:</span>
-                            {parsed.slice(0, 3).map((item, idx) => (
-                              <div key={idx} className="truncate mt-0.5">
-                                • {item.code} : <span className="text-slate-800 font-medium">{item.name}</span> ({item.location})
+                        <div className="p-2.5 bg-emerald-50 rounded-lg border border-emerald-200">
+                          <div className="text-[10px] text-emerald-700">จับคู่ตรง Google Sheet</div>
+                          <div className="text-base font-bold text-emerald-800">
+                            {excelReconcileReport.matchedItems.length} / {excelReconcileReport.sheetCount}
+                          </div>
+                        </div>
+                        <div className="p-2.5 bg-amber-50 rounded-lg border border-amber-200">
+                          <div className="text-[10px] text-amber-800">เจ้าของยังไม่มีใน "รายชื่อ"</div>
+                          <div className="text-base font-bold text-amber-900">{excelReconcileReport.missingEmailOwners.length} คน</div>
+                        </div>
+                        <div className="p-2.5 bg-rose-50 rounded-lg border border-rose-200">
+                          <div className="text-[10px] text-rose-700">ชำรุด / เสื่อม / จำหน่าย</div>
+                          <div className="text-base font-bold text-rose-800">{excelReconcileReport.nonActiveStatusItems.length} รายการ</div>
+                        </div>
+                        <div className="p-2.5 bg-slate-100 rounded-lg border border-slate-300">
+                          <div className="text-[10px] text-slate-600">ใน Sheet ไม่พบใน Excel</div>
+                          <div className="text-base font-bold text-slate-800">{excelReconcileReport.unmatchedSheetItems.length} รายการ</div>
+                        </div>
+                      </div>
+
+                      {/* Sub-tabs for inspection */}
+                      <div className="flex flex-wrap gap-1.5 border-b border-slate-200 pb-2">
+                        {[
+                          { key: 'missing_email' as const, label: `เจ้าของไม่มีอีเมล (${excelReconcileReport.missingEmailOwners.length})` },
+                          { key: 'non_active' as const, label: `ชำรุด/จำหน่าย (${excelReconcileReport.nonActiveStatusItems.length})` },
+                          { key: 'unmatched' as const, label: `ไม่พบใน Excel (${excelReconcileReport.unmatchedSheetItems.length})` },
+                          { key: 'diffs' as const, label: `ข้อมูลต่างกัน (${excelReconcileReport.fieldDiffItems.length})` },
+                          { key: 'matched' as const, label: `จับคู่สำเร็จ (${excelReconcileReport.matchedItems.length})` }
+                        ].map(tab => (
+                          <button
+                            key={tab.key}
+                            type="button"
+                            onClick={() => setReconcileDetailTab(tab.key)}
+                            className={`px-2.5 py-1 rounded-md text-[11px] font-semibold cursor-pointer transition ${
+                              reconcileDetailTab === tab.key
+                                ? 'bg-slate-800 text-white'
+                                : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
+                            }`}
+                          >
+                            {tab.label}
+                          </button>
+                        ))}
+                      </div>
+
+                      <div className="max-h-56 overflow-y-auto bg-white rounded-lg border border-slate-200 p-3 text-[11px]">
+                        {reconcileDetailTab === 'missing_email' && (
+                          excelReconcileReport.missingEmailOwners.length === 0 ? (
+                            <p className="text-emerald-700 font-medium">✓ เจ้าของครุภัณฑ์ที่จับคู่ได้ทั้งหมดมีอีเมลในแท็บ "รายชื่อ" ครบถ้วน</p>
+                          ) : (
+                            <div className="space-y-1.5">
+                              <p className="text-amber-800 font-semibold mb-2">
+                                รายชื่อผู้รับผิดชอบต่อไปนี้พบใน Excel แต่ยังไม่มีในแท็บ "รายชื่อ" ของ Google Sheet (ระบบจะบันทึกชื่อเจ้าของให้ แต่จะส่งอีเมลอัตโนมัติได้เมื่อเพิ่มอีเมลในแท็บ "รายชื่อ" แล้ว):
+                              </p>
+                              {excelReconcileReport.missingEmailOwners.map(o => (
+                                <div key={o.name} className="flex items-center justify-between py-1 border-b border-slate-100">
+                                  <span className="font-bold text-slate-900">{o.name}</span>
+                                  <span className="text-slate-600">{o.count} รายการ (เช่น {o.codes.join(', ')})</span>
+                                </div>
+                              ))}
+                            </div>
+                          )
+                        )}
+
+                        {reconcileDetailTab === 'non_active' && (
+                          excelReconcileReport.nonActiveStatusItems.length === 0 ? (
+                            <p className="text-emerald-700">ทุกรายการที่จับคู่มีสถานะ "ใช้งาน" ปกติ</p>
+                          ) : (
+                            <div className="space-y-1">
+                              {excelReconcileReport.nonActiveStatusItems.map(m => (
+                                <div key={m.catalogItem.code} className="flex items-center justify-between gap-2 py-1 border-b border-slate-100">
+                                  <div>
+                                    <span className="font-mono text-blue-700 font-semibold">{m.catalogItem.code}</span>{' '}
+                                    <span className="text-slate-800">{m.catalogItem.name}</span>
+                                  </div>
+                                  <span className="px-2 py-0.5 rounded bg-rose-100 text-rose-800 font-semibold shrink-0">
+                                    {m.excelRow.excelStatus} ({m.excelRow.responsible || '-'})
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          )
+                        )}
+
+                        {reconcileDetailTab === 'unmatched' && (
+                          excelReconcileReport.unmatchedSheetItems.length === 0 ? (
+                            <p className="text-emerald-700">✓ ครุภัณฑ์ทั้ง 249 รายการใน Google Sheet พบในไฟล์ Excel ครบทุกรายการ</p>
+                          ) : (
+                            <div className="space-y-1">
+                              {excelReconcileReport.unmatchedSheetItems.map(u => (
+                                <div key={u.item.code} className="flex items-center justify-between gap-2 py-1 border-b border-slate-100">
+                                  <div>
+                                    <span className="font-mono text-slate-800 font-semibold">{u.item.code}</span>{' '}
+                                    <span className="text-slate-600">{u.item.name}</span>
+                                  </div>
+                                  {u.closeMatchCode && (
+                                    <span className="text-[10px] px-2 py-0.5 bg-amber-100 text-amber-900 rounded shrink-0">
+                                      ใน Excel มี: {u.closeMatchCode}
+                                    </span>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          )
+                        )}
+
+                        {reconcileDetailTab === 'diffs' && (
+                          excelReconcileReport.fieldDiffItems.length === 0 ? (
+                            <p className="text-emerald-700">ไม่พบความแตกต่างของชื่อ/สถานที่/ยี่ห้อ/รุ่น/Serial number</p>
+                          ) : (
+                            <div className="space-y-1.5">
+                              {excelReconcileReport.fieldDiffItems.map(m => (
+                                <div key={m.catalogItem.code} className="py-1 border-b border-slate-100">
+                                  <div className="font-mono font-semibold text-blue-700">{m.catalogItem.code}</div>
+                                  <div className="text-slate-700">{m.diffs.join(' | ')}</div>
+                                </div>
+                              ))}
+                            </div>
+                          )
+                        )}
+
+                        {reconcileDetailTab === 'matched' && (
+                          <div className="space-y-1">
+                            {excelReconcileReport.matchedItems.slice(0, 100).map(m => (
+                              <div key={m.catalogItem.code} className="flex items-center justify-between gap-2 py-1 border-b border-slate-100">
+                                <div className="truncate">
+                                  <span className="font-mono text-blue-700 font-semibold">{m.catalogItem.code}</span>{' '}
+                                  <span className="text-slate-800">{m.updatedItem.name}</span>
+                                </div>
+                                <span className="shrink-0 text-slate-700">
+                                  <strong>{m.updatedItem.responsible}</strong>{' '}
+                                  <span className="text-slate-400">({m.resolvedEmail || 'ยังไม่มีอีเมลในรายชื่อ'})</span>
+                                </span>
                               </div>
                             ))}
-                            {parsed.length > 3 && <div className="text-slate-400 mt-0.5">...และอีก {parsed.length - 3} รายการ</div>}
+                            {excelReconcileReport.matchedItems.length > 100 && (
+                              <div className="text-center text-slate-400 pt-1">
+                                แสดง 100 รายการแรก จากทั้งหมด {excelReconcileReport.matchedItems.length} รายการ
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
-                    );
-                  })()
-                )}
-              </div>
 
-              {/* Option 2: Upload CSV File */}
-              <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-slate-900 flex items-center gap-1.5 text-xs">
-                    <span className="w-5 h-5 rounded-full bg-slate-700 text-white flex items-center justify-center text-[10px] font-bold">2</span>
-                    วิธีที่ 2: ดาวน์โหลดเป็นไฟล์ CSV จาก Google Sheets แล้วนำมาอัปโหลด
-                  </span>
-                </div>
-                <p className="text-slate-600 text-[11px] leading-relaxed">
-                  ใน Google Sheets ไปที่เมนู <strong>ไฟล์ (File) &gt; ดาวน์โหลด (Download) &gt; ค่าที่คั่นด้วยจุลภาค (.csv, แผ่นงานปัจจุบัน)</strong> จากนั้นเลือกไฟล์ที่บันทึกไว้ในเครื่อง:
-                </p>
-                <input
-                  type="file"
-                  accept=".csv,text/csv"
-                  onChange={handleFileUpload}
-                  className="w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-slate-200 file:text-slate-800 hover:file:bg-slate-300 cursor-pointer"
-                />
-              </div>
+                      <div className="flex flex-wrap items-center justify-between gap-2 pt-2">
+                        <button
+                          type="button"
+                          onClick={handleDownloadReconciledCsv}
+                          className="px-3 py-1.5 bg-white hover:bg-slate-100 border border-slate-300 text-slate-800 rounded-lg text-xs font-semibold cursor-pointer"
+                        >
+                          ดาวน์โหลด CSV ที่จับคู่แล้ว (.csv)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleApplyExcelReconcile}
+                          disabled={excelReconcileReport.matchedItems.length === 0}
+                          className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 disabled:bg-slate-400 text-white rounded-lg text-xs font-bold shadow-xs cursor-pointer"
+                        >
+                          บันทึกอัปเดต {excelReconcileReport.matchedItems.length} รายการ และซิงค์ขึ้น Google Sheet ทันที
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <>
+                  {/* Emergency Solution Callout for User Issues */}
+                  <div className="p-4 bg-amber-50/90 border border-amber-300 rounded-xl space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-amber-950 flex items-center gap-1.5 text-xs">
+                        <AlertTriangle className="w-4 h-4 text-amber-600" />
+                        วิธีแก้ไขด่วน: กู้คืน 200+ รายการ และแก้รายการใหม่ขึ้นไปอยู่แถวบนสุด
+                      </span>
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-200 text-amber-900 font-semibold">
+                        ทำตาม 3 ขั้นตอนนี้
+                      </span>
+                    </div>
 
-              {/* Option 3: Publish to Web Explanation */}
-              <div className="p-4 bg-amber-50/70 border border-amber-200 rounded-xl space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-amber-950 flex items-center gap-1.5 text-xs">
-                    <span className="w-5 h-5 rounded-full bg-amber-600 text-white flex items-center justify-center text-[10px] font-bold">3</span>
-                    วิธีที่ 3: ซิงค์อัตโนมัติด้วย "เผยแพร่ไปยังเว็บ (Publish to web)"
-                  </span>
-                </div>
-                <p className="text-amber-900 text-[11px] leading-relaxed">
-                  เนื่องจากบัญชี Google ของมหาวิทยาลัย (<span className="font-mono text-amber-950 font-bold">@psu.ac.th</span>) มักมีการตั้งค่านโยบายความปลอดภัยบล็อกการเข้าถึงไฟล์โดยตรงจากภายนอก (Google จะตอบกลับเป็น 404)<br/>
-                  <strong>วิธีตั้งค่าให้ดึงได้ตลอด:</strong> ใน Google Sheets ไปที่เมนู <strong>ไฟล์ &gt; แชร์ &gt; เผยแพร่ไปยังเว็บ</strong> &gt; เลือกแผ่นงาน <strong>"ครุภัณฑ์"</strong> &gt; เลือกรูปแบบ <strong>"ค่าที่คั่นด้วยจุลภาค (.csv)"</strong> &gt; คลิก <strong>เผยแพร่</strong> แล้วนำลิงก์ที่ได้มากรอกในระบบ
-                </p>
-              </div>
+                    <div className="space-y-2.5 text-slate-700 text-[11px] leading-relaxed">
+                      <div className="p-2.5 bg-white/90 rounded-lg border border-amber-200">
+                        <strong className="text-amber-950">1. แก้แถวที่ 1 ใน Google Sheet (ที่ทำให้ระบบหาข้อมูลไม่เจอ):</strong>
+                        <p className="mt-1 text-slate-600">
+                          ใน Google Sheet แถวที่ 1 กำลังถูก <strong>"ผสานเซลล์ (Merge Cells)"</strong> รวมกัน ให้คลิกที่แถวที่ 1 แล้วกดปุ่ม <strong>"ยกเลิกการผสานเซลล์"</strong> (ไอคอนตารางผสานเซลล์ด้านบน) จากนั้นกดปุ่มคัดลอกด้านล่างนี้แล้ววางลงที่เซลล์ <strong>A1</strong> เพื่อใส่หัวตารางมาตรฐาน:
+                        </p>
+                        <div className="mt-2 flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={handleCopyHeaderRow}
+                            className="px-3 py-1.5 bg-amber-700 hover:bg-amber-800 text-white rounded-lg font-semibold flex items-center gap-1.5 transition cursor-pointer shadow-xs"
+                          >
+                            {hasCopiedHeader ? <Check className="w-3.5 h-3.5 text-emerald-300" /> : <Copy className="w-3.5 h-3.5" />}
+                            <span>{hasCopiedHeader ? 'คัดลอกแล้ว! นำไปวางในเซลล์ A1 ได้เลย' : 'คลิกคัดลอกหัวตาราง 8 คอลัมน์ที่ถูกต้อง'}</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Option 1: Quick Copy-Paste from Google Sheets */}
+                  <div className="p-4 bg-blue-50/70 border border-blue-200 rounded-xl space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-blue-950 flex items-center gap-1.5 text-xs">
+                        <span className="w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center text-[10px] font-bold">1</span>
+                        คัดลอกจาก Google Sheets แล้ววาง (Ctrl+C & Ctrl+V)
+                      </span>
+                    </div>
+
+                    <div className="mt-2">
+                      <textarea
+                        rows={5}
+                        value={csvInputText}
+                        onChange={(e) => setCsvInputText(e.target.value)}
+                        placeholder="คลิกที่นี่แล้วกด Ctrl + V เพื่อวางข้อมูลตารางที่คัดลอกมาจาก Google Sheets..."
+                        className="w-full p-3 font-mono text-[11px] border border-blue-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-600 bg-white"
+                      />
+                    </div>
+
+                    {csvInputText.trim() && (
+                      (() => {
+                        const parsed = parseEquipmentSheetCSV(csvInputText);
+                        return (
+                          <div className="p-2.5 bg-white border border-blue-200 rounded-lg space-y-1.5">
+                            <div className="flex items-center justify-between">
+                              <span className="font-semibold text-emerald-800 flex items-center gap-1 text-[11px]">
+                                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                                ตรวจพบข้อมูลถูกต้องจำนวน {parsed.length} รายการ
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => handleProcessCsv(csvInputText)}
+                                className="px-3 py-1 bg-emerald-700 hover:bg-emerald-800 text-white rounded text-xs font-semibold cursor-pointer transition shadow-xs"
+                              >
+                                บันทึกนำเข้า {parsed.length} รายการทันที
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })()
+                    )}
+                  </div>
+
+                  {/* Option 2: Upload CSV File */}
+                  <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                    <span className="font-bold text-slate-900 flex items-center gap-1.5 text-xs">
+                      <span className="w-5 h-5 rounded-full bg-slate-700 text-white flex items-center justify-center text-[10px] font-bold">2</span>
+                      อัปโหลดไฟล์ CSV จาก Google Sheets
+                    </span>
+                    <input
+                      type="file"
+                      accept=".csv,text/csv"
+                      onChange={handleFileUpload}
+                      className="w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-slate-200 file:text-slate-800 hover:file:bg-slate-300 cursor-pointer"
+                    />
+                  </div>
+                </>
+              )}
             </div>
 
-            <div className="flex justify-end gap-2 pt-4 border-t border-slate-100 mt-4 shrink-0">
+            <div className="flex justify-end gap-2 pt-3 border-t border-slate-100 mt-3 shrink-0">
               <button
                 type="button"
                 onClick={() => setShowImportModal(false)}
-                className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg text-xs"
+                className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg text-xs cursor-pointer"
               >
                 ปิดหน้าต่าง
               </button>
-              {csvInputText.trim() && (
+              {importMode === 'replace' && csvInputText.trim() && (
                 <button
                   type="button"
                   onClick={() => handleProcessCsv(csvInputText)}
-                  className="px-4 py-2 bg-blue-700 hover:bg-blue-800 text-white font-semibold rounded-lg text-xs transition shadow-xs"
+                  className="px-4 py-2 bg-blue-700 hover:bg-blue-800 text-white font-semibold rounded-lg text-xs transition shadow-xs cursor-pointer"
                 >
                   บันทึกนำเข้าข้อมูลทันที
                 </button>

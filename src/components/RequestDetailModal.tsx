@@ -309,11 +309,18 @@ export const RequestDetailModal: React.FC<RequestDetailModalProps> = ({
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {request.equipmentList.map((item, idx) => {
-                    // Check if current user is owner of this specific item or admin
-                    const isOwnerOfThisItem = 
+                    const respNorm = (item.responsible || '').trim().toLowerCase();
+                    const userPureName = (currentUser.name || '').trim().toLowerCase();
+                    const userFirstName = (currentUser.first_name_th || userPureName.split(' ')[0] || '').trim().toLowerCase();
+                    const isGenericResp = !respNorm || respNorm === 'รพ.สัตว์ ม.อ.';
+                    const isOwnerOfThisItem =
                       currentUser.role === 'admin' ||
-                      (item.responsibleEmail && currentUser.email.toLowerCase() === item.responsibleEmail.toLowerCase()) ||
-                      (currentUser.name && item.responsible && currentUser.name.trim() === item.responsible.trim());
+                      (Boolean(item.responsibleEmail) && currentUser.email.toLowerCase() === item.responsibleEmail.toLowerCase()) ||
+                      (!isGenericResp && (
+                        userPureName === respNorm ||
+                        (userFirstName && (respNorm === userFirstName || respNorm.includes(userFirstName))) ||
+                        userPureName.includes(respNorm)
+                      ));
 
                     const isItemApproved = item.ownerStatus === 'ยินยอม' || item.ownerApprovedAt;
                     const isItemRejected = item.ownerStatus === 'ไม่อนุมัติ';

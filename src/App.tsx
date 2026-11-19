@@ -25,7 +25,8 @@ import {
   revokeUserAllSessions,
   revokeAllActiveSessionsExceptAdmin,
   checkCurrentSessionValid,
-  SESSION_MAX_DURATION_MS
+  SESSION_MAX_DURATION_MS,
+  enrichRequestsWithEquipmentOwners
 } from './services/storage';
 import { BorrowRequest, EquipmentMaster, SystemNotification, BorrowedEquipmentItem, BorrowRequestStatus, StaffUser, LoginLog } from './types';
 import { STAFF_USERS } from './data/initialData';
@@ -144,14 +145,18 @@ export default function App() {
     // Auto-fetch latest staff, equipment, and requests from Google Sheets in the background
     const syncFromLiveSheets = async () => {
       try {
+        const localEq = getStoredEquipment();
+        const localStaff = getStoredStaffUsers();
         const [staffRes, eqRes, reqRes] = await Promise.allSettled([
           fetchStaffFromGoogleSheets(),
-          fetchEquipmentFromGoogleSheets(),
-          fetchRequestsFromGoogleSheets()
+          fetchEquipmentFromGoogleSheets(undefined, localEq, localStaff),
+          fetchRequestsFromGoogleSheets(undefined, localEq, localStaff)
         ]);
 
+        let activeStaff = localStaff;
         if (staffRes.status === 'fulfilled' && staffRes.value.success && staffRes.value.staff.length > 0) {
           const liveStaff = staffRes.value.staff;
+          activeStaff = liveStaff;
           setStaffDatabase(liveStaff);
           saveStoredStaffUsers(liveStaff);
           const currentActive = getStoredActiveUserEmail();
@@ -164,9 +169,11 @@ export default function App() {
           }
         }
 
+        let activeEq = localEq;
         if (eqRes.status === 'fulfilled' && eqRes.value.success && eqRes.value.equipment.length > 0) {
-          setEquipment(eqRes.value.equipment);
-          saveStoredEquipment(eqRes.value.equipment);
+          activeEq = eqRes.value.equipment;
+          setEquipment(activeEq);
+          saveStoredEquipment(activeEq);
         }
 
         if (reqRes.status === 'fulfilled' && reqRes.value.success && reqRes.value.requests.length > 0) {
@@ -175,9 +182,10 @@ export default function App() {
           const existingIds = new Set(liveReqs.map(r => r.id));
           const currentLocal = getStoredRequests();
           const localOnly = currentLocal.filter(r => !existingIds.has(r.id));
-          const merged = [...liveReqs, ...localOnly];
+          const merged = enrichRequestsWithEquipmentOwners([...liveReqs, ...localOnly], activeEq, activeStaff);
           setRequests(merged);
           saveStoredRequests(merged);
+          setEquipment(getStoredEquipment());
           setNotifications(generateSystemNotifications(merged));
         }
       } catch (err) {
@@ -202,13 +210,12 @@ export default function App() {
     }
   }, [currentPortal, currentNavView]);
 
-  // Session timer (15 minutes limit) & Live detection if admin force-kicked this user's session
+  // Session timer (15 minutes limit for standard users; unlimited for Admin) & Live detection if admin force-kicked this user's session
   useEffect(() => {
     if (!isAuthenticated) return;
 
-    // Check validity every 1.5 seconds
-    const interval = setInterval(() => {
-      const check = checkCurrentSessionValid();
+    const validateSession = () => {
+      const check = checkCurrentSessionValid(currentUser.role);
       setSessionRemainingMs(check.remainingMs);
 
       if (!check.isValid) {
@@ -216,15 +223,19 @@ export default function App() {
         saveStoredIsAuthenticated(false);
         clearUserSession();
         if (check.reason === 'expired') {
-           triggerSyncToast('หมดเวลาการใช้งาน 15 นาที ระบบทำการออกจากระบบอัตโนมัติเพื่อความปลอดภัย');
+          triggerSyncToast('หมดเวลาการใช้งาน 15 นาที ระบบทำการออกจากระบบอัตโนมัติเพื่อความปลอดภัย');
         } else if (check.reason === 'revoked_by_admin') {
-           triggerSyncToast('เซสชันของคุณถูกบังคับให้ออกจากระบบโดยผู้ดูแลระบบ (Force Logout)');
+          triggerSyncToast('เซสชันของคุณถูกบังคับให้ออกจากระบบโดยผู้ดูแลระบบ (Force Logout)');
         }
       }
-    }, 1500);
+    };
+
+    // Validate immediately and every 1.5 seconds
+    validateSession();
+    const interval = setInterval(validateSession, 1500);
 
     return () => clearInterval(interval);
-  }, [isAuthenticated]);
+  }, [isAuthenticated, currentUser.role]);
 
   const handleSelectUser = (u: StaffUser) => {
     setCurrentUser(u);
@@ -557,17 +568,27 @@ export default function App() {
     triggerSyncToast(`แก้ไขข้อมูลครุภัณฑ์ "${item.name}" เรียบร้อยแล้ว — บันทึกลงฐานข้อมูลแล้ว`);
   };
 
-  // Batch update equipment (e.g. from Google Sheets sync or CSV import)
+  // Batch update equipment (e.g. from Google Sheets sync or CSV/Excel reconciliation)
   const handleBatchUpdateEquipment = (items: EquipmentMaster[]) => {
-    setEquipment(items);
     saveStoredEquipment(items);
-    triggerEquipmentSync(items);
-    triggerSyncToast(`อัปเดตข้อมูลครุภัณฑ์ ${items.length} รายการจากชีตเรียบร้อยแล้ว`);
+    const enrichedRequests = enrichRequestsWithEquipmentOwners(requests, items, staffDatabase);
+    const requestsChanged = JSON.stringify(enrichedRequests) !== JSON.stringify(requests);
+    saveStoredRequests(enrichedRequests);
+    const syncedEquipment = getStoredEquipment();
+
+    setEquipment(syncedEquipment);
+    if (requestsChanged) {
+      setRequests(enrichedRequests);
+      setNotifications(generateSystemNotifications(enrichedRequests));
+      triggerRequestsSync(enrichedRequests);
+    }
+    triggerEquipmentSync(syncedEquipment);
+    triggerSyncToast(`อัปเดตข้อมูลครุภัณฑ์ ${syncedEquipment.length} รายการ และซิงค์ข้อมูลเจ้าของเรียบร้อยแล้ว`);
   };
 
   // Refresh equipment directly from Google Sheets (tab 'ครุภัณฑ์')
   const handleRefreshEquipmentFromSheet = async (overrideWebhookUrl?: string) => {
-    const res = await fetchEquipmentFromGoogleSheets(overrideWebhookUrl);
+    const res = await fetchEquipmentFromGoogleSheets(overrideWebhookUrl, equipment, staffDatabase);
     if (res.success && res.equipment.length > 0) {
       setEquipment(res.equipment);
       saveStoredEquipment(res.equipment);
@@ -591,14 +612,15 @@ export default function App() {
 
   // Refresh borrow requests directly from Google Sheets (tab 'คำขอยืมครุภัณฑ์')
   const handleRefreshRequestsFromSheet = async (overrideWebhookUrl?: string) => {
-    const res = await fetchRequestsFromGoogleSheets(overrideWebhookUrl);
+    const res = await fetchRequestsFromGoogleSheets(overrideWebhookUrl, equipment, staffDatabase);
     if (res.success && res.requests.length > 0) {
       const existingIds = new Set(res.requests.map(r => r.id));
       const currentLocal = getStoredRequests();
       const localOnly = currentLocal.filter(r => !existingIds.has(r.id));
-      const merged = [...res.requests, ...localOnly];
+      const merged = enrichRequestsWithEquipmentOwners([...res.requests, ...localOnly], equipment, staffDatabase);
       setRequests(merged);
       saveStoredRequests(merged);
+      setEquipment(getStoredEquipment());
       setNotifications(generateSystemNotifications(merged));
       triggerSyncToast(`ดึงรายการคำขอยืม ${res.requests.length} รายการจากชีตเรียบร้อยแล้ว`);
       return res;
@@ -647,24 +669,31 @@ export default function App() {
     setIsRefreshingSheets(true);
     try {
       const [eqRes, reqRes] = await Promise.allSettled([
-        fetchEquipmentFromGoogleSheets(),
-        fetchRequestsFromGoogleSheets()
+        fetchEquipmentFromGoogleSheets(undefined, equipment, staffDatabase),
+        fetchRequestsFromGoogleSheets(undefined, equipment, staffDatabase)
       ]);
       let updatedEqCount = 0;
       let updatedReqCount = 0;
+      let activeEq = equipment;
 
       if (eqRes.status === 'fulfilled' && eqRes.value.success && eqRes.value.equipment.length > 0) {
-        setEquipment(eqRes.value.equipment);
-        saveStoredEquipment(eqRes.value.equipment);
-        updatedEqCount = eqRes.value.equipment.length;
+        activeEq = eqRes.value.equipment;
+        setEquipment(activeEq);
+        saveStoredEquipment(activeEq);
+        updatedEqCount = activeEq.length;
       }
       if (reqRes.status === 'fulfilled' && reqRes.value.success && reqRes.value.requests.length > 0) {
         const liveReqs = reqRes.value.requests;
         const currentLocal = getStoredRequests();
         const existingIds = new Set(liveReqs.map(r => r.id));
-        const merged = [...liveReqs, ...currentLocal.filter(r => !existingIds.has(r.id))];
+        const merged = enrichRequestsWithEquipmentOwners(
+          [...liveReqs, ...currentLocal.filter(r => !existingIds.has(r.id))],
+          activeEq,
+          staffDatabase
+        );
         setRequests(merged);
         saveStoredRequests(merged);
+        setEquipment(getStoredEquipment());
         setNotifications(generateSystemNotifications(merged));
         updatedReqCount = liveReqs.length;
       }
@@ -772,18 +801,28 @@ export default function App() {
 
           {/* Right Header Controls (Session timer, Refresh, Notifications, Add button) */}
           <div className="flex items-center gap-2 sm:gap-3">
-            {/* 15-Minute Session Timer Pill */}
-            <div 
-              className={`hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold transition ${
-                sessionRemainingMs <= 3 * 60 * 1000
-                  ? 'bg-rose-50 text-rose-700 border border-rose-300 animate-pulse'
-                  : 'bg-slate-100 text-slate-700 border border-slate-200'
-              }`}
-              title="เซสชันจะหมดอายุอัตโนมัติภายใน 15 นาทีตามนโยบายความปลอดภัย"
-            >
-              <Clock className="w-3.5 h-3.5 text-[#0090FF]" />
-              <span>{formatTimer(sessionRemainingMs)}</span>
-            </div>
+            {/* Session Timer Pill (Unlimited for Admin, 15-Minute Limit for Standard Users) */}
+            {currentUser.role === 'admin' ? (
+              <div
+                className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-800 border border-amber-300"
+                title="ผู้ดูแลระบบ (Admin) สามารถอยู่ในระบบได้ตลอดไม่จำกัดเวลา"
+              >
+                <ShieldCheck className="w-3.5 h-3.5 text-amber-600" />
+                <span>Admin • ไม่จำกัดเวลา</span>
+              </div>
+            ) : (
+              <div 
+                className={`hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold transition ${
+                  sessionRemainingMs <= 3 * 60 * 1000
+                    ? 'bg-rose-50 text-rose-700 border border-rose-300 animate-pulse'
+                    : 'bg-slate-100 text-slate-700 border border-slate-200'
+                }`}
+                title="เซสชันจะหมดอายุอัตโนมัติภายใน 15 นาทีตามนโยบายความปลอดภัย"
+              >
+                <Clock className="w-3.5 h-3.5 text-[#0090FF]" />
+                <span>{formatTimer(sessionRemainingMs)}</span>
+              </div>
+            )}
 
             {/* Refresh Live Data from Google Sheets (Matching Image 3 & 4 refresh icon) */}
             <button
@@ -868,6 +907,7 @@ export default function App() {
               onSelectToBorrow={(eq) => {
                 setIsBorrowModalOpen(true);
               }}
+              onOpenExcelReconcile={() => setIsCatalogModalOpen(true)}
               isAdmin={currentUser.role === 'admin'}
               staffList={staffDatabase}
             />
